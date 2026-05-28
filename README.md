@@ -1,4 +1,4 @@
-# ☁️ Azure Architecture Builder - Pro Edition
+# ☁️ Azure Architecture Builder 
 
 Ένα δυναμικό, διαδραστικό web εργαλείο (Single-Page Application) για τον σχεδιασμό, την οπτικοποίηση και την εξαγωγή αρχιτεκτονικών **Microsoft Azure** (Hub & Spoke / Enterprise Scale). Φτιαγμένο εξ ολοκλήρου με **Vanilla JavaScript, HTML5 Canvas και CSS3**, χωρίς εξωτερικές βιβλιοθήκες.
 
