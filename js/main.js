@@ -1,6 +1,6 @@
 import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, resetDiagram, resetPositions } from './state-management.js';
 import { draw, resize, selectNode } from './canvas-engine.js';
-import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, addSpoke, deleteSpoke, updateVnet, togglePeering, addSubnet, deleteSubnet, updateSubnet, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel } from './ui-components.js';
+import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, addSpoke, deleteSpoke, updateVnet, togglePeering, addSubnet, deleteSubnet, updateSubnet, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText } from './export-logic.js';
 
 // ================================================================
@@ -44,6 +44,14 @@ window._addResource = addResource;
 window._deleteResource = deleteResource;
 window._updateResource = updateResource;
 window._updateResConfig = updateResConfig;
+window._addRgResource = addRgResource;
+window._deleteRgResource = deleteRgResource;
+window._updateRgResource = updateRgResource;
+window._addDnsRecord = addDnsRecord;
+window._deleteDnsRecord = deleteDnsRecord;
+window._updateDnsRecord = updateDnsRecord;
+window._addVnetLink = addVnetLink;
+window._deleteVnetLink = deleteVnetLink;
 window._exportPng = exportPng;
 window._openPsModal = openPsModal;
 window._openBicepModal = openBicepModal;

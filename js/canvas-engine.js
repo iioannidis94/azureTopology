@@ -35,8 +35,11 @@ function getRenderNodes(){
         const vnets = [];
         if (state.hub.rgId === rg.id) vnets.push(state.hub);
         vnets.push(...state.spokes.filter(sp => sp.rgId === rg.id));
-        const rgWidth = vnets.length > 0 ? vnets.reduce((sum, v) => sum + vw(v), 0) + (vnets.length - 1) * VGAP + 40 : 200;
-        return { ...rg, vnets, renderWidth: rgWidth };
+        const rgLevelRes = (state.rgResources||[]).filter(r => r.rgId === rg.id);
+        const vnetWidth = vnets.length > 0 ? vnets.reduce((sum, v) => sum + vw(v), 0) + (vnets.length - 1) * VGAP : 0;
+        const rgResWidth = rgLevelRes.length > 0 ? rgLevelRes.length * (RW + RP) + 40 : 0;
+        const rgWidth = Math.max(200, vnetWidth + rgResWidth + 40);
+        return { ...rg, vnets, rgLevelRes, renderWidth: rgWidth };
       });
       const subWidth = rgs.length > 0 ? rgs.reduce((sum, rg) => sum + rg.renderWidth, 0) + (rgs.length - 1) * RG_GAP + 80 : 300;
       return { ...sub, rgs, renderWidth: subWidth };
@@ -74,6 +77,14 @@ function getRenderNodes(){
           
           vnetX += vWidth + VGAP;
         });
+
+        // RG-level resources (DNS zones etc)
+        if (rg.rgLevelRes && rg.rgLevelRes.length > 0) {
+          const rgResY = bottomY + vh() + 40;
+          rg.rgLevelRes.forEach((res, k) => {
+            nodes.push({id:res.id, isVnet:false, isRgLevel:true, parentId:null, x:vnetX + k*(RW+RP) + RW/2, y:rgResY, label:res.name, type:res.type, color:RES_TYPES[res.type]?.color||'#FFF', width:RW, height:RH, rgId:rg.id});
+          });
+        }
         rgX += rg.renderWidth + RG_GAP;
       });
       curX += sub.renderWidth + SUB_GAP;

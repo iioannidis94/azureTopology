@@ -55,6 +55,43 @@ export function generatePowerShell(){
         });
         lines.push('');
       });
+
+      // RG-level resources (DNS Zones)
+      const rgResources = (state.rgResources||[]).filter(r => r.rgId === rg.id);
+      rgResources.forEach(res => {
+        if(res.type === 'publicDns') {
+          lines.push(`# -- Public DNS Zone: ${res.config.zone} --`);
+          lines.push(`$zone = New-AzDnsZone -Name "${res.config.zone}" -ResourceGroupName "${rg.name}"\n`);
+          (res.config.records||[]).forEach(rec => {
+            if(rec.type === 'A') {
+              lines.push(`New-AzDnsRecordSet -Name "${rec.name}" -RecordType A -ZoneName "${res.config.zone}" -ResourceGroupName "${rg.name}" -Ttl ${rec.ttl||3600} -DnsRecords (New-AzDnsRecordConfig -IPv4Address "${rec.value}")`);
+            } else if(rec.type === 'CNAME') {
+              lines.push(`New-AzDnsRecordSet -Name "${rec.name}" -RecordType CNAME -ZoneName "${res.config.zone}" -ResourceGroupName "${rg.name}" -Ttl ${rec.ttl||3600} -DnsRecords (New-AzDnsRecordConfig -Cname "${rec.value}")`);
+            } else if(rec.type === 'MX') {
+              lines.push(`New-AzDnsRecordSet -Name "${rec.name}" -RecordType MX -ZoneName "${res.config.zone}" -ResourceGroupName "${rg.name}" -Ttl ${rec.ttl||3600} -DnsRecords (New-AzDnsRecordConfig -Exchange "${rec.value}" -Preference 10)`);
+            } else if(rec.type === 'TXT') {
+              lines.push(`New-AzDnsRecordSet -Name "${rec.name}" -RecordType TXT -ZoneName "${res.config.zone}" -ResourceGroupName "${rg.name}" -Ttl ${rec.ttl||3600} -DnsRecords (New-AzDnsRecordConfig -Value "${rec.value}")`);
+            } else {
+              lines.push(`# ${rec.type} Record: ${rec.name} -> ${rec.value}`);
+            }
+          });
+          lines.push('');
+        } else if(res.type === 'dns') {
+          lines.push(`# -- Private DNS Zone: ${res.config.zone} --`);
+          lines.push(`$privateDnsZone = New-AzPrivateDnsZone -Name "${res.config.zone}" -ResourceGroupName "${rg.name}"\n`);
+          (res.config.records||[]).forEach(rec => {
+            if(rec.type === 'A') {
+              lines.push(`New-AzPrivateDnsRecordSet -Name "${rec.name}" -RecordType A -ZoneName "${res.config.zone}" -ResourceGroupName "${rg.name}" -Ttl ${rec.ttl||3600} -PrivateDnsRecords (New-AzPrivateDnsRecordConfig -IPv4Address "${rec.value}")`);
+            } else {
+              lines.push(`# ${rec.type} Record: ${rec.name} -> ${rec.value}`);
+            }
+          });
+          (res.config.vnetLinks||[]).forEach(link => {
+            lines.push(`New-AzPrivateDnsVirtualNetworkLink -Name "link-${link.vnetName}" -ResourceGroupName "${rg.name}" -ZoneName "${res.config.zone}" -VirtualNetworkId $vnet_${link.vnetName.replace(/[^a-zA-Z0-9]/g,'_')}.Id${link.registrationEnabled ? ' -EnableRegistration' : ''}`);
+          });
+          lines.push('');
+        }
+      });
     });
   });
 
@@ -82,6 +119,42 @@ export function generateBicep(){
             lines.push(`// module ${res.name.replace(/[^a-zA-Z0-9]/g,'_')} 'br/public:avm/res/...'`);
           });
         });
+        lines.push('');
+      });
+
+      // RG-level resources (DNS Zones)
+      const rgResources = (state.rgResources||[]).filter(r => r.rgId === rg.id);
+      rgResources.forEach(res => {
+        if(res.type === 'publicDns') {
+          const safeName = res.config.zone.replace(/[^a-zA-Z0-9]/g,'_');
+          lines.push(`module dnsZone_${safeName} 'br/public:avm/res/network/dns-zone:0.3.0' = {`);
+          lines.push(`  name: '${res.config.zone}'`);
+          lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
+          lines.push(`  params: { name: '${res.config.zone}' }`);
+          lines.push(`}\n`);
+          (res.config.records||[]).forEach(rec => {
+            lines.push(`// DNS Record: ${rec.name} ${rec.type} ${rec.value}`);
+          });
+        } else if(res.type === 'dns') {
+          const safeName = res.config.zone.replace(/[^a-zA-Z0-9]/g,'_');
+          lines.push(`module privateDnsZone_${safeName} 'br/public:avm/res/network/private-dns-zone:0.3.0' = {`);
+          lines.push(`  name: '${res.config.zone}'`);
+          lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
+          lines.push(`  params: {`);
+          lines.push(`    name: '${res.config.zone}'`);
+          if(res.config.vnetLinks && res.config.vnetLinks.length > 0) {
+            lines.push(`    virtualNetworkLinks: [`);
+            res.config.vnetLinks.forEach(link => {
+              lines.push(`      { virtualNetworkResourceId: ${link.vnetName.replace(/[^a-zA-Z0-9]/g,'_')}.id, registrationEnabled: ${link.registrationEnabled||false} }`);
+            });
+            lines.push(`    ]`);
+          }
+          lines.push(`  }`);
+          lines.push(`}\n`);
+          (res.config.records||[]).forEach(rec => {
+            lines.push(`// Private DNS Record: ${rec.name} ${rec.type} ${rec.value}`);
+          });
+        }
         lines.push('');
       });
     });

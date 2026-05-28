@@ -19,7 +19,8 @@ export const RES_TYPES={
   bas:{icon:'🔒', img:'bastions.svg', color:'#0078D4',label:'Azure Bastion',cat:'network', cost: 190, config:{sku:'Standard'}},
   afd:{icon:'⚡', img:'front-doors.svg', color:'#FF8C00',label:'Azure Front Door',cat:'network', cost: 330, config:{sku:'Premium'}},
   pe:{icon:'🔌', img:'private-endpoint.svg', color:'#8764B8',label:'Private Endpoint',cat:'network', cost: 10, config:{target:'Storage'}},
-  dns:{icon:'🌐', img:'dns-zones.svg', color:'#00B294',label:'Private DNS Zone',cat:'network', cost: 5, config:{zone:'privatelink'}},
+  dns:{icon:'🌐', img:'dns-zones.svg', color:'#00B294',label:'Private DNS Zone',cat:'network', cost: 5, config:{zone:'privatelink.blob.core.windows.net'}, rgLevel:true, dnsType:'private'},
+  publicDns:{icon:'🌍', img:'dns-zones.svg', color:'#00BCF2',label:'Public DNS Zone',cat:'network', cost: 5, config:{zone:'example.com'}, rgLevel:true, dnsType:'public'},
   nsg:{icon:'📋', img:'network-security-groups.svg', color:'#E81123',label:'Network Sec Group',cat:'network', cost: 0, config:{rules:'5'}},
   sql:{icon:'🗄️', img:'sql-databases.svg', color:'#00B294',label:'Azure SQL',cat:'data', cost: 380, config:{vcores:'4'}},
   cosmos:{icon:'🌌', img:'azure-cosmos-db.svg', color:'#00B294',label:'Cosmos DB',cat:'data', cost: 400, config:{api:'NoSQL'}},
@@ -55,6 +56,7 @@ export const PRICING_CALCULATOR_SLUGS={
   afd:'front-door',
   pe:'private-link',
   dns:'dns',
+  publicDns:'dns',
   nsg:'network-security-groups',
   sql:'sql-database',
   cosmos:'cosmos-db',
@@ -108,6 +110,7 @@ const defaultState={
     {id:'rg-conn', name:'rg-connectivity', location:'eastus', subId:'sub-1'},
     {id:'rg-prod', name:'rg-production', location:'eastus', subId:'sub-1'}
   ],
+  rgResources:[],
   hub:{
     id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-conn', peerings: [],
     subnets:[
@@ -144,6 +147,7 @@ try{
   const s=localStorage.getItem(KEY);
   state=s?JSON.parse(s):JSON.parse(JSON.stringify(defaultState));
   state.dragging=false; state.dragNodeId=null; state.dragGroup=null;
+  if(!state.rgResources) state.rgResources=[];
   if(state.theme==='dark') document.body.classList.remove('theme-drawio');
   else document.body.classList.add('theme-drawio');
 }catch(e){state=JSON.parse(JSON.stringify(defaultState));}
@@ -157,7 +161,8 @@ export const esc=s=>String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').re
 export function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
 
 export function getAllDiagramResources(){
-  return [state.hub, ...state.spokes].flatMap(vnet => vnet.subnets.flatMap(sn => sn.resources));
+  const vnetRes = [state.hub, ...state.spokes].flatMap(vnet => vnet.subnets.flatMap(sn => sn.resources));
+  return [...vnetRes, ...(state.rgResources || [])];
 }
 
 export function getPricingCalculatorUrl(resourceTypes){
@@ -201,3 +206,109 @@ export function resetPositions(){if(confirm('Clear Drag&Drop positions and retur
 let _fullUpdate = null;
 export function setFullUpdate(fn) { _fullUpdate = fn; }
 export function fullUpdate() { if (_fullUpdate) _fullUpdate(); }
+
+// ================================================================
+// CIDR VALIDATION & DYNAMIC SUBNETTING
+// ================================================================
+export function parseCidr(cidr) {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/.exec((cidr||'').trim());
+  if (!m) return null;
+  const octets = [+m[1],+m[2],+m[3],+m[4]];
+  const prefix = +m[5];
+  if (octets.some(o => o < 0 || o > 255)) return null;
+  if (prefix < 0 || prefix > 32) return null;
+  const ip = ((octets[0]<<24)|(octets[1]<<16)|(octets[2]<<8)|octets[3]) >>> 0;
+  const mask = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+  const network = (ip & mask) >>> 0;
+  const broadcast = (network | (~mask >>> 0)) >>> 0;
+  return { ip, mask, prefix, network, broadcast, octets };
+}
+
+export function cidrToString(network, prefix) {
+  return `${(network>>>24)&255}.${(network>>>16)&255}.${(network>>>8)&255}.${network&255}/${prefix}`;
+}
+
+export function isValidCidr(cidr) {
+  const p = parseCidr(cidr);
+  if (!p) return false;
+  return p.ip === p.network;
+}
+
+export function cidrsOverlap(cidr1, cidr2) {
+  const a = parseCidr(cidr1), b = parseCidr(cidr2);
+  if (!a || !b) return false;
+  return a.network <= b.broadcast && b.network <= a.broadcast;
+}
+
+export function getAllVnetCidrs() {
+  return [state.hub, ...state.spokes].map(v => v.cidr).filter(Boolean);
+}
+
+export function checkCidrOverlap(newCidr, excludeVnetId) {
+  const allVnets = [state.hub, ...state.spokes];
+  for (const v of allVnets) {
+    if (v.id === excludeVnetId) continue;
+    if (cidrsOverlap(newCidr, v.cidr)) return v;
+  }
+  return null;
+}
+
+export function autoSubnet(vnetCidr, numSubnets) {
+  const p = parseCidr(vnetCidr);
+  if (!p) return [];
+  const bitsNeeded = Math.ceil(Math.log2(Math.max(numSubnets, 1)));
+  const subnetPrefix = Math.min(p.prefix + bitsNeeded, 28);
+  const subnetSize = (1 << (32 - subnetPrefix)) >>> 0;
+  const maxSubnets = 1 << (subnetPrefix - p.prefix);
+  const results = [];
+  for (let i = 0; i < Math.min(numSubnets, maxSubnets); i++) {
+    const subnetNetwork = (p.network + i * subnetSize) >>> 0;
+    results.push(cidrToString(subnetNetwork, subnetPrefix));
+  }
+  return results;
+}
+
+export function nextAvailableVnetCidr() {
+  const existingCidrs = getAllVnetCidrs();
+  for (let second = 0; second <= 255; second++) {
+    const candidate = `10.${second}.0.0/16`;
+    const overlaps = existingCidrs.some(c => cidrsOverlap(candidate, c));
+    if (!overlaps) return candidate;
+  }
+  return '172.16.0.0/16';
+}
+
+export function nextAvailableSubnetCidr(vnetId) {
+  const vnet = [state.hub, ...state.spokes].find(v => v.id === vnetId);
+  if (!vnet) return '10.0.0.0/24';
+  const vnetParsed = parseCidr(vnet.cidr);
+  if (!vnetParsed) return '10.0.0.0/24';
+  const existingSubnets = vnet.subnets.map(sn => sn.cidr).filter(c => parseCidr(c));
+  return nextAvailableSubnetCidrFromParsed(vnetParsed, existingSubnets);
+}
+
+export function nextAvailableSubnetCidrFromParsed(vnetParsed, existingSubnets) {
+  const subnetPrefix = 24;
+  const subnetSize = (1 << (32 - subnetPrefix)) >>> 0;
+  let candidate = vnetParsed.network;
+  while (candidate <= vnetParsed.broadcast) {
+    const candidateCidr = cidrToString(candidate, subnetPrefix);
+    const overlaps = existingSubnets.some(c => cidrsOverlap(candidateCidr, c));
+    if (!overlaps) return candidateCidr;
+    candidate = (candidate + subnetSize) >>> 0;
+  }
+  return cidrToString(vnetParsed.network, subnetPrefix);
+}
+
+// ================================================================
+// RG-LEVEL RESOURCES
+// ================================================================
+export function getRgResources(rgId) {
+  if (!state.rgResources) state.rgResources = [];
+  return state.rgResources.filter(r => r.rgId === rgId);
+}
+
+export function getAllDiagramResourcesIncludingRg() {
+  const vnetRes = [state.hub, ...state.spokes].flatMap(vnet => vnet.subnets.flatMap(sn => sn.resources));
+  return [...vnetRes, ...(state.rgResources || [])];
+}

@@ -1,4 +1,4 @@
-import { state, esc, uid, fullUpdate, saveState, getVnetsInRg, RES_TYPES, RES_CATEGORIES, AZURE_ICON_BASE, VNET_COLORS, SUB_COLORS } from './state-management.js';
+import { state, esc, uid, fullUpdate, saveState, getVnetsInRg, getRgResources, RES_TYPES, RES_CATEGORIES, AZURE_ICON_BASE, VNET_COLORS, SUB_COLORS, isValidCidr, checkCidrOverlap, nextAvailableVnetCidr, nextAvailableSubnetCidr, nextAvailableSubnetCidrFromParsed, parseCidr } from './state-management.js';
 import { selectNode } from './canvas-engine.js';
 
 // ================================================================
@@ -233,6 +233,38 @@ export function renderSidebar(){
       });
 
       h+=`<button class="add-btn vnet-level" onclick="window._addSpoke('${rg.id}')">➕ Add Spoke VNet</button>`;
+
+      // RG-level resources (DNS zones etc)
+      const rgRes = getRgResources(rg.id);
+      if (rgRes.length > 0) {
+        h+=`<div class="rg-resources-section"><div class="rg-res-title">RG-Level Resources</div>`;
+        rgRes.forEach(res => {
+          const rt = RES_TYPES[res.type] || RES_TYPES.dns;
+          const isSelRes = state.selectedId === res.id;
+          h+=`<div class="chip rg-chip" style="${isSelRes?'background:var(--azure-blue);color:white;border-color:var(--azure-blue);':''}" onclick="window._selectNode('${res.id}')">
+            <img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+            <span style="display:none; font-size:10px;">${rt.icon}</span>
+            <span>${esc(res.name)}</span>
+          </div>`;
+        });
+        h+=`</div>`;
+      }
+      h+=`<div class="add-res-container">
+        <button class="add-btn rg-level" onclick="window._toggleDropdown('rg-${rg.id}')">➕ Add DNS / RG Resource</button>
+        <div class="res-dropdown" id="dropdown-rg-${rg.id}">
+          <div class="res-search-container">
+            <input type="text" class="res-search-input" placeholder="Search..." onkeyup="window._filterResources(event, 'rg-${rg.id}')" onclick="event.stopPropagation()">
+          </div>
+          <div class="res-dd-section">DNS & RG-Level Resources</div>`;
+      Object.keys(RES_TYPES).filter(k => RES_TYPES[k].rgLevel).forEach(k => {
+        const t = RES_TYPES[k];
+        h+=`<div class="res-option" onclick="window._addRgResource('${rg.id}','${k}')">
+          <img src="${AZURE_ICON_BASE}${t.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+          <span style="display:none">${t.icon}</span> <span class="res-label">${t.label}</span>
+        </div>`;
+      });
+      h+=`</div></div>`;
+
       h+=`</div></div>`;
     });
 
@@ -266,17 +298,23 @@ export function renderEditor(){
 
   let obj=null, parent=null, typeObj='none';
   
-  const allVnets = [state.hub, ...state.spokes];
-  for (let v of allVnets) {
-    if (v.id === state.selectedId) { obj=v; typeObj='vnet'; break; }
-    for (let sn of v.subnets) {
-      if (sn.id === state.selectedId) { obj=sn; parent=v; typeObj='subnet'; break; }
-      for (let r of sn.resources) {
-        if (r.id === state.selectedId) { obj=r; parent=sn; typeObj='resource'; break; }
+  // Check RG-level resources first
+  const rgRes = (state.rgResources||[]).find(r => r.id === state.selectedId);
+  if (rgRes) {
+    obj = rgRes; typeObj = 'rgResource';
+  } else {
+    const allVnets = [state.hub, ...state.spokes];
+    for (let v of allVnets) {
+      if (v.id === state.selectedId) { obj=v; typeObj='vnet'; break; }
+      for (let sn of v.subnets) {
+        if (sn.id === state.selectedId) { obj=sn; parent=v; typeObj='subnet'; break; }
+        for (let r of sn.resources) {
+          if (r.id === state.selectedId) { obj=r; parent=sn; typeObj='resource'; break; }
+        }
+        if (obj) break;
       }
       if (obj) break;
     }
-    if (obj) break;
   }
 
   if(!obj){state.selectedId=null;return renderEditor();}
@@ -324,6 +362,46 @@ export function renderEditor(){
       h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
     });
     h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteResource('${obj.id}')">🗑 Delete Resource</button>`;
+  } else if (typeObj === 'rgResource') {
+    const rt = RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓', img:''};
+    h+=`<div class="editor-header">
+          <img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+          <span style="display:none">${rt.icon}</span> 
+          ${rt.label}
+        </div>
+      <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._updateRgResource('${obj.id}','name',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">Zone</span><input class="input-field" value="${esc(obj.config.zone||'')}" onchange="window._updateResConfig('${obj.id}','zone',this.value)"></div>`;
+    
+    // DNS Records
+    if(obj.config.records) {
+      h+=`<div class="editor-row" style="margin-top:10px;"><span class="editor-label" style="font-weight:bold;">DNS Records</span></div>`;
+      obj.config.records.forEach((rec, idx) => {
+        h+=`<div class="editor-row dns-record-row" style="gap:4px;flex-wrap:wrap;border:1px solid var(--border);border-radius:4px;padding:6px;margin-bottom:4px;">
+          <input class="input-field" style="flex:1;min-width:60px;" placeholder="Name" value="${esc(rec.name)}" onchange="window._updateDnsRecord('${obj.id}',${idx},'name',this.value)">
+          <select class="input-field" style="width:60px;" onchange="window._updateDnsRecord('${obj.id}',${idx},'type',this.value)">
+            ${['A','AAAA','CNAME','MX','TXT','NS','SOA','SRV','PTR'].map(t=>`<option${rec.type===t?' selected':''}>${t}</option>`).join('')}
+          </select>
+          <input class="input-field" style="flex:2;min-width:80px;" placeholder="Value" value="${esc(rec.value)}" onchange="window._updateDnsRecord('${obj.id}',${idx},'value',this.value)">
+          <input class="input-field" style="width:50px;" placeholder="TTL" value="${esc(rec.ttl)}" onchange="window._updateDnsRecord('${obj.id}',${idx},'ttl',this.value)">
+          <button class="icon-btn danger" onclick="window._deleteDnsRecord('${obj.id}',${idx})">🗑</button>
+        </div>`;
+      });
+      h+=`<button style="width:100%;padding:6px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--azure-blue);background:transparent;color:var(--azure-blue);font-family:JetBrains Mono;margin-top:4px;" onclick="window._addDnsRecord('${obj.id}')">➕ Add Record</button>`;
+    }
+    
+    // VNet Links (for Private DNS)
+    if(obj.type === 'dns' && obj.config.vnetLinks !== undefined) {
+      h+=`<div class="editor-row" style="margin-top:10px;"><span class="editor-label" style="font-weight:bold;">VNet Links</span></div>`;
+      (obj.config.vnetLinks||[]).forEach((link, idx) => {
+        h+=`<div class="editor-row" style="gap:4px;border:1px solid var(--border);border-radius:4px;padding:6px;margin-bottom:4px;">
+          <span style="flex:1;font-size:10px;">🔗 ${esc(link.vnetName)}</span>
+          <button class="icon-btn danger" onclick="window._deleteVnetLink('${obj.id}',${idx})">🗑</button>
+        </div>`;
+      });
+      h+=`<button style="width:100%;padding:6px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--azure-blue);background:transparent;color:var(--azure-blue);font-family:JetBrains Mono;margin-top:4px;" onclick="window._addVnetLink('${obj.id}')">🔗 Link VNet</button>`;
+    }
+    
+    h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteRgResource('${obj.id}')">🗑 Delete Resource</button>`;
   }
   h+=`</div>`;
   el.innerHTML=h;
@@ -337,14 +415,19 @@ export function deleteSub(id){ if(state.subscriptions.length<=1){alert('Need at 
 export function renameSub(id,val){const s=state.subscriptions.find(s=>s.id===id);if(s){s.name=val;saveState();window._draw();}}
 
 export function addRg(subId){ const n=state.resourceGroups.filter(r=>r.subId===subId).length; state.resourceGroups.push({id:'rg-'+uid(),name:`rg-new-${n+1}`,location:'eastus',subId}); fullUpdate(); }
-export function deleteRg(id){ if(state.resourceGroups.length<=1){alert('Need at least one resource group.');return;} const fallback=state.resourceGroups.find(r=>r.id!==id); if(!fallback){alert('No fallback.');return;} if(!confirm('Delete resource group?')) return; if(state.hub.rgId===id) state.hub.rgId=fallback.id; state.spokes.forEach(s=>{if(s.rgId===id)s.rgId=fallback.id;}); state.resourceGroups=state.resourceGroups.filter(r=>r.id!==id); fullUpdate(); }
+export function deleteRg(id){ if(state.resourceGroups.length<=1){alert('Need at least one resource group.');return;} const fallback=state.resourceGroups.find(r=>r.id!==id); if(!fallback){alert('No fallback.');return;} if(!confirm('Delete resource group?')) return; if(state.hub.rgId===id) state.hub.rgId=fallback.id; state.spokes.forEach(s=>{if(s.rgId===id)s.rgId=fallback.id;}); state.rgResources=(state.rgResources||[]).filter(r=>r.rgId!==id); state.resourceGroups=state.resourceGroups.filter(r=>r.id!==id); fullUpdate(); }
 export function renameRg(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.name=val;saveState();window._draw();}}
 export function setRgLocation(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.location=val;saveState();}}
 
 export function addSpoke(rgId){
   const n=state.spokes.length;
-  state.spokes.push({ id:uid(),name:`spoke-${n+1}-vnet`,cidr:`10.${n+1}.0.0/16`, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], rgId:rgId||state.resourceGroups[0]?.id,
-    subnets: [{id:uid(), name:'default', cidr:`10.${n+1}.1.0/24`, resources:[]}]
+  const cidr = nextAvailableVnetCidr();
+  const spokeId = uid();
+  // Temporarily create the spoke to calculate subnet CIDR using the same logic
+  const p = parseCidr(cidr);
+  const subnetCidr = p ? nextAvailableSubnetCidrFromParsed(p, []) : `10.${n+1}.1.0/24`;
+  state.spokes.push({ id:spokeId,name:`spoke-${n+1}-vnet`,cidr, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], rgId:rgId||state.resourceGroups[0]?.id,
+    subnets: [{id:uid(), name:'default', cidr:subnetCidr, resources:[]}]
   });
   fullUpdate();
 }
@@ -353,7 +436,16 @@ export function deleteSpoke(id){
   [state.hub, ...state.spokes].forEach(v => { if (v.peerings) v.peerings = v.peerings.filter(pId => pId !== id); });
   state.selectedId=null; fullUpdate();
 }
-export function updateVnet(id,key,val){ const v=[state.hub,...state.spokes].find(v=>v.id===id); if(v)v[key]=val; fullUpdate(); }
+export function updateVnet(id,key,val){
+  const v=[state.hub,...state.spokes].find(v=>v.id===id);
+  if(!v) return;
+  if(key==='cidr'){
+    if(!isValidCidr(val)){ alert('Invalid CIDR format. Use format like 10.0.0.0/16'); return; }
+    const overlap = checkCidrOverlap(val, id);
+    if(overlap){ alert(`CIDR ${val} overlaps with VNet "${overlap.name}" (${overlap.cidr})`); return; }
+  }
+  v[key]=val; fullUpdate();
+}
 export function togglePeering(id1, id2) {
   const v1 = [state.hub,...state.spokes].find(s => s.id === id1);
   const v2 = [state.hub,...state.spokes].find(s => s.id === id2);
@@ -367,7 +459,7 @@ export function togglePeering(id1, id2) {
 
 export function addSubnet(vnetId){
   const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  if(vnet) { vnet.subnets.push({id:uid(), name:`subnet-${vnet.subnets.length+1}`, cidr:'10.x.x.x/24', resources:[]}); fullUpdate(); }
+  if(vnet) { const cidr = nextAvailableSubnetCidr(vnetId); vnet.subnets.push({id:uid(), name:`subnet-${vnet.subnets.length+1}`, cidr, resources:[]}); fullUpdate(); }
 }
 export function deleteSubnet(vnetId, snId){
   const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
@@ -375,7 +467,17 @@ export function deleteSubnet(vnetId, snId){
 }
 export function updateSubnet(vnetId, snId, key, val) {
   const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  const sn = vnet?.subnets.find(s=>s.id===snId); if(sn){ sn[key]=val; fullUpdate(); }
+  const sn = vnet?.subnets.find(s=>s.id===snId);
+  if(!sn) return;
+  if(key==='cidr'){
+    if(!isValidCidr(val)){ alert('Invalid CIDR format. Use format like 10.0.1.0/24'); return; }
+    const vnetParsed = parseCidr(vnet.cidr);
+    const snParsed = parseCidr(val);
+    if(vnetParsed && snParsed && (snParsed.network < vnetParsed.network || snParsed.broadcast > vnetParsed.broadcast)){
+      alert(`Subnet CIDR ${val} is outside VNet address space ${vnet.cidr}`); return;
+    }
+  }
+  sn[key]=val; fullUpdate();
 }
 
 export function toggleDropdown(id){ 
@@ -438,15 +540,102 @@ export function addResource(vnetId, snId, resType){
 }
 export function deleteResource(resId){
   [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { sn.resources = sn.resources.filter(r => r.id !== resId); }));
+  if(state.rgResources) state.rgResources = state.rgResources.filter(r => r.id !== resId);
   state.selectedId=null; fullUpdate();
 }
 export function updateResource(resId,key,val){
   [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { const r=sn.resources.find(r=>r.id===resId); if(r)r[key]=val; }));
+  const rgR = (state.rgResources||[]).find(r => r.id === resId); if(rgR) rgR[key] = val;
   fullUpdate();
 }
 export function updateResConfig(resId,configKey,val){
   [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { const r=sn.resources.find(r=>r.id===resId); if(r)r.config[configKey]=val; }));
+  // Also check RG-level resources
+  const rgRes = (state.rgResources||[]).find(r => r.id === resId);
+  if(rgRes) rgRes.config[configKey] = val;
   saveState(); renderEditor(); 
+}
+
+// ================================================================
+// RG-LEVEL RESOURCE MUTATIONS
+// ================================================================
+export function addRgResource(rgId, resType) {
+  if(!state.rgResources) state.rgResources = [];
+  const rT = RES_TYPES[resType];
+  if(!rT) return;
+  const rg = state.resourceGroups.find(r => r.id === rgId);
+  const baseName = rg ? rg.name.replace('rg-','') : 'res';
+  const config = {...rT.config};
+  // Add default records for DNS zones
+  if(resType === 'dns') {
+    config.records = [{name:'vm1', type:'A', value:'10.0.1.4', ttl:'3600'}];
+    config.vnetLinks = [];
+    // Auto-link VNets in same RG
+    const rgVnets = getVnetsInRg(rgId);
+    rgVnets.forEach(v => config.vnetLinks.push({vnetId: v.id, vnetName: v.name, registrationEnabled: false}));
+  } else if(resType === 'publicDns') {
+    config.records = [{name:'www', type:'A', value:'20.0.0.1', ttl:'3600'}, {name:'@', type:'MX', value:'mail.example.com', ttl:'3600'}];
+  }
+  const nr = {id:uid(), type:resType, name:`${baseName}-${rT.label.toLowerCase().replace(/\s+/g,'-')}`, config, rgId};
+  state.rgResources.push(nr);
+  document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show'));
+  selectNode(nr.id);
+}
+
+export function deleteRgResource(resId) {
+  if(!state.rgResources) return;
+  state.rgResources = state.rgResources.filter(r => r.id !== resId);
+  state.selectedId = null; fullUpdate();
+}
+
+export function updateRgResource(resId, key, val) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(r) { r[key] = val; fullUpdate(); }
+}
+
+export function addDnsRecord(resId) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(!r || !r.config) return;
+  if(!r.config.records) r.config.records = [];
+  r.config.records.push({name:'new-record', type:'A', value:'10.0.0.1', ttl:'3600'});
+  saveState(); renderEditor();
+}
+
+export function deleteDnsRecord(resId, idx) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(!r || !r.config || !r.config.records) return;
+  r.config.records.splice(idx, 1);
+  saveState(); renderEditor();
+}
+
+export function updateDnsRecord(resId, idx, key, val) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(!r || !r.config || !r.config.records || !r.config.records[idx]) return;
+  r.config.records[idx][key] = val;
+  saveState();
+}
+
+export function addVnetLink(resId) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(!r || !r.config) return;
+  if(!r.config.vnetLinks) r.config.vnetLinks = [];
+  // Find a VNet not already linked
+  const allVnets = [state.hub, ...state.spokes];
+  const linkedIds = r.config.vnetLinks.map(l => l.vnetId);
+  const available = allVnets.find(v => !linkedIds.includes(v.id));
+  if(available) {
+    r.config.vnetLinks.push({vnetId: available.id, vnetName: available.name, registrationEnabled: false});
+    saveState(); renderEditor();
+  } else {
+    alert('All VNets are already linked.');
+  }
+}
+
+export function deleteVnetLink(resId, idx) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(!r || !r.config || !r.config.vnetLinks) return;
+  r.config.vnetLinks.splice(idx, 1);
+  saveState(); renderEditor();
 }
 
 // ================================================================
