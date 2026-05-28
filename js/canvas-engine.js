@@ -138,8 +138,40 @@ function getRenderNodes(){
 
   // CUSTOM POSITIONS
   if (!state.customPos) state.customPos = {};
+  // Store original (layout-computed) positions for offset calculation
+  const origPos = {};
+  nodes.forEach(n => { origPos[n.id] = {x: n.x, y: n.y}; });
   nodes.forEach(n => {
     if (state.customPos[n.id]) { n.x = state.customPos[n.id].x; n.y = state.customPos[n.id].y; }
+  });
+  // Re-position child nodes that have no custom position relative to their (possibly moved) parent.
+  // First pass: subnets follow their parent VNet
+  nodes.forEach(n => {
+    if(n.isSubnet && n.parentId && !state.customPos[n.id]){
+      const parent = nodes.find(p => p.id === n.parentId);
+      if(parent && origPos[parent.id]){
+        const dx = parent.x - origPos[parent.id].x;
+        const dy = parent.y - origPos[parent.id].y;
+        if(dx !== 0 || dy !== 0){
+          n.x = origPos[n.id].x + dx;
+          n.y = origPos[n.id].y + dy;
+        }
+      }
+    }
+  });
+  // Second pass: resources follow their parent subnet (or VNet in radial layout)
+  nodes.forEach(n => {
+    if(!n.isVnet && !n.isSubnet && !n.isOnPrem && !n.isRgLevel && n.parentId && !state.customPos[n.id]){
+      const parent = nodes.find(p => p.id === n.parentId);
+      if(parent && origPos[parent.id]){
+        const dx = parent.x - origPos[parent.id].x;
+        const dy = parent.y - origPos[parent.id].y;
+        if(dx !== 0 || dy !== 0){
+          n.x = origPos[n.id].x + dx;
+          n.y = origPos[n.id].y + dy;
+        }
+      }
+    }
   });
 
   // Expand VNet bounds to contain all its subnets (like RGs expand to contain VNets)
