@@ -50,6 +50,10 @@
   .cost-estimator {background: linear-gradient(135deg, rgba(0,120,212,0.1), transparent); border: 1px solid var(--azure-blue); border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: center;}
   .cost-value {font-family: 'Syne'; font-size: 24px; font-weight: 800; color: var(--azure-light); margin: 4px 0;}
   body.theme-drawio .cost-value {color: var(--azure-blue);}
+  .calculator-link{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px 12px;border-radius:6px;border:1px solid var(--azure-blue);background:rgba(0,120,212,.08);color:var(--azure-blue);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.2px;text-decoration:none;transition:all .2s;}
+  body:not(.theme-drawio) .calculator-link{color:var(--azure-light);border-color:var(--azure-light);background:rgba(80,230,255,.08);}
+  .calculator-link:hover{transform:translateY(-1px);background:rgba(0,120,212,.16);box-shadow:0 6px 20px rgba(0,120,212,.18);}
+  .calculator-link[hidden]{display:none;}
 
   /* ON PREM BLOCK */
   .onprem-block {background: rgba(16,124,16,0.05); border: 1px dashed #107C10; border-radius: 6px; padding: 10px; margin-bottom: 16px; display:flex; align-items:center; justify-content:space-between;}
@@ -230,6 +234,7 @@
       <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Est. Monthly Cost</div>
       <div class="cost-value" id="cost-display">$0</div>
     </div>
+    <a id="pricing-calculator-link" class="calculator-link" target="_blank" rel="noopener noreferrer" hidden>🔗 View in Azure Pricing Calculator</a>
 
     <div class="tree-section-title">// Properties Editor</div>
     <div id="editor-container">
@@ -315,6 +320,39 @@ const RES_TYPES={
   openai:{icon:'🧠', img:'cognitive-services.svg', color:'#50E6FF',label:'Azure OpenAI',cat:'ai', cost: 150, config:{model:'gpt-4o'}},
   monitor:{icon:'📈', img:'monitor.svg', color:'#00B294',label:'Azure Monitor',cat:'management', cost: 15, config:{retentionDays:'90'}},
 };
+const AZURE_PRICING_CALCULATOR_BASE='https://azure.microsoft.com/en-us/pricing/calculator/';
+const PRICING_CALCULATOR_SLUGS={
+  vm:'virtual-machines',
+  vmss:'virtual-machine-scale-sets',
+  aks:'kubernetes-service',
+  fa:'functions',
+  aca:'container-apps',
+  fw:'azure-firewall',
+  nva:'virtual-machines',
+  agw:'application-gateway',
+  lb:'load-balancer',
+  gw:'vpn-gateway',
+  ergw:'expressroute',
+  bas:'azure-bastion',
+  afd:'front-door',
+  pe:'private-link',
+  dns:'dns',
+  nsg:'network-security-groups',
+  sql:'sql-database',
+  cosmos:'cosmos-db',
+  sa:'storage-accounts',
+  redis:'azure-cache-for-redis',
+  adls:'storage-accounts',
+  kv:'key-vault',
+  app:'app-service',
+  apim:'api-management',
+  sb:'service-bus',
+  evh:'event-hubs',
+  logic:'logic-apps',
+  foundry:'azure-ai-foundry',
+  openai:'azure-openai',
+  monitor:'azure-monitor',
+};
 
 const loadedImages = {};
 function loadAzureIcons(callback) {
@@ -393,17 +431,36 @@ const uid=()=>'id-'+Math.random().toString(36).substr(2,9);
 const esc=s=>String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
 function fullUpdate(){ saveState(); updateCost(); renderSidebar(); renderEditor(); draw(); }
+function getAllDiagramResources(){
+  return [state.hub, ...state.spokes].flatMap(vnet => vnet.subnets.flatMap(sn => sn.resources));
+}
+function getPricingCalculatorUrl(resourceTypes){
+  const slugs=[...new Set(resourceTypes.map(type=>PRICING_CALCULATOR_SLUGS[type]).filter(Boolean))];
+  if(!slugs.length) return '';
+  const params=new URLSearchParams();
+  slugs.forEach(slug=>params.append('service',slug));
+  return `${AZURE_PRICING_CALCULATOR_BASE}?${params.toString()}`;
+}
 
 function updateCost() {
   let total = 0;
-  [state.hub, ...state.spokes].forEach(vnet => {
-    vnet.subnets.forEach(sn => {
-      sn.resources.forEach(r => {
-        if(RES_TYPES[r.type] && RES_TYPES[r.type].cost) total += RES_TYPES[r.type].cost;
-      });
-    });
+  const usedResourceTypes = new Set();
+  getAllDiagramResources().forEach(r => {
+    if(RES_TYPES[r.type] && RES_TYPES[r.type].cost) total += RES_TYPES[r.type].cost;
+    if(PRICING_CALCULATOR_SLUGS[r.type]) usedResourceTypes.add(r.type);
   });
   document.getElementById('cost-display').innerText = `$${total.toLocaleString()}`;
+  const pricingLink=document.getElementById('pricing-calculator-link');
+  const pricingUrl=getPricingCalculatorUrl([...usedResourceTypes]);
+  if(pricingUrl){
+    pricingLink.href=pricingUrl;
+    pricingLink.hidden=false;
+    pricingLink.title=`Open Azure Pricing Calculator for: ${[...usedResourceTypes].map(type=>RES_TYPES[type]?.label||type).join(', ')}`;
+  }else{
+    pricingLink.removeAttribute('href');
+    pricingLink.hidden=true;
+    pricingLink.title='Add resources to open the Azure Pricing Calculator.';
+  }
 }
 
 // ================================================================
