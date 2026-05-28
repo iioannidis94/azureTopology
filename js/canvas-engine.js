@@ -9,6 +9,16 @@ const ctx = canvas.getContext('2d');
 
 function safeRR(c,x,y,w,h,r){if(typeof c.roundRect==='function')c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h);}
 
+function pointToSegmentDist(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.sqrt((px - x1) ** 2 + (py - y1) ** 2);
+  let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const projX = x1 + t * dx, projY = y1 + t * dy;
+  return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
+}
+
 export function resize(){canvas.width=canvas.parentElement.clientWidth;canvas.height=canvas.parentElement.clientHeight;draw();}
 window.addEventListener('resize',resize);
 
@@ -281,8 +291,8 @@ function drawSubnet(n, dw) {
   ctx.save();
   ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
   if(dw){
-    ctx.fillStyle = isSel?'rgba(0,120,212,0.10)':'rgba(0,0,0,0.08)'; ctx.fill();
-    ctx.strokeStyle=isSel?'#0078D4':'#6B7280'; ctx.lineWidth=isSel?2:1.5; ctx.stroke();
+    ctx.fillStyle = isSel?'rgba(0,120,212,0.10)':(n.color+'12'); ctx.fill();
+    ctx.strokeStyle=isSel?'#0078D4':(n.color+'CC'); ctx.lineWidth=isSel?2:1.5; ctx.stroke();
   } else {
     ctx.fillStyle = isSel?(n.color+'18'):'rgba(255,255,255,0.06)'; ctx.fill();
     ctx.strokeStyle=isSel?n.color:(n.color+'70'); ctx.lineWidth=isSel?2:1.5; ctx.stroke();
@@ -440,6 +450,25 @@ canvas.addEventListener('mousedown',e=>{
       state.dragGroup = allInVnet.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
     }
   } else {
+    // Check if clicking on a peering line
+    let peeringHit = null;
+    const map = {}; nodes.forEach(n => map[n.id] = n);
+    const allVnetsForPeering = [state.hub, ...state.spokes];
+    for (const vnet of allVnetsForPeering) {
+      for (const peerId of (vnet.peerings || [])) {
+        const n = map[vnet.id], target = map[peerId];
+        if (!n || !target) continue;
+        // Check distance from point to line segment
+        const dist = pointToSegmentDist(px, py, n.x, n.y, target.x, target.y);
+        if (dist < 12) { peeringHit = { id1: vnet.id, id2: peerId }; break; }
+      }
+      if (peeringHit) break;
+    }
+    if (peeringHit) {
+      state.selectedId = `peering:${peeringHit.id1}:${peeringHit.id2}`;
+      fullUpdate();
+      return;
+    }
     // Check if clicking on RG or Subscription box (group drag)
     if(state.layout==='grid'){
       let groupHit = null;

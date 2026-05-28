@@ -111,8 +111,8 @@ const defaultState={
   ],
   rgResources:[],
   hub:{
-    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-1', peerings: [],
-    subnets:[]
+    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-1', peerings: [], peeringConfigs: {},
+    subnets:[{id:'sn-hub-default', name:'default', cidr:'10.0.0.0/24', resources:[]}]
   },
   spokes:[],
   selectedId:null, offset:{x:0,y:0}, scale:1, dragging:false, dragStart:{x:0,y:0}, offsetStart:{x:0,y:0}, dragNodeId:null, dragGroup:null
@@ -124,6 +124,8 @@ try{
   state=s?JSON.parse(s):JSON.parse(JSON.stringify(defaultState));
   state.dragging=false; state.dragNodeId=null; state.dragGroup=null;
   if(!state.rgResources) state.rgResources=[];
+  if(!state.hub.peeringConfigs) state.hub.peeringConfigs={};
+  state.spokes.forEach(s => { if(!s.peeringConfigs) s.peeringConfigs = {}; });
   if(state.theme==='dark') document.body.classList.remove('theme-drawio');
   else document.body.classList.add('theme-drawio');
 }catch(e){state=JSON.parse(JSON.stringify(defaultState));}

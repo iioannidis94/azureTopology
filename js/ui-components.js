@@ -78,6 +78,74 @@ function analyzeSecurityPosture() {
     findings.push({ severity: 'suggestion', icon: '💡', message: `AKS Cluster "${aksResource.name}" detected without Key Vault in the architecture. Consider adding Key Vault for secrets management.`, resId: aksResource.id });
   }
 
+  // 8. DEPENDENCY / ERROR CHECKS
+  // VNet without subnets
+  allVnets.forEach(vnet => {
+    if (vnet.subnets.length === 0) {
+      findings.push({ severity: 'error', icon: '🚫', message: `VNet "${vnet.name}" has no subnets. A VNet requires at least one subnet to be functional.`, resId: vnet.id });
+    }
+  });
+
+  // Peering to non-existent VNet (stale peering references)
+  allVnets.forEach(vnet => {
+    (vnet.peerings || []).forEach(peerId => {
+      const target = allVnets.find(v => v.id === peerId);
+      if (!target) {
+        findings.push({ severity: 'error', icon: '🚫', message: `VNet "${vnet.name}" has a peering reference to a non-existent VNet. Remove the stale peering.`, resId: vnet.id });
+      }
+    });
+  });
+
+  // Gateway Transit enabled but no VPN/ER Gateway in VNet
+  allVnets.forEach(vnet => {
+    const hasGw = vnet.subnets.some(sn => sn.resources.some(r => r.type === 'gw' || r.type === 'ergw'));
+    if (vnet.peeringConfigs) {
+      Object.entries(vnet.peeringConfigs).forEach(([peerId, cfg]) => {
+        if (cfg.allowGatewayTransit && !hasGw) {
+          const peer = allVnets.find(v => v.id === peerId);
+          findings.push({ severity: 'error', icon: '🚫', message: `VNet "${vnet.name}" has Gateway Transit enabled toward "${peer?.name || 'unknown'}" but contains no VPN/ExpressRoute Gateway.`, resId: vnet.id });
+        }
+        if (cfg.useRemoteGateways) {
+          const peer = allVnets.find(v => v.id === peerId);
+          const peerHasGw = peer?.subnets.some(sn => sn.resources.some(r => r.type === 'gw' || r.type === 'ergw'));
+          if (peer && !peerHasGw) {
+            findings.push({ severity: 'error', icon: '🚫', message: `VNet "${vnet.name}" uses Remote Gateways from "${peer.name}" but that VNet has no VPN/ExpressRoute Gateway.`, resId: vnet.id });
+          }
+        }
+      });
+    }
+  });
+
+  // Subnet with resources but no parent VNet CIDR containing it
+  allVnets.forEach(vnet => {
+    const vnetParsed = parseCidr(vnet.cidr);
+    if (!vnetParsed) return;
+    vnet.subnets.forEach(sn => {
+      const snParsed = parseCidr(sn.cidr);
+      if (snParsed && (snParsed.network < vnetParsed.network || snParsed.broadcast > vnetParsed.broadcast)) {
+        findings.push({ severity: 'error', icon: '🚫', message: `Subnet "${sn.name}" (${sn.cidr}) is outside VNet "${vnet.name}" address space (${vnet.cidr}).`, resId: sn.id });
+      }
+    });
+  });
+
+  // VPN Gateway without GatewaySubnet
+  allVnets.forEach(vnet => {
+    const hasVpnGw = vnet.subnets.some(sn => sn.resources.some(r => r.type === 'gw' || r.type === 'ergw'));
+    const hasGwSubnet = vnet.subnets.some(sn => sn.name.toLowerCase() === 'gatewaysubnet');
+    if (hasVpnGw && !hasGwSubnet) {
+      findings.push({ severity: 'error', icon: '🚫', message: `VNet "${vnet.name}" has a VPN/ER Gateway but no subnet named "GatewaySubnet". This is required by Azure.`, resId: vnet.id });
+    }
+  });
+
+  // Bastion without AzureBastionSubnet
+  allVnets.forEach(vnet => {
+    const hasBastion = vnet.subnets.some(sn => sn.resources.some(r => r.type === 'bas'));
+    const hasBastionSubnet = vnet.subnets.some(sn => sn.name.toLowerCase() === 'azurebastionsubnet');
+    if (hasBastion && !hasBastionSubnet) {
+      findings.push({ severity: 'error', icon: '🚫', message: `VNet "${vnet.name}" has Azure Bastion but no subnet named "AzureBastionSubnet". This is required by Azure.`, resId: vnet.id });
+    }
+  });
+
   return findings;
 }
 
@@ -90,25 +158,34 @@ export function renderSecurityPanel() {
     return;
   }
 
+  const errors = findings.filter(f => f.severity === 'error').length;
   const warnings = findings.filter(f => f.severity === 'warning').length;
   const suggestions = findings.filter(f => f.severity === 'suggestion').length;
   const recommendations = findings.filter(f => f.severity === 'recommendation').length;
 
   let grade, gradeClass;
-  if (warnings >= 3) { grade = 'D'; gradeClass = 'danger'; }
+  if (errors >= 1) { grade = 'F'; gradeClass = 'danger'; }
+  else if (warnings >= 3) { grade = 'D'; gradeClass = 'danger'; }
   else if (warnings >= 2) { grade = 'C'; gradeClass = 'danger'; }
   else if (warnings >= 1) { grade = 'B'; gradeClass = 'warning'; }
   else if (suggestions + recommendations > 0) { grade = 'B+'; gradeClass = 'warning'; }
   else { grade = 'A+'; gradeClass = 'good'; }
 
   const summaryParts = [];
+  if (errors > 0) summaryParts.push(`${errors} error${errors!==1?'s':''}`);
   if (warnings > 0) summaryParts.push(`${warnings} warning${warnings!==1?'s':''}`);
   if (suggestions > 0) summaryParts.push(`${suggestions} suggestion${suggestions!==1?'s':''}`);
   if (recommendations > 0) summaryParts.push(`${recommendations} recommendation${recommendations!==1?'s':''}`);
 
   let h = `<div class="security-score"><div class="security-score-badge ${gradeClass}">${grade}</div><div class="security-score-label">Security Score<br><span style="font-size:9px;font-weight:normal;">${summaryParts.join(', ')}</span></div></div>`;
 
-  findings.forEach(f => {
+  // Show errors first
+  const sortedFindings = [...findings].sort((a, b) => {
+    const order = { error: 0, warning: 1, recommendation: 2, suggestion: 3 };
+    return (order[a.severity] ?? 4) - (order[b.severity] ?? 4);
+  });
+
+  sortedFindings.forEach(f => {
     const classes = `security-item ${f.severity}${f.resId ? ' clickable' : ''}`;
     const extraAttrs = f.resId ? ` onclick="window._selectNode('${f.resId}')" title="Click to select resource"` : '';
     h += `<div class="${classes}"${extraAttrs}><span class="sev-icon">${f.icon}</span><div class="sev-text"><span class="sev-label ${f.severity}">${f.severity}</span><br>${esc(f.message)}</div></div>`;
@@ -240,6 +317,7 @@ export function renderSidebar(){
       });
 
       h+=`<button class="add-btn vnet-level" onclick="window._addSpoke('${rg.id}')">➕ Add Spoke VNet</button>`;
+      h+=`<button class="add-btn vnet-level" onclick="window._addVnetToRg('${rg.id}')" style="margin-top:2px;">🌐+ Add VNet</button>`;
 
       // RG-level resources (DNS zones etc)
       const rgRes = getRgResources(rg.id);
@@ -303,6 +381,36 @@ export function renderEditor(){
     return;
   }
 
+  // Peering editor
+  if (state.selectedId && state.selectedId.startsWith('peering:')) {
+    const parts = state.selectedId.split(':');
+    const id1 = parts[1], id2 = parts[2];
+    const allVnetsP = [state.hub, ...state.spokes];
+    const v1 = allVnetsP.find(v => v.id === id1);
+    const v2 = allVnetsP.find(v => v.id === id2);
+    if (!v1 || !v2) { state.selectedId = null; return renderEditor(); }
+    const cfg1 = (v1.peeringConfigs || {})[id2] || { allowForwardedTraffic: false, allowGatewayTransit: false, useRemoteGateways: false, allowVirtualNetworkAccess: true };
+    const cfg2 = (v2.peeringConfigs || {})[id1] || { allowForwardedTraffic: false, allowGatewayTransit: false, useRemoteGateways: false, allowVirtualNetworkAccess: true };
+    const boolSelect = (vnetId, peerId, key, val) => `<select class="input-field" onchange="window._updatePeeringConfig('${vnetId}','${peerId}','${key}',this.value==='true')"><option value="true"${val?' selected':''}>Enabled</option><option value="false"${!val?' selected':''}>Disabled</option></select>`;
+    let h = `<div class="editor-panel" style="border-color:var(--azure-blue)">
+      <div class="editor-header">🔗 VNet Peering</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px;">${esc(v1.name)} ↔ ${esc(v2.name)}</div>
+      <div style="font-size:11px;font-weight:bold;color:var(--azure-blue);margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:4px;">📤 ${esc(v1.name)} → ${esc(v2.name)}</div>
+      <div class="editor-row"><span class="editor-label">Allow Virtual Network Access</span>${boolSelect(id1,id2,'allowVirtualNetworkAccess',cfg1.allowVirtualNetworkAccess)}</div>
+      <div class="editor-row"><span class="editor-label">Allow Forwarded Traffic</span>${boolSelect(id1,id2,'allowForwardedTraffic',cfg1.allowForwardedTraffic)}</div>
+      <div class="editor-row"><span class="editor-label">Allow Gateway Transit</span>${boolSelect(id1,id2,'allowGatewayTransit',cfg1.allowGatewayTransit)}</div>
+      <div class="editor-row"><span class="editor-label">Use Remote Gateways</span>${boolSelect(id1,id2,'useRemoteGateways',cfg1.useRemoteGateways)}</div>
+      <div style="font-size:11px;font-weight:bold;color:var(--azure-blue);margin:12px 0 6px;border-bottom:1px solid var(--border);padding-bottom:4px;">📥 ${esc(v2.name)} → ${esc(v1.name)}</div>
+      <div class="editor-row"><span class="editor-label">Allow Virtual Network Access</span>${boolSelect(id2,id1,'allowVirtualNetworkAccess',cfg2.allowVirtualNetworkAccess)}</div>
+      <div class="editor-row"><span class="editor-label">Allow Forwarded Traffic</span>${boolSelect(id2,id1,'allowForwardedTraffic',cfg2.allowForwardedTraffic)}</div>
+      <div class="editor-row"><span class="editor-label">Allow Gateway Transit</span>${boolSelect(id2,id1,'allowGatewayTransit',cfg2.allowGatewayTransit)}</div>
+      <div class="editor-row"><span class="editor-label">Use Remote Gateways</span>${boolSelect(id2,id1,'useRemoteGateways',cfg2.useRemoteGateways)}</div>
+      <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._togglePeering('${id1}','${id2}')">🗑 Remove Peering</button>
+    </div>`;
+    el.innerHTML = h;
+    return;
+  }
+
   let obj=null, parent=null, typeObj='none';
   const allVnets = [state.hub, ...state.spokes];
   
@@ -343,7 +451,11 @@ export function renderEditor(){
     allVnets.forEach(v => {
       if (v.id === obj.id) return;
       const actuallyPeered = (obj.peerings || []).includes(v.id) || (v.peerings || []).includes(obj.id);
-      peerHtml += `<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:10px;font-weight:bold;border:1px solid ${actuallyPeered ? 'var(--azure-blue)' : 'var(--border)'};background:${actuallyPeered ? 'rgba(0,120,212,.1)' : 'transparent'};color:${actuallyPeered ? 'var(--azure-blue)' : 'var(--text)'};transition:0.2s;" onclick="window._togglePeering('${obj.id}', '${v.id}')">${actuallyPeered ? '🔗 ' : '🔌 '}${esc(v.name)}</button>`;
+      if (actuallyPeered) {
+        peerHtml += `<div style="display:flex;gap:4px;"><button style="flex:1;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:10px;font-weight:bold;border:1px solid var(--azure-blue);background:rgba(0,120,212,.1);color:var(--azure-blue);transition:0.2s;" onclick="window._selectPeering('${obj.id}', '${v.id}')">🔗 ${esc(v.name)}</button><button style="padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px solid var(--danger);background:transparent;color:var(--danger);" onclick="window._togglePeering('${obj.id}', '${v.id}')" title="Remove peering">✕</button></div>`;
+      } else {
+        peerHtml += `<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:10px;font-weight:bold;border:1px solid var(--border);background:transparent;color:var(--text);transition:0.2s;" onclick="window._togglePeering('${obj.id}', '${v.id}')">🔌 ${esc(v.name)}</button>`;
+      }
     });
     peerHtml += `</div></div>`;
     h += peerHtml;
@@ -463,10 +575,20 @@ export function addSpoke(rgId){
   const n=state.spokes.length;
   const cidr = nextAvailableVnetCidr();
   const spokeId = uid();
-  // Temporarily create the spoke to calculate subnet CIDR using the same logic
   const p = parseCidr(cidr);
   const subnetCidr = p ? nextAvailableSubnetCidrFromParsed(p, []) : `10.${n+1}.1.0/24`;
-  state.spokes.push({ id:spokeId,name:`spoke-${n+1}-vnet`,cidr, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], rgId:rgId||state.resourceGroups[0]?.id,
+  state.spokes.push({ id:spokeId,name:`spoke-${n+1}-vnet`,cidr, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], peeringConfigs:{}, rgId:rgId||state.resourceGroups[0]?.id,
+    subnets: [{id:uid(), name:'default', cidr:subnetCidr, resources:[]}]
+  });
+  fullUpdate();
+}
+
+export function addVnetToRg(rgId){
+  const n=state.spokes.length;
+  const cidr = nextAvailableVnetCidr();
+  const p = parseCidr(cidr);
+  const subnetCidr = p ? nextAvailableSubnetCidrFromParsed(p, []) : `10.${n+1}.1.0/24`;
+  state.spokes.push({ id:uid(),name:`vnet-${n+1}`,cidr, color:VNET_COLORS[n%VNET_COLORS.length],peerings:[], peeringConfigs:{}, rgId:rgId||state.resourceGroups[0]?.id,
     subnets: [{id:uid(), name:'default', cidr:subnetCidr, resources:[]}]
   });
   fullUpdate();
@@ -494,6 +616,20 @@ export function togglePeering(id1, id2) {
   const hasPeering = v1.peerings.includes(id2) || v2.peerings.includes(id1);
   if (hasPeering) { v1.peerings = v1.peerings.filter(p => p !== id2); v2.peerings = v2.peerings.filter(p => p !== id1); } 
   else { v1.peerings.push(id2); }
+  fullUpdate();
+}
+
+export function updatePeeringConfig(vnetId, peerId, key, val) {
+  const v = [state.hub,...state.spokes].find(s => s.id === vnetId);
+  if (!v) return;
+  if (!v.peeringConfigs) v.peeringConfigs = {};
+  if (!v.peeringConfigs[peerId]) v.peeringConfigs[peerId] = { allowForwardedTraffic: false, allowGatewayTransit: false, useRemoteGateways: false, allowVirtualNetworkAccess: true };
+  v.peeringConfigs[peerId][key] = val;
+  fullUpdate();
+}
+
+export function selectPeering(id1, id2) {
+  state.selectedId = `peering:${id1}:${id2}`;
   fullUpdate();
 }
 
