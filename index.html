@@ -321,6 +321,7 @@ const RES_TYPES={
   monitor:{icon:'📈', img:'monitor.svg', color:'#00B294',label:'Azure Monitor',cat:'management', cost: 15, config:{retentionDays:'90'}},
 };
 const AZURE_PRICING_CALCULATOR_BASE_URL='https://azure.microsoft.com/en-us/pricing/calculator/';
+const PRICING_CALCULATOR_PARAM_NAME='service';
 const PRICING_CALCULATOR_SLUGS={
   vm:'virtual-machines',
   vmss:'virtual-machine-scale-sets',
@@ -435,10 +436,10 @@ function getAllDiagramResources(){
   return [state.hub, ...state.spokes].flatMap(vnet => vnet.subnets.flatMap(sn => sn.resources));
 }
 function getPricingCalculatorUrl(resourceTypes){
-  const slugs=[...new Set(resourceTypes.flatMap(type=>PRICING_CALCULATOR_SLUGS[type] ? [PRICING_CALCULATOR_SLUGS[type]] : []))];
+  const slugs=[...new Set(resourceTypes.map(type=>PRICING_CALCULATOR_SLUGS[type]).filter(Boolean))];
   if(!slugs.length) return '';
   const params=new URLSearchParams();
-  slugs.forEach(slug=>params.append('service',slug));
+  slugs.forEach(slug=>params.append(PRICING_CALCULATOR_PARAM_NAME,slug));
   return `${AZURE_PRICING_CALCULATOR_BASE_URL}?${params.toString()}`;
 }
 
