@@ -234,7 +234,7 @@
       <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Est. Monthly Cost</div>
       <div class="cost-value" id="cost-display">$0</div>
     </div>
-    <a id="pricing-calculator-link" class="calculator-link" target="_blank" rel="noopener noreferrer" hidden>🔗 View in Azure Pricing Calculator</a>
+    <a id="pricing-calculator-link" class="calculator-link" target="_blank" rel="noopener noreferrer" aria-label="View current resources in Azure Pricing Calculator" hidden>🔗 View in Azure Pricing Calculator</a>
 
     <div class="tree-section-title">// Properties Editor</div>
     <div id="editor-container">
@@ -459,7 +459,7 @@ function updateCost() {
   }else{
     pricingLink.removeAttribute('href');
     pricingLink.hidden=true;
-    pricingLink.title='Add resources to open the Azure Pricing Calculator.';
+    pricingLink.removeAttribute('title');
   }
 }
 
