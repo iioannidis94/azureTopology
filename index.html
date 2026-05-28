@@ -76,7 +76,7 @@
   .rg-name-input:focus, .rg-name-input:hover{border-color:rgba(135,100,184,0.5);background:var(--bg2);}
   .rg-loc-select{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;outline:none;cursor:pointer;max-width:75px;padding:2px;border-radius:3px;}
   .rg-loc-select:focus, .rg-loc-select:hover{border-color:rgba(135,100,184,.5);color:var(--text);}
-  .rg-body{padding-left:10px;border-left:2px solid rgba(135,100,184,.15);display:flex;flex-direction:column;gap:8px;margin-top:6px;margin-left:4px;}
+  .rg-body{padding-left:10px;border-left:2px solid rgba(135,100,184,.15);display:flex;flex-direction:column;gap:6px;margin-top:6px;margin-left:4px;}
   
   /* VNET CARD */
   .vnet-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);}
@@ -94,14 +94,17 @@
   .subnet-header {display:flex; align-items:center; gap:4px; margin-bottom:6px;}
   .subnet-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;outline:none;min-width:0;padding:2px;}
   .subnet-name-input:focus, .subnet-name-input:hover{border-color:var(--border);background:var(--bg2);}
-  .subnet-cidr-input{width:80px;background:transparent;border:1px solid transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;outline:none;text-align:center;}
+  .subnet-cidr-input{width:80px;background:transparent;border:1px solid transparent;color:var(--azure-blue);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;outline:none;text-align:center;}
   .subnet-cidr-input:focus, .subnet-cidr-input:hover{border-color:var(--border);background:var(--bg2);}
 
-  .resource-chips{display:flex;flex-wrap:wrap;gap:5px;}
+  .resource-chips{display:flex;flex-wrap:wrap;gap:4px;}
   .chip{font-size:9px;padding:4px 6px;border-radius:4px;background:rgba(0,120,212,.08);border:1px solid rgba(0,120,212,.3);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;transition:.15s;max-width:115px;}
   body:not(.theme-drawio) .chip{color:white;background:rgba(0,120,212,.18);}
   .chip:hover{background:var(--azure-blue);color:white!important;border-color:var(--azure-blue);}
   .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .chip.hub-chip{background:rgba(255,140,0,.08);border-color:rgba(255,140,0,.4);}
+  body:not(.theme-drawio) .chip.hub-chip{background:rgba(255,140,0,.18);}
+  .chip.hub-chip:hover{background:#FF8C00;color:white!important;border-color:#FF8C00;}
   .chip img {width: 14px; height: 14px; object-fit: contain;}
   
   /* BUTTONS */
@@ -113,13 +116,16 @@
   .add-btn.rg-level:hover{border-color:#8764B8;color:#8764B8;background:rgba(135,100,184,.08);}
   .add-btn.subnet-level{font-size:8px; padding:4px; margin-top:6px;}
   
-  /* RES DROPDOWN */
+  /* RES DROPDOWN WITH SEARCH BOX */
   .add-res-container{position:relative;}
-  .res-dropdown{display:none;position:absolute;top:100%;left:0;width:220px;background:var(--bg2);border:1px solid var(--azure-blue);border-radius:6px;z-index:300;max-height:240px;overflow-y:auto;box-shadow:0 8px 25px rgba(0,0,0,.4);}
+  .res-dropdown{display:none;position:absolute;top:100%;left:0;width:240px;background:var(--bg2);border:1px solid var(--azure-blue);border-radius:6px;z-index:300;max-height:280px;overflow-y:auto;box-shadow:0 8px 25px rgba(0,0,0,.4);padding:4px;}
   .res-dropdown.show{display:block;}
+  .search-box-container {position: sticky; top: 0; background: var(--bg2); padding: 4px; border-bottom: 1px solid var(--border); z-index: 310;}
+  .search-input {width: 100%; padding: 6px; font-size: 10px; font-family: 'JetBrains Mono'; border: 1px solid var(--border); border-radius: 4px; background: rgba(0,0,0,0.1); color: var(--text); outline: none;}
+  .search-input:focus {border-color: var(--azure-blue);}
   .res-dd-section{font-size:8px;letter-spacing:1.5px;color:var(--muted);padding:8px 8px 4px;text-transform:uppercase;border-top:1px solid var(--border);font-weight:bold;}
-  .res-dd-section:first-child{border-top:none;}
-  .res-option{padding:6px 10px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text);transition:0.1s;}
+  .res-dd-section:first-of-type{border-top:none;}
+  .res-option{padding:6px 10px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text);transition:0.1s;border-radius:4px;}
   .res-option:hover{background:var(--azure-blue);color:white;}
   .res-option img {width: 16px; height: 16px;}
   
@@ -148,8 +154,10 @@
   .export-btn.secondary{background:transparent;border:1px solid var(--azure-blue);color:var(--azure-blue);}
   body:not(.theme-drawio) .export-btn.secondary{color:#50E6FF;border-color:#50E6FF;}
   .export-btn.secondary:hover{background:rgba(0,120,212,.1);}
+  .export-btn.pricing {background: transparent; border: 1px solid var(--accent); color: var(--accent); font-size: 10px; padding: 6px; text-decoration: none; text-align: center; border-radius: 4px; font-weight: bold; margin-top: 4px; display: inline-block;}
+  .export-btn.pricing:hover {background: var(--accent); color: #000;}
   .export-btn.reset{background:transparent;border:1px dashed var(--danger);color:var(--danger);}
-  .export-btn.reset:hover{background:var(--danger);color:white;border-style:solid;box-shadow:0 6px 20px rgba(255,68,68,.3);}
+  .export-btn.reset:hover{background:var(--danger);color:white;border-style:solid;}
   
   .hdr-btn{background:transparent;border:1px solid var(--muted);color:var(--muted);padding:6px 12px;font-size:10px;cursor:pointer;border-radius:4px;font-family:'JetBrains Mono';transition:.2s;white-space:nowrap;font-weight:bold;}
   .hdr-btn:hover{border-color:var(--azure-blue);color:var(--azure-blue);background:rgba(0,120,212,.08);}
@@ -166,6 +174,7 @@
   .modal-btn.secondary{background:transparent;border:1px solid var(--muted);color:var(--muted);}
   .modal-btn:hover{opacity:.85;transform:translateY(-1px);}
   
+  /* RENAME OVERLAY */
   #rename-overlay{display:none;position:fixed;z-index:500;}
   #rename-input{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;border:2px solid #0078D4;border-radius:6px;background:#fff;color:#111;outline:none;min-width:140px;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
   
@@ -218,6 +227,7 @@
   </div>
 </div>
 
+<!-- PowerShell Modal -->
 <div class="modal-overlay" id="ps-modal">
   <div class="modal">
     <h2>⚡ Azure PowerShell Deployment Script</h2>
@@ -230,6 +240,7 @@
   </div>
 </div>
 
+<!-- Bicep Modal -->
 <div class="modal-overlay" id="bicep-modal">
   <div class="modal">
     <h2>📄 Bicep Template</h2>
@@ -248,42 +259,42 @@
 
 <script>
 // ================================================================
-// RESOURCE TYPES (With Monthly Cost Estimates)
+// RESOURCE TYPES (With Real Pricing URLs)
 // ================================================================
 const AZURE_ICON_BASE = 'https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@master/azure-icons/';
 
 const RES_CATEGORIES={compute:'Compute',network:'Networking',data:'Data & Storage',security:'Security',integration:'Integration',ai:'AI & Analytics',management:'Management'};
 const RES_TYPES={
-  vm:{icon:'💻', img:'virtual-machines.svg', color:'#00BCF2',label:'Virtual Machine',cat:'compute', cost: 85, config:{size:'Standard_D2s_v3',os:'Ubuntu 22.04'}},
-  vmss:{icon:'🖥️', img:'virtual-machine-scale-sets.svg', color:'#00A4EF',label:'VM Scale Set',cat:'compute', cost: 250, config:{size:'Standard_D2s_v3',instances:'2'}},
-  aks:{icon:'☸️', img:'kubernetes-services.svg', color:'#0078D4',label:'AKS Cluster',cat:'compute', cost: 150, config:{nodes:'3',version:'1.29'}},
-  fa:{icon:'⚡', img:'function-apps.svg', color:'#8764B8',label:'Function App',cat:'compute', cost: 20, config:{plan:'Consumption'}},
-  aca:{icon:'📦', img:'container-instances.svg', color:'#8764B8',label:'Container Apps',cat:'compute', cost: 40, config:{replicas:'10'}},
-  fw:{icon:'🛡️', img:'firewalls.svg', color:'#E81123',label:'Azure Firewall',cat:'network', cost: 900, config:{sku:'Premium'}},
-  nva:{icon:'🧱', img:'network-appliances.svg', color:'#E81123',label:'FortiGate NVA',cat:'network', cost: 600, config:{mode:'Active/Passive'}},
-  agw:{icon:'🌍', img:'application-gateways.svg', color:'#FF8C00',label:'App Gateway',cat:'network', cost: 350, config:{sku:'WAF_v2'}},
-  lb:{icon:'⚖️', img:'load-balancers.svg', color:'#00BCF2',label:'Load Balancer',cat:'network', cost: 25, config:{sku:'Standard'}},
-  gw:{icon:'🔀', img:'virtual-network-gateways.svg', color:'#0078D4',label:'VPN Gateway',cat:'network', cost: 140, config:{sku:'VpnGw2AZ'}},
-  ergw:{icon:'🚄', img:'expressroute-circuits.svg', color:'#003A5C',label:'ExpressRoute GW',cat:'network', cost: 450, config:{sku:'ErGw2AZ'}},
-  bas:{icon:'🔒', img:'bastions.svg', color:'#0078D4',label:'Azure Bastion',cat:'network', cost: 190, config:{sku:'Standard'}},
-  afd:{icon:'⚡', img:'front-doors.svg', color:'#FF8C00',label:'Azure Front Door',cat:'network', cost: 330, config:{sku:'Premium'}},
-  pe:{icon:'🔌', img:'private-endpoint.svg', color:'#8764B8',label:'Private Endpoint',cat:'network', cost: 10, config:{target:'Storage'}},
-  dns:{icon:'🌐', img:'dns-zones.svg', color:'#00B294',label:'Private DNS Zone',cat:'network', cost: 5, config:{zone:'privatelink'}},
-  nsg:{icon:'📋', img:'network-security-groups.svg', color:'#E81123',label:'Network Sec Group',cat:'network', cost: 0, config:{rules:'5'}},
-  sql:{icon:'🗄️', img:'sql-databases.svg', color:'#00B294',label:'Azure SQL',cat:'data', cost: 380, config:{vcores:'4'}},
-  cosmos:{icon:'🌌', img:'azure-cosmos-db.svg', color:'#00B294',label:'Cosmos DB',cat:'data', cost: 400, config:{api:'NoSQL'}},
-  sa:{icon:'💾', img:'storage-accounts.svg', color:'#00B294',label:'Storage Account',cat:'data', cost: 25, config:{replication:'ZRS'}},
-  redis:{icon:'⚡', img:'azure-cache-for-redis.svg', color:'#E81123',label:'Azure Cache Redis',cat:'data', cost: 120, config:{sku:'Premium P1'}},
-  adls:{icon:'🗃️', img:'storage-accounts.svg', color:'#0078D4',label:'Data Lake',cat:'data', cost: 50, config:{tier:'Standard'}},
-  kv:{icon:'🔑', img:'key-vaults.svg', color:'#FF8C00',label:'Key Vault',cat:'security', cost: 5, config:{sku:'Premium'}},
-  app:{icon:'📱', img:'app-services.svg', color:'#00BCF2',label:'App Service',cat:'integration', cost: 220, config:{sku:'P1v3'}},
-  apim:{icon:'🔌', img:'api-management.svg', color:'#FF8C00',label:'API Management',cat:'integration', cost: 700, config:{tier:'Developer'}},
-  sb:{icon:'📨', img:'service-bus.svg', color:'#8764B8',label:'Service Bus',cat:'integration', cost: 50, config:{tier:'Premium'}},
-  evh:{icon:'📤', img:'event-hubs.svg', color:'#8764B8',label:'Event Hub',cat:'integration', cost: 30, config:{tier:'Standard'}},
-  logic:{icon:'🔄', img:'logic-apps.svg', color:'#8764B8',label:'Logic App',cat:'integration', cost: 15, config:{plan:'Standard'}},
-  foundry:{icon:'🤖', img:'cognitive-services.svg', color:'#0078D4',label:'AI Foundry',cat:'ai', cost: 100, config:{sku:'S0'}},
-  openai:{icon:'🧠', img:'cognitive-services.svg', color:'#50E6FF',label:'Azure OpenAI',cat:'ai', cost: 150, config:{model:'gpt-4o'}},
-  monitor:{icon:'📈', img:'monitor.svg', color:'#00B294',label:'Azure Monitor',cat:'management', cost: 15, config:{retentionDays:'90'}},
+  vm:{icon:'💻', img:'virtual-machines.svg', color:'#00BCF2',label:'Virtual Machine',cat:'compute', cost: 85, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/', config:{size:'Standard_D2s_v3',os:'Ubuntu 22.04'}},
+  vmss:{icon:'🖥️', img:'virtual-machine-scale-sets.svg', color:'#00A4EF',label:'VM Scale Set',cat:'compute', cost: 250, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/virtual-machine-scale-sets/', config:{size:'Standard_D2s_v3',instances:'2'}},
+  aks:{icon:'☸️', img:'kubernetes-services.svg', color:'#0078D4',label:'AKS Cluster',cat:'compute', cost: 150, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/kubernetes-service/', config:{nodes:'3',version:'1.29'}},
+  fa:{icon:'⚡', img:'function-apps.svg', color:'#8764B8',label:'Function App',cat:'compute', cost: 20, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/functions/', config:{plan:'Consumption'}},
+  aca:{icon:'📦', img:'container-instances.svg', color:'#8764B8',label:'Container Apps',cat:'compute', cost: 40, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/container-apps/', config:{replicas:'10'}},
+  fw:{icon:'🛡️', img:'firewalls.svg', color:'#E81123',label:'Azure Firewall',cat:'network', cost: 900, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/azure-firewall/', config:{sku:'Premium'}},
+  nva:{icon:'🧱', img:'network-appliances.svg', color:'#E81123',label:'FortiGate NVA',cat:'network', cost: 600, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/network-appliances/', config:{mode:'Active/Passive'}},
+  agw:{icon:'🌍', img:'application-gateways.svg', color:'#FF8C00',label:'App Gateway',cat:'network', cost: 350, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/application-gateway/', config:{sku:'WAF_v2'}},
+  lb:{icon:'⚖️', img:'load-balancers.svg', color:'#00BCF2',label:'Load Balancer',cat:'network', cost: 25, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/load-balancer/', config:{sku:'Standard'}},
+  gw:{icon:'🔀', img:'virtual-network-gateways.svg', color:'#0078D4',label:'VPN Gateway',cat:'network', cost: 140, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/vpn-gateway/', config:{sku:'VpnGw2AZ'}},
+  ergw:{icon:'🚄', img:'expressroute-circuits.svg', color:'#003A5C',label:'ExpressRoute GW',cat:'network', cost: 450, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/expressroute/', config:{sku:'ErGw2AZ'}},
+  bas:{icon:'🔒', img:'bastions.svg', color:'#0078D4',label:'Azure Bastion',cat:'network', cost: 190, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/azure-bastion/', config:{sku:'Standard'}},
+  afd:{icon:'⚡', img:'front-doors.svg', color:'#FF8C00',label:'Azure Front Door',cat:'network', cost: 330, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/frontdoor/', config:{sku:'Premium'}},
+  pe:{icon:'🔌', img:'private-endpoint.svg', color:'#8764B8',label:'Private Endpoint',cat:'network', cost: 10, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/private-link/', config:{target:'Storage'}},
+  dns:{icon:'🌐', img:'dns-zones.svg', color:'#00B294',label:'Private DNS Zone',cat:'network', cost: 5, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/dns/', config:{zone:'privatelink'}},
+  nsg:{icon:'📋', img:'network-security-groups.svg', color:'#E81123',label:'Network Sec Group',cat:'network', cost: 0, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/virtual-network/', config:{rules:'5'}},
+  sql:{icon:'🗄️', img:'sql-databases.svg', color:'#00B294',label:'Azure SQL',cat:'data', cost: 380, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/azure-sql-database/single/', config:{vcores:'4'}},
+  cosmos:{icon:'🌌', img:'azure-cosmos-db.svg', color:'#00B294',label:'Cosmos DB',cat:'data', cost: 400, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/cosmos-db/', config:{api:'NoSQL'}},
+  sa:{icon:'💾', img:'storage-accounts.svg', color:'#00B294',label:'Storage Account',cat:'data', cost: 25, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/storage/blobs/', config:{replication:'ZRS'}},
+  redis:{icon:'⚡', img:'azure-cache-for-redis.svg', color:'#E81123',label:'Azure Cache Redis',cat:'data', cost: 120, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/cache/', config:{sku:'Premium P1'}},
+  adls:{icon:'🗃️', img:'storage-accounts.svg', color:'#0078D4',label:'Data Lake',cat:'data', cost: 50, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/storage/data-lake/', config:{tier:'Standard'}},
+  kv:{icon:'🔑', img:'key-vaults.svg', color:'#FF8C00',label:'Key Vault',cat:'security', cost: 5, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/key-vault/', config:{sku:'Premium'}},
+  app:{icon:'📱', img:'app-services.svg', color:'#00BCF2',label:'App Service',cat:'integration', cost: 220, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/app-service/windows/', config:{sku:'P1v3'}},
+  apim:{icon:'🔌', img:'api-management.svg', color:'#FF8C00',label:'API Management',cat:'integration', cost: 700, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/api-management/', config:{tier:'Developer'}},
+  sb:{icon:'📨', img:'service-bus.svg', color:'#8764B8',label:'Service Bus',cat:'integration', cost: 50, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/service-bus/', config:{tier:'Premium'}},
+  evh:{icon:'📤', img:'event-hubs.svg', color:'#8764B8',label:'Event Hub',cat:'integration', cost: 30, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/event-hubs/', config:{tier:'Standard'}},
+  logic:{icon:'🔄', img:'logic-apps.svg', color:'#8764B8',label:'Logic App',cat:'integration', cost: 15, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/logic-apps/', config:{plan:'Standard'}},
+  foundry:{icon:'🤖', img:'cognitive-services.svg', color:'#0078D4',label:'AI Foundry',cat:'ai', cost: 100, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/cognitive-services/', config:{sku:'S0'}},
+  openai:{icon:'🧠', img:'cognitive-services.svg', color:'#50E6FF',label:'Azure OpenAI',cat:'ai', cost: 150, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/', config:{model:'gpt-4o'}},
+  monitor:{icon:'📈', img:'monitor.svg', color:'#00B294',label:'Azure Monitor',cat:'management', cost: 15, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/monitor/', config:{retentionDays:'90'}},
 };
 
 const loadedImages = {};
@@ -301,20 +312,15 @@ function loadAzureIcons(callback) {
 }
 
 // ================================================================
-// STATE (V11 - Adding Subnets)
+// STATE
 // ================================================================
-const KEY='azureBuilderV11';
-const SUB_COLORS=['#FFB900','#00BCF2','#00B294','#FF8C00','#8764B8'];
-const RG_COLORS=['#8764B8','#0078D4','#00B294','#FF8C00','#E81123'];
-const VNET_COLORS=['#0078D4','#00BCF2','#00B294','#FF8C00','#8764B8','#107C10'];
+const KEY='azureBuilderV12'; 
 
 const defaultState={
   theme:'drawio', layout:'grid',
   onPrem: { enabled: false, id: 'onprem', name: 'Corp Datacenter', cidr: '192.168.0.0/16' },
   customPos: {}, 
-  subscriptions:[
-    {id:'sub-1',name:'Production Subscription'}
-  ],
+  subscriptions:[{id:'sub-1',name:'Production Subscription'}],
   resourceGroups:[
     {id:'rg-conn', name:'rg-connectivity', location:'eastus', subId:'sub-1'},
     {id:'rg-prod', name:'rg-production', location:'eastus', subId:'sub-1'}
@@ -322,28 +328,16 @@ const defaultState={
   hub:{
     id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-conn', peerings: [],
     subnets:[
-      {
-        id:'sn-hub-fw', name:'AzureFirewallSubnet', cidr:'10.0.1.0/26',
-        resources:[{id:'rh1',type:'fw', name:'hub-firewall',config:{...RES_TYPES.fw.config}}]
-      },
-      {
-        id:'sn-hub-gw', name:'GatewaySubnet', cidr:'10.0.2.0/27',
-        resources:[{id:'rh2',type:'gw', name:'hub-vpngw',config:{...RES_TYPES.gw.config}}]
-      }
+      {id:'sn-hub-fw', name:'AzureFirewallSubnet', cidr:'10.0.1.0/26', resources:[{id:'rh1',type:'fw', name:'hub-firewall',config:{...RES_TYPES.fw.config}}]},
+      {id:'sn-hub-gw', name:'GatewaySubnet', cidr:'10.0.2.0/27', resources:[{id:'rh2',type:'gw', name:'hub-vpngw',config:{...RES_TYPES.gw.config}}]}
     ]
   },
   spokes:[
     {
       id:'sp1',name:'prod-vnet',cidr:'10.1.0.0/16',color:'#00BCF2',peerings:['hub'],rgId:'rg-prod',
       subnets:[
-        {
-          id:'sn-sp1-web', name:'WebSubnet', cidr:'10.1.1.0/24',
-          resources:[{id:'rs1',type:'vm', name:'prod-vm-01', config:{...RES_TYPES.vm.config}}]
-        },
-        {
-          id:'sn-sp1-db', name:'DataSubnet', cidr:'10.1.2.0/24',
-          resources:[{id:'rs2',type:'sql', name:'prod-sqldb', config:{...RES_TYPES.sql.config}}]
-        }
+        {id:'sn-sp1-web', name:'WebSubnet', cidr:'10.1.1.0/24', resources:[{id:'rs1',type:'vm', name:'prod-vm-01', config:{...RES_TYPES.vm.config}}]},
+        {id:'sn-sp1-db', name:'DataSubnet', cidr:'10.1.2.0/24', resources:[{id:'rs2',type:'sql', name:'prod-sqldb', config:{...RES_TYPES.sql.config}}]}
       ]
     }
   ],
@@ -355,8 +349,6 @@ try{
   const s=localStorage.getItem(KEY);
   state=s?JSON.parse(s):JSON.parse(JSON.stringify(defaultState));
   state.dragging=false; state.dragNodeId=null;
-  if(state.theme==='dark') document.body.classList.remove('theme-drawio');
-  else document.body.classList.add('theme-drawio');
 }catch(e){state=JSON.parse(JSON.stringify(defaultState));}
 
 const uid=()=>'id-'+Math.random().toString(36).substr(2,9);
@@ -367,25 +359,46 @@ function fullUpdate(){ saveState(); updateCost(); renderSidebar(); renderEditor(
 function updateCost() {
   let total = 0;
   [state.hub, ...state.spokes].forEach(vnet => {
-    vnet.subnets.forEach(sn => {
-      sn.resources.forEach(r => {
-        if(RES_TYPES[r.type] && RES_TYPES[r.type].cost) total += RES_TYPES[r.type].cost;
-      });
-    });
+    vnet.subnets.forEach(sn => { sn.resources.forEach(r => { if(RES_TYPES[r.type]?.cost) total += RES_TYPES[r.type].cost; }); });
   });
   document.getElementById('cost-display').innerText = `$${total.toLocaleString()}`;
 }
 
 // ================================================================
-// TOGGLES & ON PREM
+// LIVE SEARCH DROPDOWN ENGINE
 // ================================================================
-function toggleTheme(){ state.theme=state.theme==='drawio'?'dark':'drawio'; document.body.classList.toggle('theme-drawio',state.theme==='drawio'); fullUpdate(); }
-function toggleLayout(){ state.layout=state.layout==='grid'?'radial':'grid'; state.offset={x:0,y:0}; state.scale=1; fullUpdate(); }
-function fitToScreen(){state.offset={x:0,y:0};state.scale=1;saveState();draw();}
-function toggleOnPrem() { state.onPrem.enabled = !state.onPrem.enabled; fullUpdate(); }
+window.filterDropdownOptions = function(snId, query) {
+  const menuContainer = document.getElementById(`options-box-${snId}`);
+  if (!menuContainer) return;
+  const vnetId = menuContainer.dataset.vnetid;
+  let h = "";
+  const cats={};
+  Object.keys(RES_TYPES).forEach(k=>{
+    const t=RES_TYPES[k];
+    if (t.label.toLowerCase().includes(query.toLowerCase()) || t.cat.toLowerCase().includes(query.toLowerCase())) {
+      if(!cats[t.cat]) cats[t.cat]=[];
+      cats[t.cat].push({key:k,...t});
+    }
+  });
+
+  if (Object.keys(cats).length === 0) {
+    h = `<div style="padding:10px; font-size:11px; color:var(--muted); text-align:center;">No resources found...</div>`;
+  } else {
+    Object.keys(cats).forEach(cat=>{
+      h+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
+      cats[cat].forEach(t=>{
+          h+=`<div class="res-option" onclick="addResource('${vnetId}','${snId}','${t.key}')">
+            <img src="${AZURE_ICON_BASE}${t.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+            <span style="display:none">${t.icon}</span> ${t.label} <span style="margin-left:auto; font-size:8px; color:var(--muted)">($${t.cost}/mo)</span>
+          </div>`;
+      });
+    });
+  }
+  menuContainer.innerHTML = h;
+};
 
 // ================================================================
-// LEFT SIDEBAR (Nested Subnets)
+// SIDEBAR ENGINE
 // ================================================================
 function renderSidebar(){
   const el=document.getElementById('sidebar-left');
@@ -457,49 +470,46 @@ function renderSidebar(){
               <span>${esc(res.name)}</span>
             </div>`;
           });
-          h+=`</div>
-              <div class="add-res-container">
-                <button class="add-btn subnet-level" onclick="toggleDropdown('${sn.id}')">➕ Add Resource to Subnet</button>
-                <div class="res-dropdown" id="dropdown-${sn.id}">`;
+          
+          let optionsHtml = '';
           const cats={};
           Object.keys(RES_TYPES).forEach(k=>{const t=RES_TYPES[k];if(!cats[t.cat])cats[t.cat]=[];cats[t.cat].push({key:k,...t});});
           Object.keys(cats).forEach(cat=>{
-            h+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
+            optionsHtml+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
             cats[cat].forEach(t=>{
-                h+=`<div class="res-option" onclick="addResource('${vnet.id}','${sn.id}','${t.key}')">
+                optionsHtml+=`<div class="res-option" onclick="addResource('${vnet.id}','${sn.id}','${t.key}')">
                   <img src="${AZURE_ICON_BASE}${t.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-                  <span style="display:none">${t.icon}</span> ${t.label}
+                  <span style="display:none">${t.icon}</span> ${t.label} <span style="margin-left:auto; font-size:8px; color:var(--muted)">($${t.cost}/mo)</span>
                 </div>`;
             });
           });
-          h+=`</div></div></div>`; // End Subnet Card
+
+          h+=`</div>
+              <div class="add-res-container" style="margin-top:6px;">
+                <button class="add-btn subnet-level" onclick="toggleDropdown('${sn.id}')">➕ Add Resource</button>
+                <div class="res-dropdown" id="dropdown-${sn.id}">
+                  <div class="search-box-container">
+                    <input type="text" class="search-input" placeholder="🔍 Search Resource..." oninput="filterDropdownOptions('${sn.id}', this.value)" onclick="event.stopPropagation()">
+                  </div>
+                  <div id="options-box-${sn.id}" data-vnetid="${vnet.id}">${optionsHtml}</div>
+                </div>
+              </div></div>`; 
         });
-
         h+=`<button class="add-btn vnet-level" onclick="addSubnet('${vnet.id}')">➕ Add Subnet</button>`;
-        h+=`</div>`; // End VNet Card
+        h+=`</div>`; 
       });
-
       h+=`<button class="add-btn vnet-level" onclick="addSpoke('${rg.id}')">➕ Add Spoke VNet</button>`;
       h+=`</div></div>`;
     });
-
     h+=`<button class="add-btn rg-level" onclick="addRg('${sub.id}')">📁 Add Resource Group</button>`;
     h+=`</div></div>`;
   });
-
   h+=`<button class="add-btn sub-level" onclick="addSub()">☁️ Add Subscription</button>`;
   el.innerHTML=h;
 }
 
-function getVnetsInRg(rgId){
-  const result=[];
-  if(state.hub.rgId===rgId) result.push(state.hub);
-  state.spokes.forEach(s=>{if(s.rgId===rgId)result.push(s);});
-  return result;
-}
-
 // ================================================================
-// RIGHT EDITOR
+// PROPERTY EDITOR WITH AZURE PRICING LINKS
 // ================================================================
 function renderEditor(){
   const el=document.getElementById('editor-container');
@@ -518,8 +528,7 @@ function renderEditor(){
     return;
   }
 
-  let obj=null, parent=null, typeObj='none'; // vnet, subnet, resource
-  
+  let obj=null, parent=null, typeObj='none'; 
   const allVnets = [state.hub, ...state.spokes];
   for (let v of allVnets) {
     if (v.id === state.selectedId) { obj=v; typeObj='vnet'; break; }
@@ -548,7 +557,6 @@ function renderEditor(){
       <div class="editor-row"><span class="editor-label">CIDR Block</span><input class="input-field" value="${esc(obj.cidr)}" onchange="updateVnet('${obj.id}','cidr',this.value)"></div>
       <div class="editor-row"><span class="editor-label">Resource Group</span><select class="input-field" onchange="updateVnet('${obj.id}','rgId',this.value)">${allRgOpts}</select></div>`;
     
-    // PEERINGS
     let peerHtml = `<div class="editor-row" style="margin-top:10px;"><span class="editor-label">VNet Peerings</span><div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">`;
     allVnets.forEach(v => {
       if (v.id === obj.id) return;
@@ -568,27 +576,38 @@ function renderEditor(){
       <div class="editor-row"><span class="editor-label">CIDR Block</span><input class="input-field" value="${esc(obj.cidr)}" onchange="updateSubnet('${parent.id}','${obj.id}','cidr',this.value)"></div>
       <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteSubnet('${parent.id}','${obj.id}')">🗑 Delete Subnet</button>`;
   } else {
-    // RESOURCE
-    const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓'};
-    h+=`<div class="editor-header">
-          <img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-          <span style="display:none">${rt.icon}</span> 
-          ${rt.label}
-        </div>
+    // RESOURCE CONFIG + PRICING LINK
+    const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓', cost:0};
+    h+=`<div class="editor-header"><img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span style="display:none">${rt.icon}</span> ${rt.label}</div>
       <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="updateResource('${obj.id}','name',this.value)"></div>`;
+    
     Object.keys(obj.config).forEach(k=>{
       h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="updateResConfig('${obj.id}','${k}',this.value)"></div>`;
     });
-    h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteResource('${obj.id}')">🗑 Delete Resource</button>`;
+    
+    h+=`<div class="editor-row" style="margin-top:6px;">
+          <span class="editor-label">Estimated Cost</span>
+          <div style="font-size:12px; font-weight:bold; color:var(--success)">$${rt.cost} / month</div>
+        </div>`;
+        
+    if(rt.pricingUrl) {
+      h+=`<a href="${rt.pricingUrl}" target="_blank" class="export-btn pricing">🌐 View Azure Calculator Pricing</a>`;
+    }
+
+    h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:12px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteResource('${obj.id}')">🗑 Delete Resource</button>`;
   }
   h+=`</div>`;
   el.innerHTML=h;
 }
 
 // ================================================================
-// STATE MUTATIONS (Subnets/Resources)
+// STATE MUTATIONS
 // ================================================================
-// Subscriptions & RGs
+function toggleOnPrem() { state.onPrem.enabled = !state.onPrem.enabled; fullUpdate(); }
+function toggleTheme(){ state.theme=state.theme==='drawio'?'dark':'drawio'; document.body.classList.toggle('theme-drawio',state.theme==='drawio'); fullUpdate(); }
+function toggleLayout(){ state.layout=state.layout==='grid'?'radial':'grid'; state.offset={x:0,y:0}; state.scale=1; fullUpdate(); }
+function fitToScreen(){state.offset={x:0,y:0};state.scale=1;saveState();draw();}
+
 function addSub(){ const n=state.subscriptions.length; const id='sub-'+uid(); state.subscriptions.push({id,name:`Subscription ${n+1}`}); state.resourceGroups.push({id:'rg-'+uid(),name:'rg-new',location:'eastus',subId:id}); fullUpdate(); }
 function deleteSub(id){ if(state.subscriptions.length<=1){alert('Need at least one subscription.');return;} if(!confirm('Delete subscription? VNets will be moved.')) return; const fallbackRg=state.resourceGroups.find(r=>r.subId!==id); if(!fallbackRg){alert('Cannot delete.');return;} const subRgIds=state.resourceGroups.filter(r=>r.subId===id).map(r=>r.id); if(state.hub.rgId&&subRgIds.includes(state.hub.rgId)) state.hub.rgId=fallbackRg.id; state.spokes.forEach(s=>{if(subRgIds.includes(s.rgId))s.rgId=fallbackRg.id;}); state.resourceGroups=state.resourceGroups.filter(r=>r.subId!==id); state.subscriptions=state.subscriptions.filter(s=>s.id!==id); fullUpdate(); }
 function renameSub(id,val){const s=state.subscriptions.find(s=>s.id===id);if(s){s.name=val;saveState();draw();}}
@@ -598,20 +617,14 @@ function deleteRg(id){ if(state.resourceGroups.length<=1){alert('Need at least o
 function renameRg(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.name=val;saveState();draw();}}
 function setRgLocation(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.location=val;saveState();}}
 
-// VNets
 function addSpoke(rgId){
   const n=state.spokes.length;
-  state.spokes.push({ id:uid(),name:`spoke-${n+1}-vnet`,cidr:`10.${n+1}.0.0/16`, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], rgId:rgId||state.resourceGroups[0]?.id,
-    subnets: [{id:uid(), name:'default', cidr:`10.${n+1}.1.0/24`, resources:[]}]
-  });
+  state.spokes.push({ id:uid(),name:`spoke-${n+1}-vnet`,cidr:`10.${n+1}.0.0/16`, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], rgId:rgId||state.resourceGroups[0]?.id, subnets: [{id:uid(), name:'default', cidr:`10.${n+1}.1.0/24`, resources:[]}] });
   fullUpdate();
 }
-function deleteSpoke(id){
-  state.spokes=state.spokes.filter(s=>s.id!==id);
-  [state.hub, ...state.spokes].forEach(v => { if (v.peerings) v.peerings = v.peerings.filter(pId => pId !== id); });
-  state.selectedId=null; fullUpdate();
-}
+function deleteSpoke(id){ state.spokes=state.spokes.filter(s=>s.id!==id); [state.hub, ...state.spokes].forEach(v => { if (v.peerings) v.peerings = v.peerings.filter(pId => pId !== id); }); state.selectedId=null; fullUpdate(); }
 function updateVnet(id,key,val){ const v=[state.hub,...state.spokes].find(v=>v.id===id); if(v)v[key]=val; fullUpdate(); }
+
 function togglePeering(id1, id2) {
   const v1 = [state.hub,...state.spokes].find(s => s.id === id1);
   const v2 = [state.hub,...state.spokes].find(s => s.id === id2);
@@ -623,52 +636,21 @@ function togglePeering(id1, id2) {
   fullUpdate();
 }
 
-// Subnets
-function addSubnet(vnetId){
-  const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  if(vnet) { vnet.subnets.push({id:uid(), name:`subnet-${vnet.subnets.length+1}`, cidr:'10.x.x.x/24', resources:[]}); fullUpdate(); }
-}
-function deleteSubnet(vnetId, snId){
-  const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  if(vnet) { vnet.subnets = vnet.subnets.filter(s => s.id !== snId); state.selectedId=null; fullUpdate(); }
-}
-function updateSubnet(vnetId, snId, key, val) {
-  const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  const sn = vnet?.subnets.find(s=>s.id===snId); if(sn){ sn[key]=val; fullUpdate(); }
-}
+function addSubnet(vnetId){ const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); if(vnet) { vnet.subnets.push({id:uid(), name:`subnet-${vnet.subnets.length+1}`, cidr:'10.x.x.x/24', resources:[]}); fullUpdate(); } }
+function deleteSubnet(vnetId, snId){ const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); if(vnet) { vnet.subnets = vnet.subnets.filter(s => s.id !== snId); state.selectedId=null; fullUpdate(); } }
+function updateSubnet(vnetId, snId, key, val) { const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); const sn = vnet?.subnets.find(s=>s.id===snId); if(sn){ sn[key]=val; fullUpdate(); } }
 
-// Resources
-function toggleDropdown(id){ document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); const dd=document.getElementById(`dropdown-${id}`);if(dd)dd.classList.toggle('show'); }
-document.addEventListener('click',e=>{if(!e.target.closest('.add-res-container'))document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show'));});
-
-function addResource(vnetId, snId, resType){
-  const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  const sn = vnet?.subnets.find(s=>s.id===snId);
-  const rT=RES_TYPES[resType];
-  if(sn && rT) {
-    const nr={id:uid(),type:resType,name:`${sn.name.split('-')[0]}-${resType}`,config:{...rT.config}};
-    sn.resources.push(nr); document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); selectNode(nr.id);
-  }
-}
-function deleteResource(resId){
-  [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { sn.resources = sn.resources.filter(r => r.id !== resId); }));
-  state.selectedId=null; fullUpdate();
-}
-function updateResource(resId,key,val){
-  [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { const r=sn.resources.find(r=>r.id===resId); if(r)r[key]=val; }));
-  fullUpdate();
-}
-function updateResConfig(resId,configKey,val){
-  [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { const r=sn.resources.find(r=>r.id===resId); if(r)r.config[configKey]=val; }));
-  saveState(); renderEditor(); 
-}
+function addResource(vnetId, snId, resType){ const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); const sn = vnet?.subnets.find(s=>s.id===snId); const rT=RES_TYPES[resType]; if(sn && rT) { const nr={id:uid(),type:resType,name:`${sn.name.split('-')[0]}-${resType}`,config:{...rT.config}}; sn.resources.push(nr); document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); selectNode(nr.id); } }
+function deleteResource(resId){ [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { sn.resources = sn.resources.filter(r => r.id !== resId); })); state.selectedId=null; fullUpdate(); }
+function updateResource(resId,key,val){ [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { const r=sn.resources.find(r=>r.id===resId); if(r)r[key]=val; })); fullUpdate(); }
+function updateResConfig(resId,configKey,val){ [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { const r=sn.resources.find(r=>r.id===resId); if(r)r.config[configKey]=val; })); saveState(); renderEditor(); }
 
 function selectNode(id){state.selectedId=id;fullUpdate();}
 function resetDiagram(){if(confirm('Delete all changes and reset to default?')){localStorage.removeItem(KEY);location.reload();}}
 function resetPositions(){if(confirm('Clear Drag&Drop positions and return to auto-layout?')){state.customPos={};fullUpdate();}}
 
 // ================================================================
-// CANVAS SETUP & LAYOUT ENGINE
+// CANVAS SETUP & LAYOUT ENGINE 
 // ================================================================
 const canvas=document.getElementById('diagram-canvas');
 const ctx=canvas.getContext('2d');
@@ -680,16 +662,14 @@ function getRenderNodes(){
   const cx=canvas.width/2,cy=canvas.height/2,nodes=[];
   
   if(state.layout==='grid'){
-    const RW=84,RH=64,RP=10; // Resource Width/Height/Padding
-    const SPT=30, SPB=12, SPL=12; // Subnet Top/Bottom/Side Padding
-    const VPT=45, VPB=18, VGAP=60, SGAP=15; // VNet Padding & Gaps
+    const RW=84,RH=64,RP=10; 
+    const SPT=30, SPB=12, SPL=12; 
+    const VPT=45, VPB=18, VGAP=60, SGAP=15; 
     const RG_GAP=80, SUB_GAP=120;
     
-    // Subnet Width Calculation
     const sw = (sn) => Math.max(140, sn.resources.length * (RW+RP) + SPL*2 - RP);
     const sh = () => SPT + RH + SPB;
 
-    // VNet Width Calculation
     const vw = (v) => {
       if(v.subnets.length===0) return 200;
       return v.subnets.reduce((sum, sn) => sum + sw(sn), 0) + (v.subnets.length-1)*SGAP + SPL*2;
@@ -746,7 +726,6 @@ function getRenderNodes(){
     });
 
   } else {
-    // Radial Layout (flattened for simplicity: VNet circles, resources orbit them without drawing subnet boxes)
     const r=Math.min(canvas.width,canvas.height)*.34;
     nodes.push({id:state.hub.id,isVnet:true,x:cx,y:cy,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,radius:70,peerings:state.hub.peerings||[],rgId:state.hub.rgId});
     
@@ -770,7 +749,6 @@ function getRenderNodes(){
     });
   }
 
-  // ON-PREM NODE
   if (state.onPrem.enabled) {
     const hubNode = nodes.find(n => n.id === 'hub');
     const hx = hubNode ? hubNode.x : cx;
@@ -782,7 +760,6 @@ function getRenderNodes(){
     });
   }
 
-  // CUSTOM POSITIONS
   if (!state.customPos) state.customPos = {};
   nodes.forEach(n => {
     if (state.customPos[n.id]) { n.x = state.customPos[n.id].x; n.y = state.customPos[n.id].y; }
@@ -798,6 +775,10 @@ function getSubBounds(subId,nodes){
   related.forEach(n=>{
     const hw=n.width?n.width/2:n.radius||60,hh=n.height?n.height/2:n.radius||60;
     mx=Math.min(mx,n.x-hw);my=Math.min(my,n.y-hh);Mx=Math.max(Mx,n.x+hw);My=Math.max(My,n.y+hh);
+    nodes.filter(c=>c.parentId===n.id&&!c.isVnet&&!c.isOnPrem).forEach(c=>{
+      mx=Math.min(mx,c.x-c.width/2);my=Math.min(my,c.y-c.height/2);
+      Mx=Math.max(Mx,c.x+c.width/2);My=Math.max(My,c.y+c.height/2);
+    });
   });
   return{x:mx-30,y:my-50,w:Mx-mx+60,h:My-my+70};
 }
@@ -808,6 +789,10 @@ function getRgBounds(rgId,nodes){
   related.forEach(n=>{
     const hw=n.width?n.width/2:n.radius||60,hh=n.height?n.height/2:n.radius||60;
     mx=Math.min(mx,n.x-hw);my=Math.min(my,n.y-hh);Mx=Math.max(Mx,n.x+hw);My=Math.max(My,n.y+hh);
+    nodes.filter(c=>c.parentId===n.id&&!c.isVnet&&!c.isOnPrem).forEach(c=>{
+      mx=Math.min(mx,c.x-c.width/2);my=Math.min(my,c.y-c.height/2);
+      Mx=Math.max(Mx,c.x+c.width/2);My=Math.max(My,c.y+c.height/2);
+    });
   });
   return{x:mx-15,y:my-30,w:Mx-mx+30,h:My-my+45};
 }
@@ -844,7 +829,23 @@ function draw(){
     });
   }
 
-  // LINES (Peerings & On-Prem)
+  // 1. Draw Resource Links (Resource -> Subnet/VNet depending on layout)
+  nodes.forEach(n => {
+    if (!n.isVnet && !n.isSubnet && n.parentId && map[n.parentId] && !n.isOnPrem) {
+      if (state.layout === 'grid') return; 
+      const p = map[n.parentId];
+      ctx.beginPath();
+      ctx.moveTo(n.x, n.y); ctx.lineTo(p.x, p.y);
+      if (dw) {
+        ctx.strokeStyle = '#D1D5DB'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      } else {
+        ctx.strokeStyle = n.color+'60'; ctx.lineWidth = 1; ctx.setLineDash([3,6]);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+  });
+
+  // 2. Draw Any-to-Any VNet Peerings & On-Prem
   const drawnLines = new Set();
   nodes.forEach(n => {
     if (n.isOnPrem && n.parentId && map[n.parentId]) {
@@ -860,6 +861,7 @@ function draw(){
       n.peerings.forEach(pId => {
         const target = map[pId];
         if (!target) return;
+        
         const lineKey = [n.id, target.id].sort().join('|');
         if (drawnLines.has(lineKey)) return;
         drawnLines.add(lineKey);
@@ -874,9 +876,11 @@ function draw(){
             if (spokeN.y > hubN.y) {
               const busY = hubN.y + hubN.height/2 + 40;
               ctx.moveTo(hubN.x, hubN.y + hubN.height/2);
-              ctx.lineTo(hubN.x, busY); ctx.lineTo(spokeN.x, busY);
+              ctx.lineTo(hubN.x, busY);
+              ctx.lineTo(spokeN.x, busY);
               ctx.lineTo(spokeN.x, spokeN.y - spokeN.height/2);
-              midX = (hubN.x + spokeN.x) / 2; midY = busY - 4;
+              midX = (hubN.x + spokeN.x) / 2;
+              midY = busY - 4;
             } else {
               ctx.moveTo(n.x, n.y); ctx.lineTo(target.x, target.y);
               midX = (n.x + target.x) / 2; midY = (n.y + target.y) / 2 - 4;
@@ -886,26 +890,35 @@ function draw(){
             const dist = Math.abs(n.x - target.x);
             const curveY = Math.max(n.y, target.y) + n.height/2 + 40 + (dist * 0.1);
             ctx.quadraticCurveTo((n.x + target.x)/2, curveY, target.x, target.y + target.height/2);
-            midX = (n.x + target.x) / 2; midY = 0.25*(n.y + n.height/2) + 0.5*curveY + 0.25*(target.y + target.height/2) - 4;
+            midX = (n.x + target.x) / 2;
+            midY = 0.25*(n.y + n.height/2) + 0.5*curveY + 0.25*(target.y + target.height/2) - 4;
           }
         } else {
           ctx.moveTo(n.x, n.y); ctx.lineTo(target.x, target.y);
-          midX = (n.x + target.x) / 2; midY = (n.y + target.y) / 2 - 4;
+          midX = (n.x + target.x) / 2;
+          midY = (n.y + target.y) / 2 - 4;
         }
 
-        if (dw) { ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 2; } 
-        else { const g = ctx.createLinearGradient(n.x, n.y, target.x, target.y); g.addColorStop(0, 'rgba(0,120,212,0.6)'); g.addColorStop(1, target.color + 'A0'); ctx.strokeStyle = g; ctx.lineWidth = 2; }
+        if (dw) {
+          ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 2;
+        } else {
+          const g = ctx.createLinearGradient(n.x, n.y, target.x, target.y);
+          g.addColorStop(0, 'rgba(0,120,212,0.6)'); g.addColorStop(1, target.color + 'A0');
+          ctx.strokeStyle = g; ctx.lineWidth = 2;
+        }
         ctx.stroke();
 
-        if (dw) { ctx.font = '8px JetBrains Mono'; ctx.fillStyle = '#9CA3AF'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('Peering', midX, midY); }
+        if (dw) {
+          ctx.font = '8px JetBrains Mono'; ctx.fillStyle = '#9CA3AF';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          ctx.fillText('Peering', midX, midY);
+        }
       });
     }
   });
 
   // DRAW NODES
-  // 1. Subnets
   nodes.filter(n => n.isSubnet).forEach(n => drawSubnet(n, dw));
-  // 2. VNets & Resources
   nodes.filter(n => !n.isSubnet).forEach(n => drawNode(n, dw));
   
   ctx.restore();
@@ -1073,10 +1086,9 @@ function startInlineRename(node,cx,cy){
       if(node.isVnet)updateVnet(node.id,'name',v);
       else if(node.isSubnet)updateSubnet(node.parentId,node.id,'name',v);
       else if(node.parentId){
-        // find which vnet owns the subnet
         let parentVnetId = null;
         [state.hub,...state.spokes].forEach(vnet=>{ if(vnet.subnets.some(sn=>sn.id===node.parentId)) parentVnetId=vnet.id; });
-        if(parentVnetId) updateResource(parentVnetId,node.id,'name',v);
+        if(parentVnetId) updateResource(node.id,'name',v);
       }
     }
     ov.style.display='none';inp.removeEventListener('blur',finish);inp.removeEventListener('keydown',kd);
@@ -1101,16 +1113,8 @@ canvas.addEventListener('mousemove',e=>{
   }
 });
 
-canvas.addEventListener('mouseup',()=>{
-  if(state.dragNodeId) { state.dragNodeId = null; saveState(); }
-  if(state.dragging){state.dragging=false;saveState();}
-  canvas.style.cursor='grab';
-});
-canvas.addEventListener('mouseleave',()=>{
-  if(state.dragNodeId) { state.dragNodeId = null; saveState(); }
-  if(state.dragging){state.dragging=false;saveState();}
-  canvas.style.cursor='grab';
-});
+canvas.addEventListener('mouseup',()=>{ if(state.dragNodeId) { state.dragNodeId = null; saveState(); } if(state.dragging){state.dragging=false;saveState();} canvas.style.cursor='grab'; });
+canvas.addEventListener('mouseleave',()=>{ if(state.dragNodeId) { state.dragNodeId = null; saveState(); } if(state.dragging){state.dragging=false;saveState();} canvas.style.cursor='grab'; });
 canvas.addEventListener('wheel',e=>{e.preventDefault();state.scale=Math.max(.2,Math.min(3,state.scale*(e.deltaY<0?1.1:.9)));saveState();draw();},{passive:false});
 
 // ================================================================
@@ -1179,12 +1183,17 @@ function generatePowerShell(){
 }
 
 function generateBicep(){
-  const lines=[`// Bicep Template — Azure Architecture Builder\ntargetScope = 'subscription'\n`];
+  const lines=[
+    `// Bicep Template — Azure Architecture Builder`,
+    `targetScope = 'subscription'\n`
+  ];
   state.subscriptions.forEach(sub=>{
     lines.push(`// --- Subscription: ${sub.name} ---`);
     const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
     subRgs.forEach(rg=>{
-      lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {\n  name: '${rg.name}'\n  location: '${rg.location}'\n}\n`);
+      lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {`);
+      lines.push(`  name: '${rg.name}'\n  location: '${rg.location}'\n}\n`);
+      
       getVnetsInRg(rg.id).forEach(vnet=>{
         lines.push(`// VNet: ${vnet.name}`);
         lines.push(`// Subnets: ` + vnet.subnets.map(s => s.name).join(', '));
@@ -1198,10 +1207,12 @@ function generateBicep(){
       });
     });
   });
+
   if (state.onPrem.enabled) {
     lines.push(`// --- Hybrid Connectivity: ${state.onPrem.name} ---`);
     lines.push(`// Local Network Gateway for CIDR: ${state.onPrem.cidr}`);
   }
+
   return lines.join('\n');
 }
 
