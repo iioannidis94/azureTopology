@@ -325,7 +325,7 @@ function drawNode(n, dw){
     
     ctx.font='bold 9px JetBrains Mono';ctx.fillStyle=dw?'#374151':'#FFF';
     ctx.textAlign='center';ctx.textBaseline='top';
-    const lbl=n.label.length>14?n.label.slice(0,13)+'…':n.label;
+    const lbl=n.label.length>14?n.label.slice(0,14)+'…':n.label;
     ctx.fillText(lbl,n.x,n.y+n.height/2-18);
     
   }else{

@@ -371,7 +371,7 @@ export function renderEditor(){
       const cfg = obj.config;
       const vmSections = [
         { title:'💻 Compute', keys:['size','os','availabilityZone'] },
-        { title:'💾 OS Disk', keys:['diskType','osDiskSizeGB'] },
+        { title:'💾 OS Disk', keys:['osDiskType','osDiskSizeGB'] },
         { title:'📀 Data Disks', keys:['dataDisks','dataDiskSizeGB','dataDiskType'] },
         { title:'🌐 Networking', keys:['acceleratedNetworking','publicIp'] },
         { title:'🔐 Security', keys:['authType','securityType','vTpmEnabled','secureBootEnabled','managedIdentity'] },
@@ -382,7 +382,8 @@ export function renderEditor(){
         if(sectionKeys.length === 0) return;
         h+=`<div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">${section.title}</span></div>`;
         sectionKeys.forEach(k => {
-          const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase());
+          const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())
+            .replace(/\bV Tpm\b/,'vTPM').replace(/\bIp\b/,'IP').replace(/\bOs\b/,'OS').replace(/\bVm\b/,'VM').replace(/\bG B\b/,'GB');
           if(cfg[k]==='true'||cfg[k]==='false'){
             h+=`<div class="editor-row"><span class="editor-label">${label}</span><select class="input-field" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"><option value="true"${cfg[k]==='true'?' selected':''}>Yes</option><option value="false"${cfg[k]==='false'?' selected':''}>No</option></select></div>`;
           } else {
