@@ -272,7 +272,7 @@ function loadAzureIcons(callback) {
   let loaded = 0;
   Object.keys(RES_TYPES).forEach(key => {
     const img = new Image();
-    img.crossOrigin = "anonymous"; // Απαραίτητο για το Export σε PNG!
+    img.crossOrigin = "anonymous"; 
     img.onload = () => { loadedImages[key] = img; checkDone(); };
     img.onerror = () => { checkDone(); };
     img.src = AZURE_ICON_BASE + RES_TYPES[key].img;
@@ -284,9 +284,9 @@ function loadAzureIcons(callback) {
 }
 
 // ================================================================
-// STATE (V8 - Forces Clean Reset for New SVGs)
+// STATE (V9 - Forces Clean Reset for New Peering Architecture)
 // ================================================================
-const KEY='azureBuilderV8';
+const KEY='azureBuilderV9';
 const SUB_COLORS=['#FFB900','#00BCF2','#00B294','#FF8C00','#8764B8'];
 const RG_COLORS=['#8764B8','#0078D4','#00B294','#FF8C00','#E81123'];
 const VNET_COLORS=['#0078D4','#00BCF2','#00B294','#FF8C00','#8764B8','#107C10'];
@@ -303,7 +303,7 @@ const defaultState={
     {id:'rg-dev',  name:'rg-development',  location:'westeurope',subId:'sub-2'}
   ],
   hub:{
-    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-conn',
+    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-conn', peerings: [],
     resources:[
       {id:'rh1',type:'fw', name:'hub-firewall',config:{...RES_TYPES.fw.config}},
       {id:'rh2',type:'gw', name:'hub-vpngw',   config:{...RES_TYPES.gw.config}},
@@ -311,12 +311,12 @@ const defaultState={
     ]
   },
   spokes:[
-    {id:'sp1',name:'prod-vnet',cidr:'10.1.0.0/16',color:'#00BCF2',peering:true,rgId:'rg-prod',
+    {id:'sp1',name:'prod-vnet',cidr:'10.1.0.0/16',color:'#00BCF2',peerings:['hub'],rgId:'rg-prod',
      resources:[
        {id:'rs1',type:'vm',  name:'prod-vm-01',  config:{...RES_TYPES.vm.config}},
        {id:'rs2',type:'sql', name:'prod-sqldb',  config:{...RES_TYPES.sql.config}}
      ]},
-    {id:'sp2',name:'dev-vnet',cidr:'10.2.0.0/16',color:'#00B294',peering:true,rgId:'rg-dev',
+    {id:'sp2',name:'dev-vnet',cidr:'10.2.0.0/16',color:'#00B294',peerings:['hub'],rgId:'rg-dev',
      resources:[
        {id:'rd1',type:'app',    name:'dev-webapp',  config:{...RES_TYPES.app.config}},
        {id:'rd2',type:'foundry',name:'dev-ai-hub',  config:{...RES_TYPES.foundry.config}}
@@ -483,14 +483,23 @@ function renderEditor(){
   if(isVnet){
     h+=`<div class="editor-header">🌐 ${esc(obj.name)}</div>
       <div class="editor-row"><span class="editor-label">VNet Name</span><input class="input-field" value="${esc(obj.name)}" onchange="updateVnet('${obj.id}','name',this.value)"></div>
-      <div class="editor-row"><span class="editor-label">CIDR</span><input class="input-field" value="${esc(obj.cidr)}" onchange="updateVnet('${obj.id}','cidr',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">CIDR Block</span><input class="input-field" value="${esc(obj.cidr)}" onchange="updateVnet('${obj.id}','cidr',this.value)"></div>
       <div class="editor-row"><span class="editor-label">Resource Group</span><select class="input-field" onchange="updateVnet('${obj.id}','rgId',this.value)">${allRgOpts}</select></div>`;
+    
+    // --- PEERINGS SECTION ---
+    let peerHtml = `<div class="editor-row" style="margin-top:10px;"><span class="editor-label">VNet Peerings</span><div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">`;
+    const allVnets = [state.hub, ...state.spokes];
+    allVnets.forEach(v => {
+      if (v.id === obj.id) return;
+      const actuallyPeered = (obj.peerings || []).includes(v.id) || (v.peerings || []).includes(obj.id);
+      
+      peerHtml += `<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:10px;font-weight:bold;border:1px solid ${actuallyPeered ? 'var(--azure-blue)' : 'var(--border)'};background:${actuallyPeered ? 'rgba(0,120,212,.1)' : 'transparent'};color:${actuallyPeered ? 'var(--azure-blue)' : 'var(--text)'};transition:0.2s;" onclick="togglePeering('${obj.id}', '${v.id}')">${actuallyPeered ? '🔗 ' : '🔌 '}${esc(v.name)}</button>`;
+    });
+    peerHtml += `</div></div>`;
+    h += peerHtml;
+
     if(obj.id!=='hub'){
-      const p=obj.peering!==false;
-      h+=`<div class="editor-row" style="margin-top:6px;"><span class="editor-label">Hub Peering</span>
-        <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:11px;font-weight:bold;border:1px solid ${p?'var(--azure-blue)':'var(--muted)'};background:${p?'rgba(0,120,212,.1)':'transparent'};color:${p?'var(--azure-blue)':'var(--muted)'};transition:0.2s;"
-          onclick="togglePeering('${obj.id}')">${p?'🔗 Connected to Hub':'🔌 Disconnected'}</button></div>
-        <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteSpoke('${obj.id}')">🗑 Delete Spoke</button>`;
+      h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteSpoke('${obj.id}')">🗑 Delete Spoke</button>`;
     }
   }else{
     const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓'};
@@ -555,18 +564,44 @@ function addSpoke(rgId){
   const n=state.spokes.length;
   state.spokes.push({
     id:uid(),name:`spoke-${n+1}-vnet`,cidr:`10.${n+1}.0.0/16`,
-    color:VNET_COLORS[n%VNET_COLORS.length],peering:true,
+    color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'],
     rgId:rgId||state.resourceGroups[0]?.id,resources:[]
   });
   fullUpdate();
 }
-function deleteSpoke(id){state.spokes=state.spokes.filter(s=>s.id!==id);state.selectedId=null;fullUpdate();}
+function deleteSpoke(id){
+  state.spokes=state.spokes.filter(s=>s.id!==id);
+  // Remove peerings related to this spoke
+  [state.hub, ...state.spokes].forEach(v => {
+    if (v.peerings) v.peerings = v.peerings.filter(pId => pId !== id);
+  });
+  state.selectedId=null;
+  fullUpdate();
+}
 function updateVnet(id,key,val){
   if(state.hub.id===id)state.hub[key]=val;
   else{const s=state.spokes.find(s=>s.id===id);if(s)s[key]=val;}
   fullUpdate();
 }
-function togglePeering(id){const s=state.spokes.find(s=>s.id===id);if(s){s.peering=!s.peering;fullUpdate();}}
+function togglePeering(id1, id2) {
+  const v1 = state.hub.id === id1 ? state.hub : state.spokes.find(s => s.id === id1);
+  const v2 = state.hub.id === id2 ? state.hub : state.spokes.find(s => s.id === id2);
+  if (!v1 || !v2) return;
+  
+  v1.peerings = v1.peerings || [];
+  v2.peerings = v2.peerings || [];
+
+  const hasPeering = v1.peerings.includes(id2) || v2.peerings.includes(id1);
+
+  if (hasPeering) {
+    v1.peerings = v1.peerings.filter(p => p !== id2);
+    v2.peerings = v2.peerings.filter(p => p !== id1);
+  } else {
+    v1.peerings.push(id2);
+  }
+  fullUpdate();
+}
+
 function toggleDropdown(id){
   document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show'));
   const dd=document.getElementById(`dropdown-${id}`);if(dd)dd.classList.toggle('show');
@@ -646,7 +681,7 @@ function getRenderNodes(){
           const vx = vnetX + vWidth / 2;
           const vy = (vnet.id === 'hub') ? topY : bottomY;
           
-          nodes.push({id:vnet.id, isVnet:true, x:vx, y:vy, width:vWidth, height:vh(), label:vnet.name, sub:vnet.cidr, color:vnet.color, peering:vnet.peering!==false, rgId:rg.id, subId:sub.id});
+          nodes.push({id:vnet.id, isVnet:true, x:vx, y:vy, width:vWidth, height:vh(), label:vnet.name, sub:vnet.cidr, color:vnet.color, peerings:vnet.peerings||[], rgId:rg.id, subId:sub.id});
           
           vnet.resources.forEach((res,j)=>{
             const tot=vnet.resources.length,tw=tot*RW+(tot-1)*RP;
@@ -662,7 +697,7 @@ function getRenderNodes(){
 
   } else {
     const r=Math.min(canvas.width,canvas.height)*.34;
-    nodes.push({id:state.hub.id,isVnet:true,x:cx,y:cy,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,radius:70,peering:true,rgId:state.hub.rgId});
+    nodes.push({id:state.hub.id,isVnet:true,x:cx,y:cy,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,radius:70,peerings:state.hub.peerings||[],rgId:state.hub.rgId});
     state.hub.resources.forEach((res,i)=>{
       const angle=(i/Math.max(state.hub.resources.length,1))*Math.PI*2-Math.PI/2;
       nodes.push({id:res.id,isVnet:false,parentId:state.hub.id,x:cx+Math.cos(angle)*135,y:cy+Math.sin(angle)*135,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:84,height:64});
@@ -671,7 +706,7 @@ function getRenderNodes(){
       const angle=state.spokes.length===1?Math.PI/2:(i/state.spokes.length)*Math.PI*2;
       const sx=cx+Math.cos(angle)*r,sy=cy+Math.sin(angle)*r;
       const perp={x:-Math.sin(angle),y:Math.cos(angle)};
-      nodes.push({id:sp.id,isVnet:true,parentId:state.hub.id,x:sx,y:sy,label:sp.name,sub:sp.cidr,color:sp.color,radius:55,peering:sp.peering!==false,rgId:sp.rgId});
+      nodes.push({id:sp.id,isVnet:true,x:sx,y:sy,label:sp.name,sub:sp.cidr,color:sp.color,radius:55,peerings:sp.peerings||[],rgId:sp.rgId});
       sp.resources.forEach((res,j)=>{
         const t=sp.resources.length>1?(j*90-(sp.resources.length-1)*45):0;
         nodes.push({id:res.id,isVnet:false,parentId:sp.id,x:sx+Math.cos(angle)*125+perp.x*t,y:sy+Math.sin(angle)*125+perp.y*t,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:84,height:64});
@@ -745,40 +780,87 @@ function draw(){
     });
   }
 
-  // LINES (Peerings)
-  nodes.forEach(n=>{
-    if(!n.parentId||!map[n.parentId])return;
-    if(n.isVnet&&n.peering===false)return;
-    
-    const p=map[n.parentId]; 
-    ctx.beginPath();
-    if(state.layout==='grid'&&n.isVnet){
-      const busY = p.y + p.height/2 + 40; 
-      ctx.moveTo(p.x, p.y + p.height/2);
-      ctx.lineTo(p.x, busY);
-      ctx.lineTo(n.x, busY);
-      ctx.lineTo(n.x, n.y - n.height/2);
-    }else if(state.layout==='grid'){return;} 
-    else{ctx.moveTo(n.x,n.y);ctx.lineTo(p.x,p.y);}
-    
-    if(dw){
-      ctx.strokeStyle=n.isVnet?'#9CA3AF':'#D1D5DB';ctx.lineWidth=n.isVnet?2:1;
-      if(!n.isVnet)ctx.setLineDash([4,4]);
-    } else {
-      if(n.isVnet){
-        const g=ctx.createLinearGradient(p.x,p.y,n.x,n.y);
-        g.addColorStop(0,'rgba(0,120,212,.6)');g.addColorStop(1,n.color+'80');
-        ctx.strokeStyle=g;ctx.lineWidth=2;
-      } else{
-        ctx.strokeStyle=n.color+'60';ctx.lineWidth=1;ctx.setLineDash([3,6]);
+  // 1. Draw Resource Links (Resource -> VNet)
+  nodes.forEach(n => {
+    if (!n.isVnet && n.parentId && map[n.parentId]) {
+      if (state.layout === 'grid') return; // Do not draw inner lines in Grid
+      const p = map[n.parentId];
+      ctx.beginPath();
+      ctx.moveTo(n.x, n.y); ctx.lineTo(p.x, p.y);
+      if (dw) {
+        ctx.strokeStyle = '#D1D5DB'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+      } else {
+        ctx.strokeStyle = n.color+'60'; ctx.lineWidth = 1; ctx.setLineDash([3,6]);
       }
+      ctx.stroke(); ctx.setLineDash([]);
     }
-    ctx.stroke();ctx.setLineDash([]);
-    
-    if(state.layout==='grid'&&n.isVnet&&n.peering!==false&&dw){
-      const busY = p.y + p.height/2 + 40;
-      ctx.font='8px JetBrains Mono';ctx.fillStyle='#9CA3AF';ctx.textAlign='center';ctx.textBaseline='bottom';
-      ctx.fillText('VNet Peering',(p.x+n.x)/2,busY-4);
+  });
+
+  // 2. Draw Any-to-Any VNet Peerings
+  const drawnLines = new Set();
+  nodes.forEach(n => {
+    if (n.isVnet && n.peerings) {
+      n.peerings.forEach(pId => {
+        const target = map[pId];
+        if (!target) return;
+        
+        // Prevent drawing the same line twice (bi-directional)
+        const lineKey = [n.id, target.id].sort().join('|');
+        if (drawnLines.has(lineKey)) return;
+        drawnLines.add(lineKey);
+
+        ctx.beginPath();
+        let midX, midY;
+
+        if (state.layout === 'grid') {
+          // If connecting to the Hub, use the Orthogonal Bus line
+          if (n.id === 'hub' || target.id === 'hub') {
+            const hubN = n.id === 'hub' ? n : target;
+            const spokeN = n.id === 'hub' ? target : n;
+            if (spokeN.y > hubN.y) {
+              const busY = hubN.y + hubN.height/2 + 40;
+              ctx.moveTo(hubN.x, hubN.y + hubN.height/2);
+              ctx.lineTo(hubN.x, busY);
+              ctx.lineTo(spokeN.x, busY);
+              ctx.lineTo(spokeN.x, spokeN.y - spokeN.height/2);
+              midX = (hubN.x + spokeN.x) / 2;
+              midY = busY - 4;
+            } else {
+              ctx.moveTo(n.x, n.y); ctx.lineTo(target.x, target.y);
+              midX = (n.x + target.x) / 2; midY = (n.y + target.y) / 2 - 4;
+            }
+          } else {
+            // Spoke to Spoke - Draw an elegant curve underneath
+            ctx.moveTo(n.x, n.y + n.height/2);
+            const dist = Math.abs(n.x - target.x);
+            const curveY = Math.max(n.y, target.y) + n.height/2 + 40 + (dist * 0.1);
+            ctx.quadraticCurveTo((n.x + target.x)/2, curveY, target.x, target.y + target.height/2);
+            midX = (n.x + target.x) / 2;
+            midY = 0.25*(n.y + n.height/2) + 0.5*curveY + 0.25*(target.y + target.height/2) - 4;
+          }
+        } else {
+          // Radial Layout - Draw straight lines
+          ctx.moveTo(n.x, n.y); ctx.lineTo(target.x, target.y);
+          midX = (n.x + target.x) / 2;
+          midY = (n.y + target.y) / 2 - 4;
+        }
+
+        if (dw) {
+          ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 2;
+        } else {
+          const g = ctx.createLinearGradient(n.x, n.y, target.x, target.y);
+          g.addColorStop(0, 'rgba(0,120,212,0.6)'); g.addColorStop(1, target.color + 'A0');
+          ctx.strokeStyle = g; ctx.lineWidth = 2;
+        }
+        ctx.stroke();
+
+        // Label
+        if (dw) {
+          ctx.font = '8px JetBrains Mono'; ctx.fillStyle = '#9CA3AF';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          ctx.fillText('Peering', midX, midY);
+        }
+      });
     }
   });
 
@@ -935,6 +1017,8 @@ function generatePowerShell(){
   lines.push(`# Generated: ${new Date().toISOString()}`);
   lines.push(``);
   
+  const allVnets = [state.hub, ...state.spokes];
+
   state.subscriptions.forEach(sub=>{
     lines.push(`# ============ SUBSCRIPTION: ${sub.name} ============`);
     lines.push(`# Set-AzContext -SubscriptionName "${sub.name}"\n`);
@@ -943,12 +1027,20 @@ function generatePowerShell(){
       lines.push(`# -- Resource Group: ${rg.name} --`);
       lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location}" -ErrorAction SilentlyContinue\n`);
       getVnetsInRg(rg.id).forEach(vnet=>{
-        const isHub=vnet.id==='hub';
         const varN=`$vnet_${vnet.name.replace(/[^a-zA-Z0-9]/g,'_')}`;
         lines.push(`${varN} = New-AzVirtualNetwork -Name "${vnet.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AddressPrefix "${vnet.cidr}"`);
-        if(!isHub&&vnet.peering!==false){
-          lines.push(`Add-AzVirtualNetworkPeering -Name "${vnet.name}-to-hub" -VirtualNetwork $vnet_${state.hub.name.replace(/[^a-zA-Z0-9]/g,'_')} -RemoteVirtualNetworkId ${varN}.Id`);
+        
+        // Peerings
+        if (vnet.peerings && vnet.peerings.length > 0) {
+            vnet.peerings.forEach(pId => {
+                const target = allVnets.find(v => v.id === pId);
+                if (target) {
+                    lines.push(`Add-AzVirtualNetworkPeering -Name "${vnet.name}-to-${target.name}" -VirtualNetwork ${varN} -RemoteVirtualNetworkId $vnet_${target.name.replace(/[^a-zA-Z0-9]/g,'_')}.Id`);
+                    lines.push(`Add-AzVirtualNetworkPeering -Name "${target.name}-to-${vnet.name}" -VirtualNetwork $vnet_${target.name.replace(/[^a-zA-Z0-9]/g,'_')} -RemoteVirtualNetworkId ${varN}.Id -ErrorAction SilentlyContinue`);
+                }
+            });
         }
+
         vnet.resources.forEach(res=>{
           const t=RES_TYPES[res.type]||{label:'Resource'};
           lines.push(`# Deploying ${t.label}: ${res.name}`);
@@ -996,7 +1088,6 @@ function downloadText(id,fn){const b=new Blob([document.getElementById(id).textC
 // INIT & LOAD REAL ICONS
 // ================================================================
 loadAzureIcons(() => {
-  // Όταν φορτώσουν τα πραγματικά SVG εικονίδια, κάνουμε ένα render:
   setTimeout(resize, 100);
   fullUpdate();
 });
