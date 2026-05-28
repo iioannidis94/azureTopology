@@ -33,7 +33,7 @@ function generatePowerShellResource(res, rg, varN, sn) {
       } else {
         lines.push(`$vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Linux -ComputerName "${res.name}" -Credential $cred`);
       }
-      lines.push(`$vmConfig = Add-AzVMDataDisk -VM $vmConfig -DiskSizeInGB ${c.osDiskSizeGB||128} -Lun 0 -CreateOption Empty -StorageAccountType "${c.osDiskType||'Premium_LRS'}"`);
+      lines.push(`$vmConfig = Set-AzVMOSDisk -VM $vmConfig -DiskSizeInGB ${c.osDiskSizeGB||128} -CreateOption FromImage -StorageAccountType "${c.osDiskType||'Premium_LRS'}"`);
       if (c.acceleratedNetworking === 'true') {
         lines.push(`$nic = New-AzNetworkInterface -Name "${res.name}-nic" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SubnetId ${varN}.Subnets[0].Id -EnableAcceleratedNetworking`);
       } else {
@@ -172,7 +172,7 @@ function generatePowerShellResource(res, rg, varN, sn) {
       break;
     }
     case 'adls': {
-      lines.push(`New-AzStorageAccount -Name "${res.name.replace(/[^a-z0-9]/g,'').substring(0,24)}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "Standard_${c.tier||'Standard'}_LRS" -Kind "StorageV2" -EnableHierarchicalNamespace $true`);
+      lines.push(`New-AzStorageAccount -Name "${res.name.replace(/[^a-z0-9]/g,'').substring(0,24)}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "Standard_LRS" -Kind "StorageV2" -EnableHierarchicalNamespace $true`);
       break;
     }
     case 'kv': {
