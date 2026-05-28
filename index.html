@@ -53,7 +53,7 @@
   .calculator-link{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px 12px;border-radius:6px;border:1px solid var(--azure-blue);background:rgba(0,120,212,.08);color:var(--azure-blue);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.2px;text-decoration:none;transition:all .2s;}
   body:not(.theme-drawio) .calculator-link{color:var(--azure-light);border-color:var(--azure-light);background:rgba(80,230,255,.08);}
   .calculator-link:hover{transform:translateY(-1px);background:rgba(0,120,212,.16);box-shadow:0 6px 20px rgba(0,120,212,.18);}
-  .calculator-link[hidden]{display:none;}
+  .calculator-link.is-hidden{display:none;}
 
   /* ON PREM BLOCK */
   .onprem-block {background: rgba(16,124,16,0.05); border: 1px dashed #107C10; border-radius: 6px; padding: 10px; margin-bottom: 16px; display:flex; align-items:center; justify-content:space-between;}
@@ -234,7 +234,7 @@
       <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Est. Monthly Cost</div>
       <div class="cost-value" id="cost-display">$0</div>
     </div>
-    <a id="pricing-calculator-link" class="calculator-link" target="_blank" rel="noopener noreferrer" aria-label="View current resources in Azure Pricing Calculator" hidden><span aria-hidden="true">🔗</span> View in Azure Pricing Calculator</a>
+    <a id="pricing-calculator-link" class="calculator-link is-hidden" href="https://azure.microsoft.com/en-us/pricing/calculator/" target="_blank" rel="noopener noreferrer" aria-label="View current resources in Azure Pricing Calculator"><span aria-hidden="true">🔗</span> View in Azure Pricing Calculator</a>
 
     <div class="tree-section-title">// Properties Editor</div>
     <div id="editor-container">
@@ -320,7 +320,7 @@ const RES_TYPES={
   openai:{icon:'🧠', img:'cognitive-services.svg', color:'#50E6FF',label:'Azure OpenAI',cat:'ai', cost: 150, config:{model:'gpt-4o'}},
   monitor:{icon:'📈', img:'monitor.svg', color:'#00B294',label:'Azure Monitor',cat:'management', cost: 15, config:{retentionDays:'90'}},
 };
-const AZURE_PRICING_CALCULATOR_BASE='https://azure.microsoft.com/en-us/pricing/calculator/';
+const AZURE_PRICING_CALCULATOR_BASE_URL='https://azure.microsoft.com/en-us/pricing/calculator/';
 const PRICING_CALCULATOR_SLUGS={
   vm:'virtual-machines',
   vmss:'virtual-machine-scale-sets',
@@ -435,11 +435,11 @@ function getAllDiagramResources(){
   return [state.hub, ...state.spokes].flatMap(vnet => vnet.subnets.flatMap(sn => sn.resources));
 }
 function getPricingCalculatorUrl(resourceTypes){
-  const slugs=[...new Set(resourceTypes.map(type=>PRICING_CALCULATOR_SLUGS[type]).filter(Boolean))];
+  const slugs=[...new Set(resourceTypes.flatMap(type=>PRICING_CALCULATOR_SLUGS[type] ? [PRICING_CALCULATOR_SLUGS[type]] : []))];
   if(!slugs.length) return '';
   const params=new URLSearchParams();
   slugs.forEach(slug=>params.append('service',slug));
-  return `${AZURE_PRICING_CALCULATOR_BASE}?${params.toString()}`;
+  return `${AZURE_PRICING_CALCULATOR_BASE_URL}?${params.toString()}`;
 }
 
 function updateCost() {
@@ -454,10 +454,10 @@ function updateCost() {
   const pricingUrl=getPricingCalculatorUrl([...usedResourceTypes]);
   if(pricingUrl){
     pricingLink.href=pricingUrl;
-    pricingLink.hidden=false;
+    pricingLink.classList.remove('is-hidden');
   }else{
-    pricingLink.removeAttribute('href');
-    pricingLink.hidden=true;
+    pricingLink.href=AZURE_PRICING_CALCULATOR_BASE_URL;
+    pricingLink.classList.add('is-hidden');
   }
 }
 
