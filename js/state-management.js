@@ -252,7 +252,8 @@ export function calculateResourceCost(resource) {
     }
     case 'cosmos':
       if (c.serverless === 'true') return 0;
-      return (PRICING_TABLES.cosmos.Provisioned[parseInt(c.maxRU) || 4000]) || 232;
+      const ru = parseInt(c.maxRU) || 4000;
+      return PRICING_TABLES.cosmos.Provisioned[ru] || 232;
     case 'sa':
       return table[`${c.tier||'Standard'}_${c.replication||'ZRS'}`] || 25;
     case 'redis':

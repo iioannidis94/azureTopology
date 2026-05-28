@@ -268,7 +268,9 @@ export function generateBicep(){
                 lines.push(`    vmSize: '${c.size||'Standard_D2s_v3'}'`);
                 lines.push(`    osType: '${(c.os||'Ubuntu').includes('Windows')?'Windows':'Linux'}'`);
                 lines.push(`    osDisk: { diskSizeGB: ${c.diskSizeGB||128}, managedDisk: { storageAccountType: '${c.diskType||'Premium_LRS'}' } }`);
-                lines.push(`    zone: ${c.availabilityZone&&c.availabilityZone!=='None'?c.availabilityZone:'0'}`);
+                if(c.availabilityZone && c.availabilityZone !== 'None') {
+                  lines.push(`    zone: ${c.availabilityZone}`);
+                };
                 lines.push(`    nicConfigurations: [{ subnetResourceId: ${vnetSafeName}.outputs.subnetResourceIds[0] }]`);
                 lines.push(`  }`);
                 lines.push(`}\n`);
