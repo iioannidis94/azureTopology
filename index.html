@@ -3,111 +3,158 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Azure Architecture Builder v2</title>
+<title>Azure Architecture Builder - Pro Edition</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --azure-blue: #0078D4; --azure-light: #50E6FF; --azure-dark: #003A5C;
-    --accent: #FFB900; --danger: #FF4444; --success: #00C851;
-    --bg: #060D18; --bg2: #0A1628; --bg3: #0F1F3A;
-    --border: rgba(0,120,212,0.3); --text: #E8F4FD; --muted: #7BA3C0;
-    --card-bg: rgba(10,22,40,0.95);
+    --azure-blue:#0078D4;--azure-light:#50E6FF;--azure-dark:#003A5C;
+    --accent:#FFB900;--danger:#FF4444;--success:#00C851;
+    --bg:#060D18;--bg2:#0A1628;--bg3:#0F1F3A;
+    --border:rgba(0,120,212,0.3);--text:#E8F4FD;--muted:#7BA3C0;--card-bg:rgba(10,22,40,0.95);
   }
   body.theme-drawio {
-    --bg: #F0F2F5; --bg2: #FFFFFF; --bg3: #F8F9FA;
-    --border: #D1D5DB; --text: #111827; --muted: #6B7280;
-    --card-bg: #FFFFFF; --azure-light: #0078D4;
+    --bg:#F0F2F5;--bg2:#FFFFFF;--bg3:#F8F9FA;
+    --border:#D1D5DB;--text:#111827;--muted:#6B7280;
+    --card-bg:#FFFFFF;--azure-light:#0078D4;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'JetBrains Mono', monospace; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; transition: background 0.3s, color 0.3s; }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;transition:background .3s,color .3s;}
+  
   body::before {
-    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image: linear-gradient(rgba(0,120,212,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,120,212,0.04) 1px, transparent 1px);
-    background-size: 40px 40px; transition: background-image 0.3s;
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(0,120,212,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,120,212,.04) 1px,transparent 1px);
+    background-size:40px 40px;
   }
   body.theme-drawio::before {
-    background-image: linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+    background-image:linear-gradient(rgba(0,0,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.04) 1px,transparent 1px);
   }
-  header { position: relative; z-index: 10; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: var(--bg2); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-  .logo { display: flex; align-items: center; gap: 12px; }
-  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--azure-blue), #00BCF2); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; }
-  .logo h1 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; }
-  .logo span { color: var(--azure-blue); }
-  .header-actions { display: flex; gap: 8px; align-items: center; }
-  .badge { font-size: 9px; padding: 3px 8px; border-radius: 20px; border: 1px solid var(--success); color: var(--success); text-transform: uppercase; }
-  .app { position: relative; z-index: 1; display: grid; grid-template-columns: 320px 1fr 300px; height: calc(100vh - 57px); }
-  .sidebar { border-right: 1px solid var(--border); overflow-y: auto; background: var(--card-bg); padding: 14px; display: flex; flex-direction: column; gap: 12px; transition: background 0.3s; }
-  .sidebar.right { border-right: none; border-left: 1px solid var(--border); display: flex; flex-direction: column; padding: 14px; gap: 10px; overflow-y: auto; }
-  .section-title { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--azure-blue); padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 2px; font-weight: 700; }
-  .sub-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px; border-left: 3px solid #FFB900; }
-  .rg-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 10px; border-left: 3px solid #8764B8; position: relative; }
-  .vnet-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 10px; position: relative; }
-  .vnet-header { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-  .vnet-row { display: flex; gap: 6px; align-items: center; }
-  .input-field { background: rgba(0,0,0,0.05); border: 1px solid var(--border); color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 5px 7px; border-radius: 4px; outline: none; width: 100%; transition: 0.2s; }
-  body:not(.theme-drawio) .input-field { background: rgba(0,0,0,0.3); color: white; }
-  .input-field:focus { border-color: var(--azure-light); background: rgba(0,120,212,0.1); }
-  .input-field.cidr { width: 105px; text-align: center; color: var(--azure-blue); font-weight: bold; flex-shrink: 0; }
-  .resource-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  .chip { font-size: 9px; padding: 3px 7px; border-radius: 4px; background: rgba(0,120,212,0.1); border: 1px solid var(--azure-blue); color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
-  body:not(.theme-drawio) .chip { color: white; background: rgba(0,120,212,0.2); }
-  .chip:hover { background: var(--azure-blue); color: white !important; }
-  .chip.hub-chip { background: rgba(255,140,0,0.1); border-color: #FF8C00; }
-  body:not(.theme-drawio) .chip.hub-chip { background: rgba(255,140,0,0.2); }
-  .chip.hub-chip:hover { background: #FF8C00; color: white !important; }
-  .btn { background: transparent; border: 1px solid var(--muted); color: var(--muted); padding: 5px 10px; font-size: 9px; cursor: pointer; border-radius: 4px; font-family: 'JetBrains Mono'; transition: 0.2s; text-align: center; width: 100%; margin-top: 6px; }
-  .btn:hover { border-color: var(--azure-blue); color: var(--azure-blue); background: rgba(0,120,212,0.05); }
-  .btn.primary { background: rgba(0,120,212,0.1); border: 1px solid var(--azure-blue); color: var(--azure-blue); font-weight: bold; }
-  body:not(.theme-drawio) .btn.primary { background: rgba(0,120,212,0.2); color: white; }
-  .btn.primary:hover { background: var(--azure-blue); color: white; }
-  .btn.danger { border-color: var(--danger); color: var(--danger); margin-top: 10px; }
-  .btn.danger:hover { background: var(--danger); color: white; }
-  .btn.small { padding: 3px 8px; font-size: 9px; margin-top: 0; width: auto; }
-  .add-res-container { position: relative; }
-  .res-dropdown { display: none; position: absolute; top: 100%; left: 0; width: 220px; background: var(--bg2); border: 1px solid var(--azure-blue); border-radius: 6px; z-index: 200; max-height: 240px; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-  .res-dropdown.show { display: block; }
-  .res-dropdown-section { font-size: 8px; letter-spacing: 1px; color: var(--muted); padding: 6px 8px 3px; text-transform: uppercase; border-top: 1px solid var(--border); }
-  .res-dropdown-section:first-child { border-top: none; }
-  .res-option { padding: 6px 8px; font-size: 9px; cursor: pointer; display: flex; align-items: center; gap: 7px; color: var(--text); }
-  .res-option:hover { background: var(--azure-blue); color: white; }
-  .canvas-area { position: relative; overflow: hidden; background: transparent; }
-  #diagram-canvas { width: 100%; height: 100%; cursor: grab; }
-  #diagram-canvas:active { cursor: grabbing; }
-  #editor-container { flex-grow: 1; }
-  .editor-panel { background: var(--bg3); border: 1px solid var(--azure-blue); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-  .editor-header { display: flex; align-items: center; gap: 8px; font-family: 'Syne'; font-size: 14px; font-weight: 700; color: var(--azure-blue); margin-bottom: 4px; }
-  .editor-row { display: flex; flex-direction: column; gap: 3px; }
-  .editor-label { font-size: 8px; color: var(--muted); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
-  .export-area { padding-top: 12px; margin-top: auto; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
-  .export-btn { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; padding: 10px; border-radius: 6px; border: none; background: linear-gradient(135deg, var(--azure-blue), #00BCF2); color: white; cursor: pointer; width: 100%; transition: all 0.2s; text-transform: uppercase; }
-  .export-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,120,212,0.4); }
-  .export-btn.secondary { background: transparent; border: 1px solid var(--azure-blue); color: var(--azure-blue); }
-  body:not(.theme-drawio) .export-btn.secondary { color: #50E6FF; border-color: #50E6FF; }
-  .export-btn.secondary:hover { background: rgba(0,120,212,0.1); }
-  .export-btn.reset { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
-  .export-btn.reset:hover { background: var(--danger); color: white; box-shadow: 0 6px 20px rgba(255,68,68,0.4); }
-  .hdr-btn { background: transparent; border: 1px solid var(--muted); color: var(--muted); padding: 5px 10px; font-size: 9px; cursor: pointer; border-radius: 4px; font-family: 'JetBrains Mono'; transition: 0.2s; white-space: nowrap; }
-  .hdr-btn:hover { border-color: var(--azure-blue); color: var(--azure-blue); background: rgba(0,120,212,0.05); }
-  .hdr-btn.active { border-color: var(--azure-blue); color: var(--azure-blue); background: rgba(0,120,212,0.1); }
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
-  .modal-overlay.show { display: flex; }
-  .modal { background: var(--bg2); border: 1px solid var(--azure-blue); border-radius: 12px; padding: 24px; width: 700px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; gap: 16px; }
-  .modal h2 { font-family: 'Syne'; color: var(--azure-blue); font-size: 16px; }
-  .modal pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 16px; font-size: 10px; overflow: auto; flex-grow: 1; max-height: 400px; line-height: 1.6; white-space: pre-wrap; color: var(--text); }
-  .modal-actions { display: flex; gap: 10px; }
-  .modal-btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-family: 'JetBrains Mono'; font-size: 10px; font-weight: 700; }
-  .modal-btn.primary { background: var(--azure-blue); color: white; }
-  .modal-btn.secondary { background: transparent; border: 1px solid var(--muted); color: var(--muted); }
-  .modal-btn:hover { opacity: 0.85; }
-  .hierarchy-tree { font-size: 10px; }
-  .tree-item { padding: 3px 0 3px 14px; border-left: 1px solid var(--border); }
-  .tree-item:last-child { border-left-color: transparent; }
-  .rg-label { display: flex; align-items: center; gap: 5px; font-size: 9px; color: #8764B8; font-weight: 700; text-transform: uppercase; }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--azure-blue); }
-  select.input-field { cursor: pointer; }
+  
+  header{position:relative;z-index:10;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg2);box-shadow:0 2px 10px rgba(0,0,0,.1);}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--azure-blue),#00BCF2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:white;box-shadow:0 0 10px rgba(0,120,212,0.4);}
+  .logo h1{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;letter-spacing:-0.5px;}
+  .logo span{color:var(--azure-blue);}
+  .header-actions{display:flex;gap:10px;align-items:center;}
+  .badge{font-size:9px;padding:4px 8px;border-radius:20px;border:1px solid var(--success);color:var(--success);text-transform:uppercase;font-weight:bold;letter-spacing:0.5px;}
+  
+  .app{position:relative;z-index:1;display:grid;grid-template-columns:330px 1fr 310px;height:calc(100vh - 57px);}
+  
+  /* SIDEBARS */
+  .sidebar{border-right:1px solid var(--border);overflow-y:auto;background:var(--card-bg);padding:16px;display:flex;flex-direction:column;gap:4px;transition:background .3s; padding-bottom: 80px;} 
+  .sidebar.right{border-right:none;border-left:1px solid var(--border);display:flex;flex-direction:column;padding:16px;gap:12px;}
+  
+  .tree-section-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--azure-blue);padding:0 0 8px 0;border-bottom:1px solid var(--border);margin-bottom:12px;font-weight:700;}
+  
+  /* SUBSCRIPTION BLOCK */
+  .sub-block{margin-bottom:16px;}
+  .sub-header{display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(255,185,0,.05);border:1px solid rgba(255,185,0,.2);border-radius:6px;border-left:4px solid #FFB900;margin-bottom:8px;}
+  body:not(.theme-drawio) .sub-header{background:rgba(255,185,0,.1);}
+  .sub-icon{font-size:13px;flex-shrink:0;}
+  .sub-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;outline:none;min-width:0;transition:0.2s;padding:2px 4px;border-radius:3px;}
+  .sub-name-input:focus, .sub-name-input:hover{border-color:rgba(255,185,0,0.5);background:var(--bg2);}
+  .icon-btn{background:transparent;border:1px solid transparent;cursor:pointer;font-size:11px;padding:4px;border-radius:4px;color:var(--muted);transition:.2s;flex-shrink:0;}
+  .icon-btn:hover{background:rgba(0,120,212,.15);color:var(--azure-blue);border-color:var(--azure-blue);}
+  .icon-btn.danger:hover{background:rgba(255,68,68,.15);color:var(--danger);border-color:var(--danger);}
+  .sub-body{padding-left:12px;border-left:2px solid rgba(255,185,0,.15);display:flex;flex-direction:column;gap:8px;margin-left:4px;}
+  
+  /* RG BLOCK */
+  .rg-block{border-radius:6px;overflow:visible;}
+  .rg-header{display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(135,100,184,.05);border:1px solid rgba(135,100,184,.2);border-radius:6px;border-left:3px solid #8764B8;cursor:pointer;transition:0.2s;}
+  body:not(.theme-drawio) .rg-header{background:rgba(135,100,184,.1);}
+  .rg-header:hover{border-color:#8764B8;}
+  .rg-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;outline:none;min-width:0;transition:0.2s;padding:2px 4px;border-radius:3px;}
+  .rg-name-input:focus, .rg-name-input:hover{border-color:rgba(135,100,184,0.5);background:var(--bg2);}
+  .rg-loc-select{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;outline:none;cursor:pointer;max-width:75px;padding:2px;border-radius:3px;}
+  .rg-loc-select:focus, .rg-loc-select:hover{border-color:rgba(135,100,184,.5);color:var(--text);}
+  .rg-body{padding-left:10px;border-left:2px solid rgba(135,100,184,.15);display:flex;flex-direction:column;gap:6px;margin-top:6px;margin-left:4px;}
+  
+  /* VNET CARD */
+  .vnet-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);}
+  .vnet-card-header{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+  .vnet-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .vnet-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;min-width:0;transition:0.2s;padding:2px 4px;border-radius:3px;}
+  .vnet-name-input:focus, .vnet-name-input:hover{border-color:rgba(0,120,212,0.4);background:var(--bg2);}
+  .vnet-cidr-input{width:95px;background:rgba(0,0,0,0.05);border:1px dashed var(--border);color:var(--azure-blue);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;outline:none;text-align:center;border-radius:4px;padding:3px;flex-shrink:0;}
+  body:not(.theme-drawio) .vnet-cidr-input{background:rgba(0,0,0,0.3);}
+  .vnet-cidr-input:focus, .vnet-cidr-input:hover{border-style:solid;border-color:var(--azure-blue);}
+  .resource-chips{display:flex;flex-wrap:wrap;gap:5px;}
+  
+  .chip{font-size:9px;padding:4px 8px;border-radius:4px;background:rgba(0,120,212,.08);border:1px solid rgba(0,120,212,.3);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:5px;transition:.15s;max-width:115px;}
+  body:not(.theme-drawio) .chip{color:white;background:rgba(0,120,212,.18);}
+  .chip:hover{background:var(--azure-blue);color:white!important;border-color:var(--azure-blue);}
+  .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  
+  .chip.hub-chip{background:rgba(255,140,0,.08);border-color:rgba(255,140,0,.4);}
+  body:not(.theme-drawio) .chip.hub-chip{background:rgba(255,140,0,.18);}
+  .chip.hub-chip:hover{background:#FF8C00;color:white!important;border-color:#FF8C00;}
+  
+  /* BUTTONS */
+  .add-btn{display:flex;align-items:center;gap:6px;background:transparent;border:1px dashed var(--muted);color:var(--muted);padding:6px 10px;font-size:9px;font-weight:bold;cursor:pointer;border-radius:4px;font-family:'JetBrains Mono';transition:.15s;width:100%;justify-content:center;}
+  .add-btn:hover{border-color:var(--azure-blue);color:var(--azure-blue);border-style:solid;background:rgba(0,120,212,0.05);}
+  .add-btn.sub-level{border-color:rgba(255,185,0,.5);color:#FFB900;margin-top:10px;}
+  .add-btn.sub-level:hover{border-color:#FFB900;color:#FFB900;background:rgba(255,185,0,.08);}
+  .add-btn.rg-level{border-color:rgba(135,100,184,.5);color:#8764B8;margin-top:6px;}
+  .add-btn.rg-level:hover{border-color:#8764B8;color:#8764B8;background:rgba(135,100,184,.08);}
+  
+  /* RES DROPDOWN */
+  .add-res-container{position:relative;}
+  .res-dropdown{display:none;position:absolute;top:100%;left:0;width:220px;background:var(--bg2);border:1px solid var(--azure-blue);border-radius:6px;z-index:300;max-height:240px;overflow-y:auto;box-shadow:0 8px 25px rgba(0,0,0,.4);}
+  .res-dropdown.show{display:block;}
+  .res-dd-section{font-size:8px;letter-spacing:1.5px;color:var(--muted);padding:8px 8px 4px;text-transform:uppercase;border-top:1px solid var(--border);font-weight:bold;}
+  .res-dd-section:first-child{border-top:none;}
+  .res-option{padding:6px 10px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text);transition:0.1s;}
+  .res-option:hover{background:var(--azure-blue);color:white;}
+  
+  /* EDITOR */
+  .input-field{background:rgba(0,0,0,.05);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 8px;border-radius:4px;outline:none;width:100%;transition:.2s;}
+  body:not(.theme-drawio) .input-field{background:rgba(0,0,0,.3);color:white;}
+  .input-field:focus{border-color:var(--azure-light);background:rgba(0,120,212,.08);}
+  select.input-field{cursor:pointer;}
+  
+  #editor-container{flex-grow:1; overflow-y:auto; margin-bottom: 10px;}
+  .editor-panel{background:var(--bg3);border:1px solid var(--azure-blue);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 12px rgba(0,0,0,.05);}
+  .editor-header{display:flex;align-items:center;gap:8px;font-family:'Syne';font-size:14px;font-weight:700;color:var(--azure-blue);margin-bottom:4px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .editor-row{display:flex;flex-direction:column;gap:4px;}
+  .editor-label{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:bold;letter-spacing:.5px;}
+  
+  /* CANVAS */
+  .canvas-area{position:relative;overflow:hidden;background:transparent;}
+  #diagram-canvas{width:100%;height:100%;cursor:grab;}
+  #diagram-canvas:active{cursor:grabbing;}
+  
+  /* EXPORT AREA (Fixed at bottom) */
+  .export-area{padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+  .export-btn{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;padding:10px;border-radius:6px;border:none;background:linear-gradient(135deg,var(--azure-blue),#00BCF2);color:white;cursor:pointer;width:100%;transition:all .2s;text-transform:uppercase;letter-spacing:0.5px;}
+  .export-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,120,212,.3);}
+  .export-btn.secondary{background:transparent;border:1px solid var(--azure-blue);color:var(--azure-blue);}
+  body:not(.theme-drawio) .export-btn.secondary{color:#50E6FF;border-color:#50E6FF;}
+  .export-btn.secondary:hover{background:rgba(0,120,212,.1);}
+  .export-btn.reset{background:transparent;border:1px dashed var(--danger);color:var(--danger);}
+  .export-btn.reset:hover{background:var(--danger);color:white;border-style:solid;box-shadow:0 6px 20px rgba(255,68,68,.3);}
+  
+  .hdr-btn{background:transparent;border:1px solid var(--muted);color:var(--muted);padding:6px 12px;font-size:10px;cursor:pointer;border-radius:4px;font-family:'JetBrains Mono';transition:.2s;white-space:nowrap;font-weight:bold;}
+  .hdr-btn:hover{border-color:var(--azure-blue);color:var(--azure-blue);background:rgba(0,120,212,.08);}
+  
+  /* MODALS */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--bg2);border:1px solid var(--azure-blue);border-radius:12px;padding:24px;width:720px;max-width:90vw;max-height:85vh;display:flex;flex-direction:column;gap:16px;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+  .modal h2{font-family:'Syne';color:var(--azure-blue);font-size:18px;}
+  .modal pre{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:11px;overflow:auto;flex-grow:1;max-height:450px;line-height:1.6;white-space:pre-wrap;color:var(--text);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+  .modal-btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-family:'JetBrains Mono';font-size:11px;font-weight:700;transition:0.2s;}
+  .modal-btn.primary{background:var(--azure-blue);color:white;}
+  .modal-btn.secondary{background:transparent;border:1px solid var(--muted);color:var(--muted);}
+  .modal-btn:hover{opacity:.85;transform:translateY(-1px);}
+  
+  /* RENAME OVERLAY */
+  #rename-overlay{display:none;position:fixed;z-index:500;}
+  #rename-input{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;border:2px solid #0078D4;border-radius:6px;background:#fff;color:#111;outline:none;min-width:140px;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
+  
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--azure-blue);}
 </style>
 </head>
 <body class="theme-drawio">
@@ -118,33 +165,27 @@
     <h1>Azure <span>Architecture</span> Builder</h1>
   </div>
   <div class="header-actions">
-    <button class="hdr-btn" onclick="toggleLayout()" title="Toggle Layout">📐 Layout</button>
-    <button class="hdr-btn" onclick="toggleTheme()" title="Toggle Theme">🌗 Theme</button>
-    <button class="hdr-btn" onclick="fitToScreen()" title="Fit to Screen">⊡ Fit</button>
-    <button class="hdr-btn" onclick="document.getElementById('add-rg-modal').classList.add('show')" title="Manage Resource Groups">📁 RGs</button>
+    <button class="hdr-btn" onclick="toggleLayout()">📐 Toggle Layout</button>
+    <button class="hdr-btn" onclick="toggleTheme()">🌗 Toggle Theme</button>
+    <button class="hdr-btn" onclick="fitToScreen()">⊡ Fit to Screen</button>
     <div class="badge">● Live Mode</div>
   </div>
 </header>
 
 <div class="app">
   <div class="sidebar" id="sidebar-left"></div>
-
-  <div class="canvas-area">
-    <canvas id="diagram-canvas"></canvas>
-  </div>
-
+  <div class="canvas-area"><canvas id="diagram-canvas"></canvas></div>
   <div class="sidebar right" id="sidebar-right">
-    <div class="section-title">// Properties Editor</div>
+    <div class="tree-section-title">// Properties Editor</div>
     <div id="editor-container">
-      <div style="text-align:center; color:var(--muted); font-size:10px; margin-top:20px; line-height:1.8;">
-        ← Click a resource or VNet<br>to edit its properties<br><br>
-        Double-click to rename<br>any element on canvas
-      </div>
+      <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:20px;line-height:1.9;">← Click a resource or VNet<br>to edit its properties<br><br>Double-click to rename<br>any element on canvas</div>
     </div>
+    
+    <!-- FIX: EXPORT AREA IS NOW ALWAYS VISIBLE AT BOTTOM -->
     <div class="export-area">
-      <button class="export-btn secondary" onclick="exportPng()">⬇ Export PNG</button>
-      <button class="export-btn secondary" onclick="openPsModal()">⚡ Export PowerShell</button>
-      <button class="export-btn secondary" onclick="openBicepModal()">📄 Export Bicep</button>
+      <button class="export-btn secondary" onclick="exportPng()">⬇ Export as PNG</button>
+      <button class="export-btn secondary" onclick="openPsModal()">⚡ Deploy via PowerShell</button>
+      <button class="export-btn secondary" onclick="openBicepModal()">📄 Generate Bicep</button>
       <button class="export-btn reset" onclick="resetDiagram()">🔄 Reset Diagram</button>
     </div>
   </div>
@@ -156,9 +197,9 @@
     <h2>⚡ Azure PowerShell Deployment Script</h2>
     <pre id="ps-output"></pre>
     <div class="modal-actions">
-      <button class="modal-btn primary" onclick="copyText('ps-output')">📋 Copy to Clipboard</button>
+      <button class="modal-btn secondary" onclick="closeModal('ps-modal')">✕ Close</button>
+      <button class="modal-btn primary" onclick="copyText('ps-output')">📋 Copy Script</button>
       <button class="modal-btn primary" onclick="downloadText('ps-output','azure-deploy.ps1')">⬇ Download .ps1</button>
-      <button class="modal-btn secondary" onclick="document.getElementById('ps-modal').classList.remove('show')">✕ Close</button>
     </div>
   </div>
 </div>
@@ -169,1239 +210,768 @@
     <h2>📄 Bicep Template</h2>
     <pre id="bicep-output"></pre>
     <div class="modal-actions">
-      <button class="modal-btn primary" onclick="copyText('bicep-output')">📋 Copy to Clipboard</button>
+      <button class="modal-btn secondary" onclick="closeModal('bicep-modal')">✕ Close</button>
+      <button class="modal-btn primary" onclick="copyText('bicep-output')">📋 Copy Bicep</button>
       <button class="modal-btn primary" onclick="downloadText('bicep-output','main.bicep')">⬇ Download .bicep</button>
-      <button class="modal-btn secondary" onclick="document.getElementById('bicep-modal').classList.remove('show')">✕ Close</button>
     </div>
   </div>
 </div>
 
-<!-- Resource Groups Modal -->
-<div class="modal-overlay" id="add-rg-modal">
-  <div class="modal" style="width:450px;">
-    <h2>📁 Manage Resource Groups</h2>
-    <div id="rg-modal-body" style="display:flex; flex-direction:column; gap:8px; max-height:300px; overflow-y:auto;"></div>
-    <div class="modal-actions">
-      <button class="modal-btn primary" onclick="addResourceGroup()">➕ Add Resource Group</button>
-      <button class="modal-btn secondary" onclick="document.getElementById('add-rg-modal').classList.remove('show')">✕ Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Inline rename overlay -->
-<div id="rename-overlay" style="display:none; position:fixed; z-index:500;">
-  <input id="rename-input" type="text" style="font-family:'JetBrains Mono',monospace; font-size:12px; padding:4px 8px; border:2px solid #0078D4; border-radius:4px; background:#fff; color:#111; outline:none; min-width:120px;">
+<div id="rename-overlay">
+  <input id="rename-input" type="text">
 </div>
 
 <script>
-const MS_ICONS = {
-  arrow_sync: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMyLjEwMzUgMTAuMDU3QzMxLjQzMzcgMTAuOTM1MyAzMS42MDI3IDEyLjE5MDMgMzIuNDgxIDEyLjg2MDFDMzUuOTM0OSAxNS40OTQzIDM4IDE5LjU3NDEgMzggMjRDMzggMzAuOTk0NiAzMi44NzA1IDM2Ljc5MTIgMjYuMTY4IDM3LjgzMzFMMjcuNTg1OCAzNi40MTQyQzI4LjM2NjggMzUuNjMzMiAyOC4zNjY4IDM0LjM2NjggMjcuNTg1OCAzMy41ODU4QzI2LjgwNDcgMzIuODA0NyAyNS41Mzg0IDMyLjgwNDcgMjQuNzU3NCAzMy41ODU4TDE5Ljc1NzQgMzguNTg1OEMxOC45NzYzIDM5LjM2NjggMTguOTc2MyA0MC42MzMyIDE5Ljc1NzQgNDEuNDE0MkwyNC43NTc0IDQ2LjQxNDJDMjUuNTM4NCA0Ny4xOTUzIDI2LjgwNDcgNDcuMTk1MyAyNy41ODU4IDQ2LjQxNDJDMjguMzY2OCA0NS42MzMyIDI4LjM2NjggNDQuMzY2OCAyNy41ODU4IDQzLjU4NThMMjUuODk5NCA0MS45MDFDMzQuOTQ3NyA0MC45NTIgNDIgMzMuMjk5NiA0MiAyNEM0MiAxOC4zMTI5IDM5LjM0MjQgMTMuMDYyNCAzNC45MDY3IDkuNjc5NTZDMzQuMDI4NCA5LjAwOTcyIDMyLjc3MzQgOS4xNzg3MiAzMi4xMDM1IDEwLjA1N1pNMjguMjQyNiA2LjU4NTc5TDIzLjI0MjYgMS41ODU3OUMyMi40NjE2IDAuODA0NzM4IDIxLjE5NTMgMC44MDQ3MzggMjAuNDE0MiAxLjU4NTc5QzE5LjY5MzIgMi4zMDY3NSAxOS42Mzc4IDMuNDQxMjIgMjAuMjQ3OCA0LjIyNThMMjAuNDE0MiA0LjQxNDIxTDIyLjEwMDYgNi4wOTkwM0MxMy4wNTIzIDcuMDQ3OTggNiAxNC43MDA0IDYgMjRDNiAyOS40Mzk3IDguNDMwMjkgMzQuNDg2MyAxMi41NDMyIDM3Ljg4MzdDMTMuMzk0OCAzOC41ODcyIDE0LjY1NTQgMzguNDY3MSAxNS4zNTg5IDM3LjYxNTVDMTYuMDYyMyAzNi43NjM5IDE1Ljk0MjIgMzUuNTAzMiAxNS4wOTA2IDM0Ljc5OThDMTEuODg4MSAzMi4xNTQ0IDEwIDI4LjIzMzcgMTAgMjRDMTAgMTcuMDA1NCAxNS4xMjk1IDExLjIwODggMjEuODMyIDEwLjE2NjlMMjAuNDE0MiAxMS41ODU4QzE5LjYzMzIgMTIuMzY2OCAxOS42MzMyIDEzLjYzMzIgMjAuNDE0MiAxNC40MTQyQzIxLjEzNTIgMTUuMTM1MiAyMi4yNjk2IDE1LjE5MDYgMjMuMDU0MiAxNC41ODA2TDIzLjI0MjYgMTQuNDE0MkwyOC4yNDI2IDkuNDE0MjFDMjguOTYzNiA4LjY5MzI1IDI5LjAxOTEgNy41NTg3OCAyOC40MDkgNi43NzQyTDI4LjI0MjYgNi41ODU3OVoiIGZpbGw9IiMyQTQ0NkYiLz4KPC9zdmc+Cg==",
-  bot: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTM1LjUwNjEgMjcuOTk5OEMzNy45OTE0IDI3Ljk5OTggNDAuMDA2MSAzMC4wMTQ2IDQwLjAwNjEgMzIuNDk5OFYzNC4zMUM0MC4wMDYxIDM2LjQ5NzMgMzkuMDUxMiAzOC41NzU3IDM3LjM5MTYgNDAuMDAwNUMzNC4yNjA3IDQyLjY4ODUgMjkuNzggNDQuMDAyMSAyNCA0NC4wMDIxQzE4LjIyMSA0NC4wMDIxIDEzLjc0MzQgNDIuNjg4OSAxMC42MTc2IDQwLjAwMTZDOC45NjAzOSAzOC41NzY4IDguMDA3MDggMzYuNSA4LjAwNzA4IDM0LjMxNDVWMzIuNDk5OEM4LjAwNzA4IDMwLjAxNDYgMTAuMDIxOCAyNy45OTk4IDEyLjUwNzEgMjcuOTk5OEgzNS41MDYxWk0yMy43OTcxIDQuMDE0NjdMMjQuMDAwNyA0LjAwMDk4QzI0Ljc2MDEgNC4wMDA5OCAyNS4zODc2IDQuNTY1MjggMjUuNDg3IDUuMjk3NDRMMjUuNTAwNyA1LjUwMDk4TDI1LjQ5OTEgNi45OTg5OEwzMi41IDYuOTk5OTlDMzQuOTg1MyA2Ljk5OTk5IDM3IDkuMDE0NzEgMzcgMTEuNVYyMC41MDkyQzM3IDIyLjk5NDUgMzQuOTg1MyAyNS4wMDkyIDMyLjUgMjUuMDA5MkgxNS41QzEzLjAxNDcgMjUuMDA5MiAxMSAyMi45OTQ1IDExIDIwLjUwOTJWMTEuNUMxMSA5LjAxNDcxIDEzLjAxNDcgNi45OTk5OSAxNS41IDYuOTk5OTlMMjIuNDk5MSA2Ljk5ODk4TDIyLjUwMDcgNS41MDA5OEMyMi41MDA3IDQuNzQxNTkgMjMuMDY1IDQuMTEzOTkgMjMuNzk3MSA0LjAxNDY3TDI0LjAwMDcgNC4wMDA5OEwyMy43OTcxIDQuMDE0NjdaTTE5LjQ5ODYgMTNDMTguMTE4NiAxMyAxNyAxNC4xMTg2IDE3IDE1LjQ5ODZDMTcgMTYuODc4NSAxOC4xMTg2IDE3Ljk5NzEgMTkuNDk4NiAxNy45OTcxQzIwLjg3ODUgMTcuOTk3MSAyMS45OTcyIDE2Ljg3ODUgMjEuOTk3MiAxNS40OTg2QzIxLjk5NzIgMTQuMTE4NiAyMC44Nzg1IDEzIDE5LjQ5ODYgMTNaTTI4LjQ4NCAxM0MyNy4xMDQxIDEzIDI1Ljk4NTUgMTQuMTE4NiAyNS45ODU1IDE1LjQ5ODZDMjUuOTg1NSAxNi44Nzg1IDI3LjEwNDEgMTcuOTk3MSAyOC40ODQgMTcuOTk3MUMyOS44NjQgMTcuOTk3MSAzMC45ODI2IDE2Ljg3ODUgMzAuOTgyNiAxNS40OTg2QzMwLjk4MjYgMTQuMTE4NiAyOS44NjQgMTMgMjguNDg0IDEzWiIgZmlsbD0iIzJBNDQ2RiIvPgo8L3N2Zz4K",
-  building_cloud: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yOC4yNSAyMS42OTM2QzIzLjY1MDggMjEuNjkzNiAxOS43OTUgMjQuODY5MSAxOC43NTMxIDI5LjE0NzlDMTUuMjA1OSAyOS43MzE1IDEyLjUgMzIuODExOSAxMi41IDM2LjUyNDJDMTIuNSA0MC42NTMgMTUuODQ3IDQ0LjAwMDEgMTkuOTc1OCA0NC4wMDAxSDM2LjUyNDJDNDAuNjUzIDQ0LjAwMDEgNDQgNDAuNjUzIDQ0IDM2LjUyNDJDNDQgMzIuODExOSA0MS4yOTQxIDI5LjczMTUgMzcuNzQ2OSAyOS4xNDhDMzYuNzA1IDI0Ljg2OTEgMzIuODQ5MiAyMS42OTM2IDI4LjI1IDIxLjY5MzZaTTI4LjI1IDI0LjY5MzZDMjQuNzY0MSAyNC42OTM2IDIxLjg5MTQgMjcuMzI3OSAyMS41MTcyIDMwLjcxMzRMMjEuMzY5IDMyLjA1NDJMMTkuOTc1OCAzMi4wNDg0SDE5Ljk3M0MxNy41MDI0IDMyLjA0OTkgMTUuNSAzNC4wNTMzIDE1LjUgMzYuNTI0MkMxNS41IDM4Ljk5NjIgMTcuNTAzOSA0MS4wMDAxIDE5Ljk3NTggNDEuMDAwMUgzNi41MjQyQzM4Ljk5NjEgNDEuMDAwMSA0MSAzOC45OTYyIDQxIDM2LjUyNDJDNDEgMzQuMDUzMyAzOC45OTc3IDMyLjA1IDM2LjUyNzEgMzIuMDQ4NEgzNi41MjQyTDM1LjEzMSAzMi4wNTQ0TDM0Ljk4MjggMzAuNzEzNEMzNC42MDg2IDI3LjMyNzkgMzEuNzM1OSAyNC42OTM2IDI4LjI1IDI0LjY5MzZaIiBmaWxsPSIjMDA3OEQ0Ii8+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNy41IDM2SDEwLjUxNDNDMTAuNzMzOCAzMS45NzI0IDEzLjQ2NzIgMjguNjE2NyAxNy4xNzI3IDI3LjQ3MDRDMTguNzgyOCAyMy4wMTAxIDIzLjAwNjggMTkuODAwMSAyOCAxOS42OTYyVjE3LjVDMjggMTUuNTY3IDI2LjQzMyAxNCAyNC41IDE0SDIyLjVDMjIuMjIzOSAxNCAyMiAxMy43NzYxIDIyIDEzLjVWNy41QzIyIDUuNTY3IDIwLjQzMyA0IDE4LjUgNEg3LjVDNS41NjcgNCA0IDUuNTY3IDQgNy41VjMyLjVDNCAzNC40MzMgNS41NjcgMzYgNy41IDM2Wk0xMC41IDE5QzExLjMyODQgMTkgMTIgMTguMzI4NCAxMiAxNy41QzEyIDE2LjY3MTYgMTEuMzI4NCAxNiAxMC41IDE2QzkuNjcxNTcgMTYgOSAxNi42NzE2IDkgMTcuNUM5IDE4LjMyODQgOS42NzE1NyAxOSAxMC41IDE5Wk0xNS41IDEzQzE2LjMyODQgMTMgMTcgMTIuMzI4NCAxNyAxMS41QzE3IDEwLjY3MTYgMTYuMzI4NCAxMCAxNS41IDEwQzE0LjY3MTYgMTAgMTQgMTAuNjcxNiAxNCAxMS41QzE0IDEyLjMyODQgMTQuNjcxNiAxMyAxNS41IDEzWk0xNCAxNy41QzE0IDE4LjMyODQgMTQuNjcxNiAxOSAxNS41IDE5QzE2LjMyODQgMTkgMTcgMTguMzI4NCAxNyAxNy41QzE3IDE2LjY3MTYgMTYuMzI4NCAxNiAxNS41IDE2QzE0LjY3MTYgMTYgMTQgMTYuNjcxNiAxNCAxNy41Wk0xNS41IDI1QzE2LjMyODQgMjUgMTcgMjQuMzI4NCAxNyAyMy41QzE3IDIyLjY3MTYgMTYuMzI4NCAyMiAxNS41IDIyQzE0LjY3MTYgMjIgMTQgMjIuNjcxNiAxNCAyMy41QzE0IDI0LjMyODQgMTQuNjcxNiAyNSAxNS41IDI1Wk0xMC41IDI1QzExLjMyODQgMjUgMTIgMjQuMzI4NCAxMiAyMy41QzEyIDIyLjY3MTYgMTEuMzI4NCAyMiAxMC41IDIyQzkuNjcxNTcgMjIgOSAyMi42NzE2IDkgMjMuNUM5IDI0LjMyODQgOS42NzE1NyAyNSAxMC41IDI1Wk05IDExLjVDOSAxMi4zMjg0IDkuNjcxNTcgMTMgMTAuNSAxM0MxMS4zMjg0IDEzIDEyIDEyLjMyODQgMTIgMTEuNUMxMiAxMC42NzE2IDExLjMyODQgMTAgMTAuNSAxMEM5LjY3MTU3IDEwIDkgMTAuNjcxNiA5IDExLjVaIiBmaWxsPSIjMkE0NDZGIi8+Cjwvc3ZnPgo=",
-  cloud: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI0IDEwQzE4LjI2MiAxMCAxMy41NTAxIDE0LjM5MzUgMTMuMDQ0OCAyMEgxMi43NUM4LjQ2OTc5IDIwIDUgMjMuNDY5OCA1IDI3Ljc1QzUgMzIuMDMwMiA4LjQ2OTc5IDM1LjUgMTIuNzUgMzUuNUgzNS4yNUMzOS41MzAyIDM1LjUgNDMgMzIuMDMwMiA0MyAyNy43NUM0MyAyMy40Njk4IDM5LjUzMDIgMjAgMzUuMjUgMjBIMzQuOTU1MkMzNC40NDk5IDE0LjM5MzUgMjkuNzM4IDEwIDI0IDEwWiIgZmlsbD0iIzJBNDQ2RiIvPgo8L3N2Zz4K",
-  cloud_arrow_down: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEzLjA0NDggMTZDMTMuNTUwMSAxMC4zOTM1IDE4LjI2MiA2IDI0IDZDMjkuNzM4IDYgMzQuNDQ5OSAxMC4zOTM1IDM0Ljk1NTIgMTZIMzUuMjVDMzkuNTMwMiAxNiA0MyAxOS40Njk4IDQzIDIzLjc1QzQzIDI0LjA0ODcgNDIuOTgzMSAyNC4zNDM0IDQyLjk1MDIgMjQuNjMzM0M0MC41NjU1IDIxLjgwMDIgMzYuOTkzIDIwIDMzIDIwQzI2LjMyNzYgMjAgMjAuODI5MyAyNS4wMjY4IDIwLjA4NTYgMzEuNUgxMi43NUM4LjQ2OTc5IDMxLjUgNSAyOC4wMzAyIDUgMjMuNzVDNSAxOS40Njk4IDguNDY5NzkgMTYgMTIuNzUgMTZIMTMuMDQ0OFoiIGZpbGw9IiMyQTQ0NkYiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00NCAzM0M0NCAyNi45MjQ5IDM5LjA3NTEgMjIgMzMgMjJDMjYuOTI0OSAyMiAyMiAyNi45MjQ5IDIyIDMzQzIyIDM5LjA3NTEgMjYuOTI0OSA0NCAzMyA0NEMzOS4wNzUxIDQ0IDQ0IDM5LjA3NTEgNDQgMzNaTTMyLjI5MjkgNDAuNzA3MUMzMi40ODA0IDQwLjg5NDYgMzIuNzM0OCA0MSAzMyA0MUMzMy4yNjUyIDQxIDMzLjUxOTYgNDAuODk0NiAzMy43MDcxIDQwLjcwNzFMMzguNzA3MSAzNS43MDcxQzM5LjA5NzYgMzUuMzE2NiAzOS4wOTc2IDM0LjY4MzQgMzguNzA3MSAzNC4yOTI5QzM4LjMxNjYgMzMuOTAyNCAzNy42ODM0IDMzLjkwMjQgMzcuMjkyOSAzNC4yOTI5TDM0IDM3LjU4NThWMjZDMzQgMjUuNDQ3NyAzMy41NTIzIDI1IDMzIDI1QzMyLjQ0NzcgMjUgMzIgMjUuNDQ3NyAzMiAyNlYzNy41ODU4TDI4LjcwNzEgMzQuMjkyOUMyOC4zMTY2IDMzLjkwMjQgMjcuNjgzNCAzMy45MDI0IDI3LjI5MjkgMzQuMjkyOUMyNi45MDI0IDM0LjY4MzQgMjYuOTAyNCAzNS4zMTY2IDI3LjI5MjkgMzUuNzA3MUwzMi4yOTI5IDQwLjcwNzFaIiBmaWxsPSIjMDA3OEQ0Ii8+Cjwvc3ZnPgo=",
-  cloud_arrow_up: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEzLjA0NDggMTZDMTMuNTUwMSAxMC4zOTM1IDE4LjI2MiA2IDI0IDZDMjkuNzM4IDYgMzQuNDQ5OSAxMC4zOTM1IDM0Ljk1NTIgMTZIMzUuMjVDMzkuNTMwMiAxNiA0MyAxOS40Njk4IDQzIDIzLjc1QzQzIDI0LjA0ODcgNDIuOTgzMSAyNC4zNDM0IDQyLjk1MDIgMjQuNjMzM0M0MC41NjU1IDIxLjgwMDIgMzYuOTkzIDIwIDMzIDIwQzI2LjMyNzYgMjAgMjAuODI5MyAyNS4wMjY4IDIwLjA4NTYgMzEuNUgxMi43NUM4LjQ2OTc5IDMxLjUgNSAyOC4wMzAyIDUgMjMuNzVDNSAxOS40Njk4IDguNDY5NzkgMTYgMTIuNzUgMTZIMTMuMDQ0OFoiIGZpbGw9IiMyQTQ0NkYiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00NCAzM0M0NCAyNi45MjQ5IDM5LjA3NTEgMjIgMzMgMjJDMjYuOTI0OSAyMiAyMiAyNi45MjQ5IDIyIDMzQzIyIDM5LjA3NTEgMjYuOTI0OSA0NCAzMyA0NEMzOS4wNzUxIDQ0IDQ0IDM5LjA3NTEgNDQgMzNaTTMzLjcwNzEgMjUuMjkyOUMzMy41MTk2IDI1LjEwNTQgMzMuMjY1MiAyNSAzMyAyNUMzMi43MzQ4IDI1IDMyLjQ4MDQgMjUuMTA1NCAzMi4yOTI5IDI1LjI5MjlMMjcuMjkyOSAzMC4yOTI5QzI2LjkwMjQgMzAuNjgzNCAyNi45MDI0IDMxLjMxNjYgMjcuMjkyOSAzMS43MDcxQzI3LjY4MzQgMzIuMDk3NiAyOC4zMTY2IDMyLjA5NzYgMjguNzA3MSAzMS43MDcxTDMyIDI4LjQxNDJWNDBDMzIgNDAuNTUyMyAzMi40NDc3IDQxIDMzIDQxQzMzLjU1MjMgNDEgMzQgNDAuNTUyMyAzNCA0MFYyOC40MTQyTDM3LjI5MjkgMzEuNzA3MUMzNy42ODM0IDMyLjA5NzYgMzguMzE2NiAzMi4wOTc2IDM4LjcwNzEgMzEuNzA3MUMzOS4wOTc2IDMxLjMxNjYgMzkuMDk3NiAzMC42ODM0IDM4LjcwNzEgMzAuMjkyOUwzMy43MDcxIDI1LjI5MjlaIiBmaWxsPSIjMDA3OEQ0Ii8+Cjwvc3ZnPgo=",
-  cloud_beaker: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI4Ljk4MTggMzZMMjcuNDY3OCAzOC4zOTkzQzI2LjIwNzEgNDAuMzk2OSAyNy42NDI3IDQzLjAwMDMgMzAuMDA0OCA0My4wMDAzSDQxLjk5MzRDNDQuMzU1NiA0My4wMDAzIDQ1Ljc5MTEgNDAuMzk2OSA0NC41MzA1IDM4LjM5OTNMNDMuMDE2NCAzNkgyOC45ODE4WiIgZmlsbD0iIzAwNzhENCIvPgo8cGF0aCBkPSJNMjguOTk5NyAyMi4yNUMyOC45OTk3IDIxLjU1OTYgMjkuNTU5MyAyMSAzMC4yNDk3IDIxSDQxLjc0OTdDNDIuNDQgMjEgNDIuOTk5NyAyMS41NTk2IDQyLjk5OTcgMjIuMjVDNDIuOTk5NyAyMi45NDA0IDQyLjQ0IDIzLjUgNDEuNzQ5NyAyMy41SDQwVjI5Ljc3NDNDNDAgMzAuNzE4NyA0MC4yNjc1IDMxLjY0MzkgNDAuNzcxNiAzMi40NDI2TDQxLjc1NDMgMzRIMzAuMjQzOUwzMS4yMjg0IDMyLjQzOTlDMzEuNzMyNSAzMS42NDExIDMyIDMwLjcxNiAzMiAyOS43NzE1VjIzLjVIMzAuMjQ5N0MyOS41NTkzIDIzLjUgMjguOTk5NyAyMi45NDA0IDI4Ljk5OTcgMjIuMjVaIiBmaWxsPSIjMDA3OEQ0Ii8+CjxwYXRoIGQ9Ik0xMy4wNDQ4IDIwQzEzLjU1MDEgMTQuMzkzNSAxOC4yNjIgMTAgMjQgMTBDMjkuMzkyMSAxMCAzMy44NzgxIDEzLjg3OTggMzQuODE4NiAxOUgzMC4yNDk5QzI4LjQ1NSAxOSAyNi45OTk5IDIwLjQ1NTEgMjYuOTk5OSAyMi4yNUMyNi45OTk5IDIzLjk2MDkgMjguMzIyIDI1LjM2MzEgMzAuMDAwMyAyNS40OTA2VjI5Ljc3MTVDMzAuMDAwMyAzMC4zMzgyIDI5LjgzOTggMzAuODkzMyAyOS41Mzc0IDMxLjM3MjVMMjYuOTMyNyAzNS41SDEyLjc1QzguNDY5NzkgMzUuNSA1IDMyLjAzMDIgNSAyNy43NUM1IDIzLjQ2OTggOC40Njk3OSAyMCAxMi43NSAyMEgxMy4wNDQ4WiIgZmlsbD0iIzJBNDQ2RiIvPgo8L3N2Zz4K",
-  cloud_cube: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMEMxOC4yNjIgMTAgMTMuNTUwMSAxNC4zOTM1IDEzLjA0NDggMjBIMTIuNzVDOC40Njk3OSAyMCA1IDIzLjQ2OTggNSAyNy43NUM1IDMyLjAzMDIgOC40Njk3OSAzNS41IDEyLjc1IDM1LjVIMjNWMjguMzIwNEMyMyAyNi4zODkyIDI0LjExMjIgMjQuNjMwNiAyNS44NTcxIDIzLjgwMjlMMzIuODU3MSAyMC40ODI1QzMzLjUzNTIgMjAuMTYwOCAzNC4yNjc2IDIwIDM1IDIwSDM0Ljk1NTJDMzQuNDQ5OSAxNC4zOTM1IDI5LjczOCAxMCAyNCAxMFoiIGZpbGw9IiMyQTQ0NkYiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00NSAzNy42NzcxVjI4LjMyMDRDNDUgMjcuMTYxNyA0NC4zMzI3IDI2LjEwNjUgNDMuMjg1NyAyNS42MDk5TDM2LjI4NTcgMjIuMjg5NUMzNS40NzIgMjEuOTAzNSAzNC41MjggMjEuOTAzNSAzMy43MTQzIDIyLjI4OTVMMjYuNzE0MyAyNS42MDk5QzI1LjY2NzMgMjYuMTA2NSAyNSAyNy4xNjE3IDI1IDI4LjMyMDRWMzcuNjc3MUMyNSAzOC44MzU5IDI1LjY2NzMgMzkuODkxIDI2LjcxNDMgNDAuMzg3NkwzMy43MTQzIDQzLjcwODFDMzQuNTI4IDQ0LjA5NCAzNS40NzIgNDQuMDk0IDM2LjI4NTcgNDMuNzA4MUw0My4yODU3IDQwLjM4NzZDNDQuMzMyNyAzOS44OTEgNDUgMzguODM1OSA0NSAzNy42NzcxWk0yOS40Mjg2IDI4LjA5NjNDMjguOTI5NiAyNy44NTk2IDI4LjMzMzIgMjguMDcyMyAyOC4wOTY1IDI4LjU3MTJDMjcuODU5OCAyOS4wNzAyIDI4LjA3MjQgMjkuNjY2NiAyOC41NzE0IDI5LjkwMzNMMzQgMzIuNDc4NFYzOC45OTk4QzM0IDM5LjU1MjEgMzQuNDQ3NyAzOS45OTk4IDM1IDM5Ljk5OThDMzUuNTUyMyAzOS45OTk4IDM2IDM5LjU1MjEgMzYgMzguOTk5OFYzMi40Nzg0TDQxLjQyODYgMjkuOTAzM0M0MS45Mjc2IDI5LjY2NjYgNDIuMTQwMiAyOS4wNzAyIDQxLjkwMzUgMjguNTcxMkM0MS42NjY4IDI4LjA3MjMgNDEuMDcwNCAyNy44NTk2IDQwLjU3MTQgMjguMDk2M0wzNSAzMC43MzkxTDI5LjQyODYgMjguMDk2M1oiIGZpbGw9IiMwMDc4RDQiLz4KPC9zdmc+Cg==",
-  cloud_database: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCA3LjIwMDAxQzMwLjc1OTkgNy4yMDAwMSAzNC41OTQ3IDExLjgxNTkgMzUuMTUyNSAxNy4zOTA0TDM1LjMyMzEgMTcuMzkwNEMzOS4wMDU2IDE3LjM5MDQgNDIuMDk4IDE5Ljk5MDYgNDIuOTYwNSAyMy41MDRDNDIuNTUyNiAyMy4yNTI2IDQyLjEyMTYgMjMuMDM1NiA0MS42ODUxIDIyLjg0ODVDMzkuODAwNyAyMi4wNDA5IDM3LjM2NDggMjEuNiAzNC44IDIxLjZDMzIuMjM1MiAyMS42IDI5Ljc5OTIgMjIuMDQwOSAyNy45MTQ5IDIyLjg0ODVDMjYuOTc3IDIzLjI1MDQgMjYuMDY0NiAyMy43OTA3IDI1LjM1MTkgMjQuNTEyOUMyNC42MjkgMjUuMjQ1NCAyNCAyNi4yOTE0IDI0IDI3LjZWMzMuNkgxMi42NzY5QzguMzI2NjEgMzMuNiA0Ljc5OTk5IDI5Ljk3MTQgNC43OTk5OSAyNS40OTUyQzQuNzk5OTkgMjEuMDE5IDguMzI2NjEgMTcuMzkwNCAxMi42NzcgMTcuMzkwNEwxMi44NDc1IDE3LjM5MDRDMTMuNDA4NSAxMS43NzkzIDE3LjI0IDcuMjAwMDEgMjQgNy4yMDAwMVoiIGZpbGw9IiMyQTQ0NkYiLz4KPHBhdGggZD0iTTM0LjggMjRDMzAuMTYwOCAyNCAyNi40IDI2LjE0OSAyNi40IDI4LjhDMjYuNCAzMS40NTEgMzAuMTYwOCAzMy42IDM0LjggMzMuNkMzOS40MzkyIDMzLjYgNDMuMiAzMS40NTEgNDMuMiAyOC44QzQzLjIgMjYuMTQ5IDM5LjQzOTIgMjQgMzQuOCAyNFoiIGZpbGw9IiMwMDc4RDQiLz4KPHBhdGggZD0iTTQxLjkzMDQgMzQuMjc3OUMzOS45ODU5IDM1LjM4OSAzNy40NTk5IDM2IDM0LjggMzZDMzIuMTQwMSAzNiAyOS42MTQgMzUuMzg5IDI3LjY2OTYgMzQuMjc3OUMyNy4yMzQ4IDM0LjAyOTUgMjYuODA0NSAzMy43Mzk1IDI2LjQgMzMuNDA4NlY0MC44QzI2LjQgNDMuNDUxIDMwLjE2MDggNDUuNiAzNC44IDQ1LjZDMzkuNDM5MiA0NS42IDQzLjIgNDMuNDUxIDQzLjIgNDAuOFYzMy40MDg2QzQyLjc5NTUgMzMuNzM5NSA0Mi4zNjUyIDM0LjAyOTUgNDEuOTMwNCAzNC4yNzc5WiIgZmlsbD0iIzAwNzhENCIvPgo8L3N2Zz4K",
-  cloud_desktop: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zNS4xNTI1IDE5Ljc5MDRDMzQuNTk0NyAxNC4yMTU5IDMwLjc1OTkgOS42MDAwMSAyNCA5LjYwMDAxQzE3LjI0IDkuNjAwMDEgMTMuNDA4NSAxNC4xNzkzIDEyLjg0NzUgMTkuNzkwNEwxMi42NzcgMTkuNzkwNEM4LjMyNjYxIDE5Ljc5MDQgNC43OTk5OSAyMy40MTkgNC43OTk5OSAyNy44OTUyQzQuNzk5OTkgMzIuMzcxNCA4LjMyNjYxIDM2IDEyLjY3NjkgMzZIMjEuNlYyOC44QzIxLjYgMjYuMTQ5IDIzLjc0OSAyNCAyNi40IDI0SDQyLjIzMjNDNDAuODkzNCAyMS40OTEgMzguMzAxMyAxOS43OTA0IDM1LjMyMzEgMTkuNzkwNEwzNS4xNTI1IDE5Ljc5MDRaIiBmaWxsPSIjMkE0NDZGIi8+CjxwYXRoIGQ9Ik0yNCAyOC44QzI0IDI3LjQ3NDUgMjUuMDc0NSAyNi40IDI2LjQgMjYuNEg0My4yQzQ0LjUyNTUgMjYuNCA0NS42IDI3LjQ3NDUgNDUuNiAyOC44VjM4LjRDNDUuNiAzOS43MjU1IDQ0LjUyNTUgNDAuOCA0My4yIDQwLjhIMzguNFY0My4ySDM5LjZDNDAuMjYyNyA0My4yIDQwLjggNDMuNzM3MyA0MC44IDQ0LjRDNDAuOCA0NS4wNjI4IDQwLjI2MjcgNDUuNiAzOS42IDQ1LjZIMzBDMjkuMzM3MiA0NS42IDI4LjggNDUuMDYyOCAyOC44IDQ0LjRDMjguOCA0My43MzczIDI5LjMzNzIgNDMuMiAzMCA0My4ySDMxLjJWNDAuOEgyNi40QzI1LjA3NDUgNDAuOCAyNCAzOS43MjU1IDI0IDM4LjRWMjguOFoiIGZpbGw9IiMwMDc4RDQiLz4KPC9zdmc+Cg==",
-  data_bar_vertical: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTcuNSAxMC41QzcuNSA4LjAxNDcyIDkuNTE0NzIgNiAxMiA2QzE0LjQ4NTMgNiAxNi41IDguMDE0NzIgMTYuNSAxMC41VjM3LjVDMTYuNSAzOS45ODUzIDE0LjQ4NTMgNDIgMTIgNDJDOS41MTQ3MiA0MiA3LjUgMzkuOTg1MyA3LjUgMzcuNVYxMC41Wk0xOS41IDE5LjVDMTkuNSAxNy4wMTQ3IDIxLjUxNDcgMTUgMjQgMTVDMjYuNDg1MyAxNSAyOC41IDE3LjAxNDcgMjguNSAxOS41VjM3LjVDMjguNSAzOS45ODUzIDI2LjQ4NTMgNDIgMjQgNDJDMjEuNTE0NyA0MiAxOS41IDM5Ljk4NTMgMTkuNSAzNy41VjE5LjVaTTM2IDI0QzMzLjUxNDcgMjQgMzEuNSAyNi4wMTQ3IDMxLjUgMjguNVYzNy41QzMxLjUgMzkuOTg1MyAzMy41MTQ3IDQyIDM2IDQyQzM4LjQ4NTMgNDIgNDAuNSAzOS45ODUzIDQwLjUgMzcuNVYyOC41QzQwLjUgMjYuMDE0NyAzOC40ODUzIDI0IDM2IDI0WiIgZmlsbD0iIzJBNDQ2RiIvPgo8L3N2Zz4K",
-  database: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyLjAwOTcgMjAuMTgyOUMxMC42NzczIDE5LjU3MzEgOS4yMDYxNiAxOC42OTc4IDggMTcuNTI0NFYzNi4yNUg4LjAwNjg1QzguMTQ1NzYgMzguNzc2OSAxMC4zODA0IDQwLjY4NzkgMTMuMDUgNDEuOTA5NkMxNS45MTY4IDQzLjIyMTUgMTkuNzg5NCA0NCAyNCA0NEMyOC4yMTA2IDQ0IDMyLjA4MzIgNDMuMjIxNSAzNC45NSA0MS45MDk2QzM3LjYxOTYgNDAuNjg3OSAzOS44NTQyIDM4Ljc3NjkgMzkuOTkzMiAzNi4yNUg0MFYxNy41MjQ0QzM4Ljc5MzggMTguNjk3OCAzNy4zMjI3IDE5LjU3MzEgMzUuOTkwMyAyMC4xODI5QzMyLjcyODMgMjEuNjc1NiAyOC40ODU1IDIyLjUgMjQgMjIuNUMxOS41MTQ1IDIyLjUgMTUuMjcxNyAyMS42NzU2IDEyLjAwOTcgMjAuMTgyOVoiIGZpbGw9IiMyQTQ0NkYiLz4KPHBhdGggZD0iTTEzLjA1IDYuMDkwMzlDMTUuOTE2OCA0Ljc3ODQ3IDE5Ljc4OTQgNCAyNCA0QzI4LjIxMDYgNCAzMi4wODMyIDQuNzc4NDcgMzQuOTUgNi4wOTAzOUMzNy43MDY5IDcuMzUyMDQgNDAgOS4zNDg5MyA0MCAxMkM0MCAxNC42NTExIDM3LjcwNjkgMTYuNjQ4IDM0Ljk1IDE3LjkwOTZDMzIuMDgzMiAxOS4yMjE1IDI4LjIxMDYgMjAgMjQgMjBDMTkuNzg5NCAyMCAxNS45MTY4IDE5LjIyMTUgMTMuMDUgMTcuOTA5NkMxMC4yOTMxIDE2LjY0OCA4IDE0LjY1MTEgOCAxMkM4IDkuMzQ4OTMgMTAuMjkzMSA3LjM1MjA0IDEzLjA1IDYuMDkwMzlaIiBmaWxsPSIjMkE0NDZGIi8+Cjwvc3ZnPgo=",
-  deploy: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi4yNSA2QzguNzk4MjIgNiA2IDguNzk4MjIgNiAxMi4yNVYxOS43NUM2IDIwLjQ0MDQgNi41NTk2NCAyMSA3LjI1IDIxQzcuOTQwMzYgMjEgOC41IDIwLjQ0MDQgOC41IDE5Ljc1VjEyLjI1QzguNSAxMC4xNzg5IDEwLjE3ODkgOC41IDEyLjI1IDguNUgyNFYxOC43NUMyNCAyMS42NDk1IDI2LjM1MDUgMjQgMjkuMjUgMjRIMzkuNVYzNS43NUMzOS41IDM3LjgyMTEgMzcuODIxMSAzOS41IDM1Ljc1IDM5LjVIMjguMjVDMjcuNTU5NiAzOS41IDI3IDQwLjA1OTYgMjcgNDAuNzVDMjcgNDEuNDQwNCAyNy41NTk2IDQyIDI4LjI1IDQySDM1Ljc1QzM5LjIwMTggNDIgNDIgMzkuMjAxOCA0MiAzNS43NVYxMi4yNUM0MiA4Ljc5ODIyIDM5LjIwMTggNiAzNS43NSA2SDEyLjI1WiIgZmlsbD0iIzJBNDQ2RiIvPgo8cGF0aCBkPSJNNy4yNSAyOS41QzYuNTU5NjQgMjkuNSA2IDI4Ljk0MDQgNiAyOC4yNUM2IDI3LjU1OTYgNi41NTk2NCAyNyA3LjI1IDI3SDE5Ljc1QzIwLjQ0MDQgMjcgMjEgMjcuNTU5NiAyMSAyOC4yNVY0MC43NUMyMSA0MS40NDA0IDIwLjQ0MDQgNDIgMTkuNzUgNDJDMTkuMDU5NiA0MiAxOC41IDQxLjQ0MDQgMTguNSA0MC43NVYzMS4yNjc4TDguMTMzODggNDEuNjMzOUM3LjY0NTczIDQyLjEyMiA2Ljg1NDI3IDQyLjEyMiA2LjM2NjEyIDQxLjYzMzlDNS44Nzc5NiA0MS4xNDU3IDUuODc3OTYgNDAuMzU0MyA2LjM2NjEyIDM5Ljg2NjFMMTYuNzMyMiAyOS41SDcuMjVaIiBmaWxsPSIjMDA3OEQ0Ii8+Cjwvc3ZnPgo=",
-  document_text: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTI0IDE2VjRIMTJDOS43OTA4NiA0IDggNS43OTA4NiA4IDhWNDBDOCA0Mi4yMDkxIDkuNzkwODYgNDQgMTIgNDRIMzZDMzguMjA5MSA0NCA0MCA0Mi4yMDkxIDQwIDQwVjIwSDI4QzI1Ljc5MDkgMjAgMjQgMTguMjA5MSAyNCAxNlpNMTYuNSAyM0gzMS41QzMyLjMyODQgMjMgMzMgMjMuNjcxNiAzMyAyNC41QzMzIDI1LjMyODQgMzIuMzI4NCAyNiAzMS41IDI2SDE2LjVDMTUuNjcxNiAyNiAxNSAyNS4zMjg0IDE1IDI0LjVDMTUgMjMuNjcxNiAxNS42NzE2IDIzIDE2LjUgMjNaTTE2LjUgMjguNUgzMS41QzMyLjMyODQgMjguNSAzMyAyOS4xNzE2IDMzIDMwQzMzIDMwLjgyODQgMzIuMzI4NCAzMS41IDMxLjUgMzEuNUgxNi41QzE1LjY3MTYgMzEuNSAxNSAzMC44Mjg0IDE1IDMwQzE1IDI5LjE3MTYgMTUuNjcxNiAyOC41IDE2LjUgMjguNVpNMTYuNSAzNEgzMS41QzMyLjMyODQgMzQgMzMgMzQuNjcxNiAzMyAzNS41QzMzIDM2LjMyODQgMzIuMzI4NCAzNyAzMS41IDM3SDE2LjVDMTUuNjcxNiAzNyAxNSAzNi4zMjg0IDE1IDM1LjVDMTUgMzQuNjcxNiAxNS42NzE2IDM0IDE2LjUgMzRaTTI3IDE2VjVMMzkgMTdIMjhDMjcuNDQ3NyAxNyAyNyAxNi41NTIzIDI3IDE2WiIgZmlsbD0iIzJBNDQ2RiIvPgo8L3N2Zz4K",
-  globe: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUgMjRDMTYuNSAyMS45MTEyIDE2LjYxNjggMTkuODk4NiAxNi44MzI5IDE4SDMxLjE2NzFDMzEuMzgzMiAxOS44OTg2IDMxLjUgMjEuOTExMiAzMS41IDI0QzMxLjUgMjYuMDg4OCAzMS4zODMyIDI4LjEwMTUgMzEuMTY3MSAzMEgxNi44MzI5QzE2LjYxNjggMjguMTAxNSAxNi41IDI2LjA4ODggMTYuNSAyNFpNMTMuODE0NyAzMEMxMy42MDg4IDI4LjA3OTQgMTMuNSAyNi4wNjc5IDEzLjUgMjRDMTMuNSAyMS45MzIxIDEzLjYwODggMTkuOTIwNiAxMy44MTQ3IDE4SDMuODY5NjRDMy4zMDM4MyAxOS45MDExIDMgMjEuOTE1MSAzIDI0QzMgMjYuMDg0OSAzLjMwMzgzIDI4LjA5ODkgMy44Njk2NCAzMEgxMy44MTQ3Wk01LjAyMDg5IDMzSDE0LjIyNjlDMTQuNjk4MyAzNS43ODk1IDE1LjM4NDYgMzguMzIwMyAxNi4yNDMzIDQwLjQ2N0MxNi43OTYzIDQxLjg0OTUgMTcuNDMzMSA0My4xMDM3IDE4LjE1MTcgNDQuMTc0OUMxMi4zNDU1IDQyLjQ5NDggNy41NzQ3NCAzOC4zNzYgNS4wMjA4OSAzM1pNMTcuMjcyNCAzM0gzMC43Mjc2QzMwLjI5MzMgMzUuMzk4OSAyOS42OTMxIDM3LjU0ODMgMjguOTcxMiAzOS4zNTI4QzI4LjE5ODcgNDEuMjg0MSAyNy4zMTY0IDQyLjc0NjMgMjYuNDEzNCA0My43MDEyQzI1LjUxMzMgNDQuNjUyOSAyNC42OTczIDQ1IDI0IDQ1QzIzLjMwMjcgNDUgMjIuNDg2NyA0NC42NTI5IDIxLjU4NjYgNDMuNzAxMkMyMC42ODM2IDQyLjc0NjMgMTkuODAxMyA0MS4yODQxIDE5LjAyODggMzkuMzUyOEMxOC4zMDY5IDM3LjU0ODMgMTcuNzA2NyAzNS4zOTg5IDE3LjI3MjQgMzNaTTMzLjc3MzEgMzNDMzMuMzAxNyAzNS43ODk1IDMyLjYxNTQgMzguMzIwMyAzMS43NTY3IDQwLjQ2N0MzMS4yMDM3IDQxLjg0OTUgMzAuNTY2OSA0My4xMDM3IDI5Ljg0ODMgNDQuMTc0OUMzNS42NTQ1IDQyLjQ5NDggNDAuNDI1MyAzOC4zNzYgNDIuOTc5MSAzM0gzMy43NzMxWk00NC4xMzA0IDMwQzQ0LjY5NjIgMjguMDk4OSA0NSAyNi4wODQ5IDQ1IDI0QzQ1IDIxLjkxNTEgNDQuNjk2MiAxOS45MDExIDQ0LjEzMDQgMThIMzQuMTg1M0MzNC4zOTEyIDE5LjkyMDYgMzQuNSAyMS45MzIxIDM0LjUgMjRDMzQuNSAyNi4wNjc5IDM0LjM5MTIgMjguMDc5NCAzNC4xODUzIDMwSDQ0LjEzMDRaTTI4Ljk3MTIgOC42NDcxOEMyOS42OTMxIDEwLjQ1MTcgMzAuMjkzMyAxMi42MDExIDMwLjcyNzYgMTVIMTcuMjcyNEMxNy43MDY3IDEyLjYwMTEgMTguMzA2OSAxMC40NTE3IDE5LjAyODggOC42NDcxOEMxOS44MDEzIDYuNzE1OTIgMjAuNjgzNiA1LjI1MzY5IDIxLjU4NjYgNC4yOTg4MkMyMi40ODM1IDMuMzUwNDEgMjMuMjk3MSAzLjAwMjQxIDIzLjk5MjggMy4wMDAwMUwyNCAzLjAwMDAxTDI0LjAwNDEgM0MyNC43MDA1IDMuMDAxMzUgMjUuNTE1MSAzLjM0ODk3IDI2LjQxMzQgNC4yOTg4MkMyNy4zMTY0IDUuMjUzNjkgMjguMTk4NyA2LjcxNTkyIDI4Ljk3MTIgOC42NDcxOFpNMzMuNzczMSAxNUg0Mi45NzkxQzQwLjQyNTMgOS42MjQwMyAzNS42NTQ1IDUuNTA1MjcgMjkuODQ4MyAzLjgyNTExQzMwLjU2NjkgNC44OTYyOCAzMS4yMDM3IDYuMTUwNDggMzEuNzU2NyA3LjUzMzAxQzMyLjYxNTQgOS42Nzk3MiAzMy4zMDE3IDEyLjIxMDUgMzMuNzczMSAxNVpNNS4wMjA4OSAxNUgxNC4yMjY5QzE0LjY5ODMgMTIuMjEwNSAxNS4zODQ2IDkuNjc5NzIgMTYuMjQzMyA3LjUzMzAxQzE2Ljc5NjMgNi4xNTA0OCAxNy40MzMxIDQuODk2MjggMTguMTUxNyAzLjgyNTExQzEyLjM0NTUgNS41MDUyNyA3LjU3NDc0IDkuNjI0MDMgNS4wMjA4OSAxNVoiIGZpbGw9IiMyQTQ0NkYiLz4KPC9zdmc+Cg==",
-  key: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIyLjUgMzQuNVYzNkMyMi41IDM2LjgyODQgMjEuODI4NCAzNy41IDIxIDM3LjVIMThWMzlDMTggNDAuNjU2OSAxNi42NTY5IDQyIDE1IDQySDlDNy4zNDMxNSA0MiA2IDQwLjY1NjkgNiAzOVYzNS4xMjEzQzYgMzQuMzI1NyA2LjMxNjA3IDMzLjU2MjYgNi44Nzg2OCAzM0wxOC40ODY2IDIxLjM5MjFDMTguMTY5NyAyMC4zMTUxIDE4IDE5LjE3NjMgMTggMThDMTggMTEuMzcyNiAyMy4zNzI2IDYgMzAgNkMzNi42Mjc0IDYgNDIgMTEuMzcyNiA0MiAxOEM0MiAyNC42Mjc0IDM2LjYyNzQgMzAgMzAgMzBIMjdWMzNDMjcgMzMuODI4NCAyNi4zMjg0IDM0LjUgMjUuNSAzNC41SDIyLjVaTTMzIDE4QzM0LjY1NjkgMTggMzYgMTYuNjU2OSAzNiAxNUMzNiAxMy4zNDMxIDM0LjY1NjkgMTIgMzMgMTJDMzEuMzQzMSAxMiAzMCAxMy4zNDMxIDMwIDE1QzMwIDE2LjY1NjkgMzEuMzQzMSAxOCAzMyAxOFoiIGZpbGw9IiMyQTQ0NkYiLz4KPC9zdmc+Cg==",
-  lock_closed: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE1IDEyVjE1SDEyLjc1QzkuODUwNTEgMTUgNy41IDE3LjM1MDUgNy41IDIwLjI1VjM5Ljc1QzcuNSA0Mi42NDk1IDkuODUwNTEgNDUgMTIuNzUgNDVIMzUuMjVDMzguMTQ5NSA0NSA0MC41IDQyLjY0OTUgNDAuNSAzOS43NVYyMC4yNUM0MC41IDE3LjM1MDUgMzguMTQ5NSAxNSAzNS4yNSAxNUgzM1YxMkMzMyA3LjAyOTQ0IDI4Ljk3MDYgMyAyNCAzQzE5LjAyOTQgMyAxNSA3LjAyOTQ0IDE1IDEyWk0yNCA2QzI3LjMxMzcgNiAzMCA4LjY4NjI5IDMwIDEyVjE1SDE4VjEyQzE4IDguNjg2MjkgMjAuNjg2MyA2IDI0IDZaTTI0IDMzQzIyLjM0MzEgMzMgMjEgMzEuNjU2OSAyMSAzMEMyMSAyOC4zNDMxIDIyLjM0MzEgMjcgMjQgMjdDMjUuNjU2OSAyNyAyNyAyOC4zNDMxIDI3IDMwQzI3IDMxLjY1NjkgMjUuNjU2OSAzMyAyNCAzM1oiIGZpbGw9IiMyQTQ0NkYiLz4KPC9zdmc+Cg==",
-  lock_shield: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMiAxNlYxMi41QzEyIDguMDgxNzIgMTUuNTgxNyA0LjUgMjAgNC41QzI0LjQxODMgNC41IDI4IDguMDgxNzIgMjggMTIuNVYxNkgzMS4yNUMzMy44NzM0IDE2IDM2IDE4LjEyNjYgMzYgMjAuNzVWMjIuMDAwMUMzNS4zMDA0IDIxLjk5MzUgMzQuNTk4OSAyMi4yNTIzIDM0LjA1ODkgMjIuNzc2MUwzNC4wNTE2IDIyLjc4MzFMMzQuMDA4OSAyMi44MjM3QzMzLjk2OTEgMjIuODYxMyAzMy45MDggMjIuOTE4NCAzMy44Mjk2IDIyLjk5MDFDMzMuNjcxNiAyMy4xMzQ0IDMzLjQ0OTYgMjMuMzMxOSAzMy4xOTU1IDIzLjU0MzFDMzIuNjI0OSAyNC4wMTcyIDMyLjExNjUgMjQuMzcwNiAzMS44NDAyIDI0LjQ5NjFDMzEuNDYwNyAyNC42Njg0IDMwLjczNDcgMjQuODM3MyAyOS45MDY4IDI0Ljk1NTJDMjkuNTMxNiAyNS4wMDg2IDI5LjE5NDcgMjUuMDQzOCAyOC45NTI3IDI1LjA2NTRDMjguODMyNSAyNS4wNzYxIDI4LjczNzggMjUuMDgzMyAyOC42NzU5IDI1LjA4NzdDMjguNjQ1IDI1LjA4OTggMjguNjIyNSAyNS4wOTEzIDI4LjYwOTMgMjUuMDkyMUwyOC41OTc5IDI1LjA5MjhDMjcuMTQwNSAyNS4xNzM2IDI2IDI2LjM3OTYgMjYgMjcuODM5M1YzMy4yNUMyNiAzNy43OTYgMjguMzY5OCA0MC45ODI0IDMwLjUyMjQgNDIuOTE5MkMzMC45NTg5IDQzLjMxMiAzMS4zOTM3IDQzLjY2MDggMzEuODA5NyA0My45Njc0QzMxLjYyNjIgNDMuOTg4OSAzMS40Mzk0IDQ0IDMxLjI1IDQ0SDguNzVDNi4xMjY2NSA0NCA0IDQxLjg3MzQgNCAzOS4yNVYyMC43NUM0IDE4LjEyNjYgNi4xMjY2NSAxNiA4Ljc1IDE2SDEyWk0yNS41IDEyLjVDMjUuNSA5LjQ2MjQzIDIzLjAzNzYgNyAyMCA3QzE2Ljk2MjQgNyAxNC41IDkuNDYyNDMgMTQuNSAxMi41VjE2SDI1LjVWMTIuNVpNMjAgMzNDMjEuNjU2OSAzMyAyMyAzMS42NTY5IDIzIDMwQzIzIDI4LjM0MzEgMjEuNjU2OSAyNyAyMCAyN0MxOC4zNDMxIDI3IDE3IDI4LjM0MzEgMTcgMzBDMTcgMzEuNjU2OSAxOC4zNDMxIDMzIDIwIDMzWiIgZmlsbD0iIzJBNDQ2RiIvPgo8cGF0aCBkPSJNMjggMjcuNzZWMzMuNTAwMkMyOCAzOS45ODI4IDM0LjMxNDIgNDMuMjk3OCAzNS43MjI0IDQzLjk1NjVDMzUuOTAxIDQ0LjA0IDM2LjA5NjMgNDQuMDQwMSAzNi4yNzUgNDMuOTU2OUMzNy42ODM5IDQzLjMwMSA0NCA0MC4wMDk1IDQ0IDMzLjcxMjVWMjcuNzU5N0M0NCAyNy4zNDExIDQzLjY1ODIgMjcuMDAzMiA0My4yMzk4IDI2Ljk4ODlDNDIuMjc3OSAyNi45NTYgNDAuNjEyNiAyNi44MzQ4IDM5LjQ5ODYgMjYuNDAwMkMzOC40NjI4IDI1Ljk5NiAzNy4yNjU3IDI0LjkzMDEgMzYuNTc0NSAyNC4yNTUzQzM2LjI1ODYgMjMuOTQ2OSAzNS43NDEyIDIzLjk0NjggMzUuNDI1MiAyNC4yNTVDMzQuNzMzMyAyNC45Mjk3IDMzLjUzNTIgMjUuOTk1OSAzMi41MDAyIDI2LjQwMDJDMzEuMzg2OCAyNi44MzUxIDI5LjcyMiAyNi45NTYyIDI4Ljc2MDMgMjYuOTg5QzI4LjM0MTkgMjcuMDAzMyAyOCAyNy4zNDEzIDI4IDI3Ljc2WiIgZmlsbD0iIzAwNzhENCIvPgo8L3N2Zz4K",
-  search: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIwLjUgNkMxMi40OTE5IDYgNiAxMi40OTE5IDYgMjAuNUM2IDI4LjUwODEgMTIuNDkxOSAzNSAyMC41IDM1QzIzLjk2MzggMzUgMjcuMTQzOSAzMy43ODU1IDI5LjYzNzcgMzEuNzU5TDM5LjQzOSA0MS41NjAyQzQwLjAyNDcgNDIuMTQ2IDQwLjk3NDUgNDIuMTQ2IDQxLjU2MDMgNDEuNTYwMkM0Mi4xNDYxIDQwLjk3NDQgNDIuMTQ2MSA0MC4wMjQ3IDQxLjU2MDMgMzkuNDM4OUwzMS43NTkxIDI5LjYzNzdDMzMuNzg1NSAyNy4xNDM5IDM1IDIzLjk2MzggMzUgMjAuNUMzNSAxMi40OTE5IDI4LjUwODEgNiAyMC41IDZaTTkgMjAuNUM5IDE0LjE0ODcgMTQuMTQ4NyA5IDIwLjUgOUMyNi44NTEzIDkgMzIgMTQuMTQ4NyAzMiAyMC41QzMyIDI2Ljg1MTMgMjYuODUxMyAzMiAyMC41IDMyQzE0LjE0ODcgMzIgOSAyNi44NTEzIDkgMjAuNVoiIGZpbGw9IiMyQTQ0NkYiLz4KPC9zdmc+Cg==",
-  shield_error: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQwLjUgMTBDMzUuMTczMiAxMCAyOS45ODQxIDguMTEzMDUgMjQuOSA0LjNDMjQuMzY2NyAzLjkgMjMuNjMzMyAzLjkgMjMuMSA0LjNDMTguMDE1OSA4LjExMzA1IDEyLjgyNjggMTAgNy41IDEwQzYuNjcxNTcgMTAgNiAxMC42NzE2IDYgMTEuNVYyMkM2IDMyLjAwMjQgMTEuOTE1MSAzOS4zNTE1IDIzLjQ1MDIgNDMuODk1NkMyMy44MDM1IDQ0LjAzNDggMjQuMTk2NSA0NC4wMzQ4IDI0LjU0OTggNDMuODk1NkMzNi4wODQ5IDM5LjM1MTUgNDIgMzIuMDAyNCA0MiAyMlYxMS41QzQyIDEwLjY3MTYgNDEuMzI4NCAxMCA0MC41IDEwWk0yMi41MTM3IDE1LjI2MDdDMjIuNjEzIDE0LjUyODUgMjMuMjQwNiAxMy45NjQyIDI0IDEzLjk2NDJDMjQuNzU5NCAxMy45NjQyIDI1LjM4NyAxNC41Mjg1IDI1LjQ4NjMgMTUuMjYwN0wyNS41IDE1LjQ2NDJWMjguNDY0MkwyNS40ODYzIDI4LjY2NzhDMjUuMzg3IDI5LjM5OTkgMjQuNzU5NCAyOS45NjQyIDI0IDI5Ljk2NDJDMjMuMjQwNiAyOS45NjQyIDIyLjYxMyAyOS4zOTk5IDIyLjUxMzcgMjguNjY3OEwyMi41IDI4LjQ2NDJWMTUuNDY0MkwyMi41MTM3IDE1LjI2MDdaTTI0IDM2QzIyLjg5NTQgMzYgMjIgMzUuMTA0NiAyMiAzNEMyMiAzMi44OTU0IDIyLjg5NTQgMzIgMjQgMzJDMjUuMTA0NiAzMiAyNiAzMi44OTU0IDI2IDM0QzI2IDM1LjEwNDYgMjUuMTA0NiAzNiAyNCAzNloiIGZpbGw9IiMyQTQ0NkYiLz4KPC9zdmc+Cg=="
+// ================================================================
+// RESOURCE TYPES (Fixed icons with clear Emojis)
+// ================================================================
+const RES_CATEGORIES={compute:'Compute',network:'Networking',data:'Data & Storage',security:'Security',integration:'Integration',ai:'AI & Analytics',management:'Management'};
+const RES_TYPES={
+  vm:{icon:'💻',color:'#00BCF2',label:'Virtual Machine',cat:'compute',config:{size:'Standard_D2s_v3',os:'Ubuntu 22.04',zone:'1'}},
+  vmss:{icon:'🖥️',color:'#00A4EF',label:'VM Scale Set',cat:'compute',config:{size:'Standard_D2s_v3',minInstances:'2',maxInstances:'10'}},
+  aks:{icon:'☸️',color:'#0078D4',label:'AKS Cluster',cat:'compute',config:{nodes:'3',version:'1.29',tier:'Standard'}},
+  fa:{icon:'⚡',color:'#8764B8',label:'Function App',cat:'compute',config:{plan:'Consumption',runtime:'.NET 8'}},
+  aca:{icon:'📦',color:'#8764B8',label:'Container Apps',cat:'compute',config:{minReplicas:'0',maxReplicas:'10'}},
+  fw:{icon:'🛡️',color:'#E81123',label:'Azure Firewall',cat:'network',config:{sku:'Premium',mode:'Alert & Deny',zones:'1,2,3'}},
+  nva:{icon:'🧱',color:'#E81123',label:'FortiGate NVA',cat:'network',config:{mode:'Active/Passive',version:'7.6'}},
+  agw:{icon:'🌍',color:'#FF8C00',label:'App Gateway',cat:'network',config:{sku:'WAF_v2',capacity:'Autoscale',waf:'Enabled'}},
+  lb:{icon:'⚖️',color:'#00BCF2',label:'Load Balancer',cat:'network',config:{sku:'Standard',type:'Internal'}},
+  gw:{icon:'🔀',color:'#0078D4',label:'VPN Gateway',cat:'network',config:{sku:'VpnGw2AZ',routing:'BGP Enabled'}},
+  ergw:{icon:'🚄',color:'#003A5C',label:'ExpressRoute GW',cat:'network',config:{sku:'ErGw2AZ',fastPath:'Enabled'}},
+  bas:{icon:'🔒',color:'#0078D4',label:'Azure Bastion',cat:'network',config:{sku:'Standard',shareable:'Enabled'}},
+  afd:{icon:'⚡',color:'#FF8C00',label:'Azure Front Door',cat:'network',config:{sku:'Premium',waf:'Enabled'}},
+  pe:{icon:'🔌',color:'#8764B8',label:'Private Endpoint',cat:'network',config:{targetService:'Storage',subresource:'blob'}},
+  dns:{icon:'🌐',color:'#00B294',label:'Private DNS Zone',cat:'network',config:{zone:'privatelink.blob.core.windows.net'}},
+  nsg:{icon:'📋',color:'#E81123',label:'Network Sec Group',cat:'network',config:{rules:'5 custom rules'}},
+  sql:{icon:'🗄️',color:'#00B294',label:'Azure SQL',cat:'data',config:{tier:'General Purpose',vcores:'4',ha:'Zone Redundant'}},
+  cosmos:{icon:'🌌',color:'#00B294',label:'Cosmos DB',cat:'data',config:{api:'NoSQL',consistency:'Session',zones:'Enabled'}},
+  sa:{icon:'💾',color:'#00B294',label:'Storage Account',cat:'data',config:{tier:'Standard',replication:'ZRS',accessTier:'Hot'}},
+  redis:{icon:'⚡',color:'#E81123',label:'Azure Cache Redis',cat:'data',config:{sku:'Premium P1',zones:'Enabled'}},
+  adls:{icon:'🗃️',color:'#0078D4',label:'Data Lake Storage',cat:'data',config:{tier:'Standard',hns:'Enabled'}},
+  kv:{icon:'🔑',color:'#FF8C00',label:'Key Vault',cat:'security',config:{sku:'Premium',rbac:'Enabled',purgeProtect:'Enabled'}},
+  app:{icon:'📱',color:'#00BCF2',label:'App Service',cat:'integration',config:{sku:'Premium V3 P1v3',instances:'2',zone:'Enabled'}},
+  apim:{icon:'🔌',color:'#FF8C00',label:'API Management',cat:'integration',config:{tier:'Developer',capacity:'1'}},
+  sb:{icon:'📨',color:'#8764B8',label:'Service Bus',cat:'integration',config:{tier:'Premium',zones:'Enabled'}},
+  evh:{icon:'📤',color:'#8764B8',label:'Event Hub',cat:'integration',config:{tier:'Standard',partitions:'4'}},
+  logic:{icon:'🔄',color:'#8764B8',label:'Logic App',cat:'integration',config:{plan:'Standard',sku:'WS1'}},
+  foundry:{icon:'🤖',color:'#0078D4',label:'AI Foundry',cat:'ai',config:{kind:'AIServices',sku:'S0'}},
+  openai:{icon:'🧠',color:'#50E6FF',label:'Azure OpenAI',cat:'ai',config:{model:'gpt-4o',tier:'PayAsYouGo'}},
+  docintel:{icon:'📄',color:'#0078D4',label:'Document Intelligence',cat:'ai',config:{tier:'S0',endpoint:'Custom'}},
+  search:{icon:'🔍',color:'#FF8C00',label:'AI Search',cat:'ai',config:{tier:'Standard',replicas:'1',partitions:'1'}},
+  synapse:{icon:'📊',color:'#8764B8',label:'Synapse Analytics',cat:'ai',config:{sku:'Standard',dedicatedSql:'DW100c'}},
+  monitor:{icon:'📈',color:'#00B294',label:'Azure Monitor',cat:'management',config:{workspace:'Log Analytics',retentionDays:'90'}},
 };
 
-// ============================================================
-// RESOURCE DEFINITIONS - Extended with 30+ types
-// ============================================================
-const RES_CATEGORIES = {
-  compute: 'Compute',
-  network: 'Networking',
-  data: 'Data & Storage',
-  security: 'Security',
-  integration: 'Integration',
-  ai: 'AI & Analytics',
-  management: 'Management'
-};
+// ================================================================
+// STATE (V7 - Forces Clean Reset for New Layout)
+// ================================================================
+const KEY='azureBuilderV7';
+const SUB_COLORS=['#FFB900','#00BCF2','#00B294','#FF8C00','#8764B8'];
+const RG_COLORS=['#8764B8','#0078D4','#00B294','#FF8C00','#E81123'];
+const VNET_COLORS=['#0078D4','#00BCF2','#00B294','#FF8C00','#8764B8','#107C10'];
 
-const RES_TYPES = {
-  // COMPUTE
-  vm:       { icon: 'cloud_desktop',   color: '#00BCF2', label: 'Virtual Machine',       cat: 'compute',    config: { size: 'Standard_D2s_v3', os: 'Ubuntu 22.04', availabilityZone: '1' } },
-  vmss:     { icon: 'cloud_desktop',   color: '#00A4EF', label: 'VM Scale Set',          cat: 'compute',    config: { size: 'Standard_D2s_v3', minInstances: '2', maxInstances: '10' } },
-  aks:      { icon: 'cloud_cube',      color: '#0078D4', label: 'AKS Cluster',           cat: 'compute',    config: { nodes: '3', version: '1.29', tier: 'Standard' } },
-  fa:       { icon: 'deploy',          color: '#8764B8', label: 'Function App',          cat: 'compute',    config: { plan: 'Consumption', runtime: '.NET 8' } },
-  aca:      { icon: 'cloud_cube',      color: '#8764B8', label: 'Container Apps',        cat: 'compute',    config: { minReplicas: '0', maxReplicas: '10' } },
-  // NETWORKING
-  fw:       { icon: 'shield_error',    color: '#E81123', label: 'Azure Firewall',        cat: 'network',    config: { sku: 'Premium', mode: 'Alert & Deny', zones: '1,2,3' } },
-  nva:      { icon: 'lock_shield',     color: '#E81123', label: 'FortiGate NVA',         cat: 'network',    config: { mode: 'Active/Passive', version: '7.6' } },
-  agw:      { icon: 'globe',           color: '#FF8C00', label: 'App Gateway',           cat: 'network',    config: { sku: 'WAF_v2', capacity: 'Autoscale', waf: 'Enabled' } },
-  lb:       { icon: 'arrow_sync',      color: '#00BCF2', label: 'Load Balancer',         cat: 'network',    config: { sku: 'Standard', type: 'Internal' } },
-  gw:       { icon: 'building_cloud',  color: '#0078D4', label: 'VPN Gateway',           cat: 'network',    config: { sku: 'VpnGw2AZ', routing: 'BGP Enabled' } },
-  ergw:     { icon: 'building_cloud',  color: '#003A5C', label: 'ExpressRoute GW',       cat: 'network',    config: { sku: 'ErGw2AZ', fastPath: 'Enabled' } },
-  bas:      { icon: 'lock_closed',     color: '#0078D4', label: 'Azure Bastion',         cat: 'network',    config: { sku: 'Standard', shareable: 'Enabled' } },
-  afd:      { icon: 'globe',           color: '#FF8C00', label: 'Azure Front Door',      cat: 'network',    config: { sku: 'Premium', waf: 'Enabled' } },
-  pe:       { icon: 'lock_closed',     color: '#8764B8', label: 'Private Endpoint',      cat: 'network',    config: { targetService: 'Storage', subresource: 'blob' } },
-  dns:      { icon: 'globe',           color: '#00B294', label: 'Private DNS Zone',      cat: 'network',    config: { zone: 'privatelink.blob.core.windows.net' } },
-  nsg:      { icon: 'shield_error',    color: '#E81123', label: 'Network Sec Group',     cat: 'network',    config: { rules: '5 custom rules' } },
-  // DATA & STORAGE
-  sql:      { icon: 'cloud_database',  color: '#00B294', label: 'Azure SQL',             cat: 'data',       config: { tier: 'General Purpose', vcores: '4', ha: 'Zone Redundant' } },
-  cosmos:   { icon: 'database',        color: '#00B294', label: 'Cosmos DB',             cat: 'data',       config: { api: 'NoSQL', consistency: 'Session', zones: 'Enabled' } },
-  sa:       { icon: 'cloud_arrow_down',color: '#00B294', label: 'Storage Account',       cat: 'data',       config: { tier: 'Standard', replication: 'ZRS', accessTier: 'Hot' } },
-  redis:    { icon: 'database',        color: '#E81123', label: 'Azure Cache Redis',     cat: 'data',       config: { sku: 'Premium P1', zones: 'Enabled' } },
-  adls:     { icon: 'cloud_arrow_down',color: '#0078D4', label: 'Data Lake Storage',     cat: 'data',       config: { tier: 'Standard', hns: 'Enabled' } },
-  // SECURITY
-  kv:       { icon: 'key',             color: '#FF8C00', label: 'Key Vault',             cat: 'security',   config: { sku: 'Premium', rbac: 'Enabled', purgeProtect: 'Enabled' } },
-  // INTEGRATION  
-  app:      { icon: 'globe',           color: '#00BCF2', label: 'App Service',           cat: 'integration',config: { sku: 'Premium V3 P1v3', instances: '2', zone: 'Enabled' } },
-  apim:     { icon: 'globe',           color: '#FF8C00', label: 'API Management',        cat: 'integration',config: { tier: 'Developer', capacity: '1', zones: 'Disabled' } },
-  sb:       { icon: 'cloud',           color: '#8764B8', label: 'Service Bus',           cat: 'integration',config: { tier: 'Premium', zones: 'Enabled' } },
-  evh:      { icon: 'cloud_arrow_up',  color: '#8764B8', label: 'Event Hub',             cat: 'integration',config: { tier: 'Standard', partitions: '4' } },
-  logic:    { icon: 'arrow_sync',      color: '#8764B8', label: 'Logic App',             cat: 'integration',config: { plan: 'Standard', sku: 'WS1' } },
-  // AI & ANALYTICS
-  foundry:  { icon: 'bot',             color: '#0078D4', label: 'AI Foundry',            cat: 'ai',         config: { kind: 'AIServices', sku: 'S0' } },
-  openai:   { icon: 'bot',             color: '#50E6FF', label: 'Azure OpenAI',          cat: 'ai',         config: { model: 'gpt-4o', tier: 'PayAsYouGo' } },
-  docintel: { icon: 'document_text',   color: '#0078D4', label: 'Document Intelligence', cat: 'ai',         config: { tier: 'S0', endpoint: 'Custom' } },
-  search:   { icon: 'search',          color: '#FF8C00', label: 'AI Search',             cat: 'ai',         config: { tier: 'Standard', replicas: '1', partitions: '1' } },
-  synapse:  { icon: 'data_bar_vertical',color:'#8764B8', label: 'Synapse Analytics',     cat: 'ai',         config: { sku: 'Standard', dedicatedSql: 'DW100c' } },
-  // MANAGEMENT
-  monitor:  { icon: 'cloud_beaker',    color: '#00B294', label: 'Azure Monitor',         cat: 'management', config: { workspace: 'Log Analytics', retentionDays: '90' } },
-};
-
-// ============================================================
-// STATE
-// ============================================================
-const SAVED_STATE_KEY = 'azureBuilderV2';
-
-const defaultState = {
-  theme: 'drawio', layout: 'grid',
-  subscription: { name: 'Azure Subscription', id: 'sub-1' },
-  resourceGroups: [
-    { id: 'rg-connectivity', name: 'rg-connectivity', location: 'eastus' },
-    { id: 'rg-production',   name: 'rg-production',   location: 'eastus' },
-    { id: 'rg-development',  name: 'rg-development',  location: 'westeurope' }
+const defaultState={
+  theme:'drawio',layout:'grid',
+  subscriptions:[
+    {id:'sub-1',name:'Production Subscription'},
+    {id:'sub-2',name:'Development Subscription'}
   ],
-  hub: {
-    id: 'hub', name: 'Hub VNet', cidr: '10.0.0.0/16', color: '#0078D4', rgId: 'rg-connectivity',
-    resources: [
-      { id: 'res-h1', type: 'fw',  name: 'hub-firewall', config: { ...RES_TYPES.fw.config } },
-      { id: 'res-h2', type: 'gw',  name: 'hub-vpngw',    config: { ...RES_TYPES.gw.config } },
-      { id: 'res-h3', type: 'bas', name: 'hub-bastion',  config: { ...RES_TYPES.bas.config } }
+  resourceGroups:[
+    {id:'rg-conn', name:'rg-connectivity', location:'eastus',   subId:'sub-1'},
+    {id:'rg-prod', name:'rg-production',   location:'eastus',   subId:'sub-1'},
+    {id:'rg-dev',  name:'rg-development',  location:'westeurope',subId:'sub-2'}
+  ],
+  hub:{
+    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-conn',
+    resources:[
+      {id:'rh1',type:'fw', name:'hub-firewall',config:{...RES_TYPES.fw.config}},
+      {id:'rh2',type:'gw', name:'hub-vpngw',   config:{...RES_TYPES.gw.config}},
+      {id:'rh3',type:'bas',name:'hub-bastion', config:{...RES_TYPES.bas.config}}
     ]
   },
-  spokes: [
-    {
-      id: 'spoke-1', name: 'prod-vnet', cidr: '10.1.0.0/16', color: '#00BCF2', peering: true, rgId: 'rg-production',
-      resources: [
-        { id: 'res-s1', type: 'vm',   name: 'prod-vm-01',    config: { ...RES_TYPES.vm.config } },
-        { id: 'res-s2', type: 'sql',  name: 'prod-sqldb',    config: { ...RES_TYPES.sql.config } },
-        { id: 'res-s3', type: 'kv',   name: 'prod-keyvault', config: { ...RES_TYPES.kv.config } },
-        { id: 'res-s4', type: 'pe',   name: 'prod-pe-sql',   config: { ...RES_TYPES.pe.config } }
-      ]
-    },
-    {
-      id: 'spoke-2', name: 'dev-vnet', cidr: '10.2.0.0/16', color: '#00B294', peering: true, rgId: 'rg-development',
-      resources: [
-        { id: 'res-d1', type: 'app',     name: 'dev-webapp',   config: { ...RES_TYPES.app.config } },
-        { id: 'res-d2', type: 'foundry', name: 'dev-ai-hub',   config: { ...RES_TYPES.foundry.config } }
-      ]
-    }
+  spokes:[
+    {id:'sp1',name:'prod-vnet',cidr:'10.1.0.0/16',color:'#00BCF2',peering:true,rgId:'rg-prod',
+     resources:[
+       {id:'rs1',type:'vm',  name:'prod-vm-01',  config:{...RES_TYPES.vm.config}},
+       {id:'rs2',type:'sql', name:'prod-sqldb',  config:{...RES_TYPES.sql.config}}
+     ]},
+    {id:'sp2',name:'dev-vnet',cidr:'10.2.0.0/16',color:'#00B294',peering:true,rgId:'rg-dev',
+     resources:[
+       {id:'rd1',type:'app',    name:'dev-webapp',  config:{...RES_TYPES.app.config}},
+       {id:'rd2',type:'foundry',name:'dev-ai-hub',  config:{...RES_TYPES.foundry.config}}
+     ]}
   ],
-  selectedId: null, offset: { x: 0, y: 0 }, scale: 1, dragging: false, dragStart: {x:0,y:0}, offsetStart: {x:0,y:0}
+  selectedId:null,offset:{x:0,y:0},scale:1,dragging:false,dragStart:{x:0,y:0},offsetStart:{x:0,y:0}
 };
 
 let state;
-try {
-  const s = localStorage.getItem(SAVED_STATE_KEY);
-  state = s ? JSON.parse(s) : JSON.parse(JSON.stringify(defaultState));
-  state.dragging = false;
-  // Migrate old state: add subscription/resourceGroups if missing
-  if (!state.subscription) state.subscription = defaultState.subscription;
-  if (!state.resourceGroups) state.resourceGroups = defaultState.resourceGroups;
-  if (!state.hub.rgId) state.hub.rgId = 'rg-connectivity';
-  state.spokes.forEach((s, i) => { if (!s.rgId) s.rgId = 'rg-production'; });
-  if (state.theme === 'dark') document.body.classList.remove('theme-drawio');
+try{
+  const s=localStorage.getItem(KEY);
+  state=s?JSON.parse(s):JSON.parse(JSON.stringify(defaultState));
+  state.dragging=false;
+  if(state.theme==='dark') document.body.classList.remove('theme-drawio');
   else document.body.classList.add('theme-drawio');
-} catch(e) { state = JSON.parse(JSON.stringify(defaultState)); }
+}catch(e){state=JSON.parse(JSON.stringify(defaultState));}
 
-const getUid = () => 'id-' + Math.random().toString(36).substr(2, 9);
+const uid=()=>'id-'+Math.random().toString(36).substr(2,9);
+const esc=s=>String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
+function fullUpdate(){saveState();renderSidebar();renderEditor();draw();}
 
-// ============================================================
-// ICON SYSTEM
-// ============================================================
-const iconImages = {};
-let iconsLoaded = 0;
-let totalIcons = 0;
-
-function preloadIcons(cb) {
-  const needed = new Set();
-  needed.add('cloud'); // fallback
-  [state.hub, ...state.spokes].forEach(vnet => {
-    vnet.resources.forEach(r => {
-      const t = RES_TYPES[r.type];
-      if (t && t.icon && MS_ICONS[t.icon]) needed.add(t.icon);
-    });
-  });
-  // preload all defined icons
-  Object.keys(RES_TYPES).forEach(k => {
-    const t = RES_TYPES[k];
-    if (t.icon && MS_ICONS[t.icon]) needed.add(t.icon);
-  });
-  totalIcons = needed.size;
-  needed.forEach(key => {
-    if (iconImages[key]) { iconsLoaded++; if (iconsLoaded >= totalIcons && cb) cb(); return; }
-    const img = new Image();
-    img.onload = () => { iconsLoaded++; if (iconsLoaded >= totalIcons && cb) cb(); };
-    img.onerror = () => { iconsLoaded++; if (iconsLoaded >= totalIcons && cb) cb(); };
-    img.src = MS_ICONS[key];
-    iconImages[key] = img;
-  });
-  if (totalIcons === 0 && cb) cb();
-}
-
-// ============================================================
+// ================================================================
 // TOGGLES
-// ============================================================
-function toggleTheme() {
-  state.theme = state.theme === 'drawio' ? 'dark' : 'drawio';
-  document.body.classList.toggle('theme-drawio', state.theme === 'drawio');
+// ================================================================
+function toggleTheme(){
+  state.theme=state.theme==='drawio'?'dark':'drawio';
+  document.body.classList.toggle('theme-drawio',state.theme==='drawio');
   fullUpdate();
 }
-function toggleLayout() {
-  state.layout = state.layout === 'grid' ? 'radial' : 'grid';
-  state.offset = { x: 0, y: 0 }; state.scale = 1; fullUpdate();
+function toggleLayout(){
+  state.layout=state.layout==='grid'?'radial':'grid';
+  state.offset={x:0,y:0};state.scale=1;fullUpdate();
 }
+function fitToScreen(){state.offset={x:0,y:0};state.scale=1;saveState();draw();}
 
-// ============================================================
-// LEFT SIDEBAR RENDERING
-// ============================================================
-function renderSidebar() {
-  const container = document.getElementById('sidebar-left');
-  let html = '';
+// ================================================================
+// LEFT SIDEBAR — Full Hierarchy Tree
+// ================================================================
+function renderSidebar(){
+  const el=document.getElementById('sidebar-left');
+  let h='<div class="tree-section-title">// Azure Hierarchy</div>';
 
-  // Subscription
-  html += `
-    <div class="section-title">// Subscription</div>
-    <div class="sub-card">
-      <div style="font-size:8px; color:#FFB900; text-transform:uppercase; font-weight:700; margin-bottom:4px;">☁ Subscription</div>
-      <input type="text" class="input-field" value="${esc(state.subscription.name)}" onchange="state.subscription.name=this.value; saveState(); draw();" placeholder="Subscription name">
-    </div>
-  `;
-
-  // Hub VNet
-  html += `<div class="section-title" style="margin-top:8px;">// Hub Network</div>`;
-  html += buildVnetCard(state.hub, true);
-
-  // Spoke VNets
-  html += `<div class="section-title" style="margin-top:8px;">// Spoke Networks</div>`;
-  state.spokes.forEach((spoke, idx) => { html += buildVnetCard(spoke, false, idx); });
-  html += `<button class="btn primary" onclick="addSpoke()">➕ Add Spoke VNet</button>`;
-
-  container.innerHTML = html;
-}
-
-function buildVnetCard(vnet, isHub, idx = null) {
-  const isSelected = state.selectedId === vnet.id;
-  const rgOptions = state.resourceGroups.map(rg =>
-    `<option value="${rg.id}" ${vnet.rgId === rg.id ? 'selected' : ''}>${rg.name}</option>`
-  ).join('');
-
-  let html = `
-    <div class="vnet-card" style="border-color:${isSelected ? 'var(--azure-blue)' : 'var(--border)'}; border-left: 3px solid ${vnet.color};">
-      <div class="vnet-header">
-        <div class="vnet-row">
-          <input type="text" class="input-field" value="${esc(vnet.name)}" onchange="updateVnet('${vnet.id}','name',this.value)" onclick="selectNode('${vnet.id}')">
-          <input type="text" class="input-field cidr" value="${esc(vnet.cidr)}" onchange="updateVnet('${vnet.id}','cidr',this.value)" onclick="selectNode('${vnet.id}')">
-        </div>
-        <div class="vnet-row">
-          <span style="font-size:8px; color:var(--muted); white-space:nowrap;">📁 RG:</span>
-          <select class="input-field" style="flex:1;" onchange="updateVnet('${vnet.id}','rgId',this.value)">${rgOptions}</select>
-          ${!isHub ? `<input type="color" title="Color" style="width:24px;height:24px;border:none;background:none;cursor:pointer;padding:0;" value="${vnet.color}" onchange="updateVnet('${vnet.id}','color',this.value)">` : ''}
-        </div>
+  state.subscriptions.forEach((sub,si)=>{
+    const rgs=state.resourceGroups.filter(rg=>rg.subId===sub.id);
+    const subColor=SUB_COLORS[si%SUB_COLORS.length];
+    h+=`<div class="sub-block">
+      <div class="sub-header" style="border-left-color:${subColor}">
+        <span class="sub-icon">☁️</span>
+        <input class="sub-name-input" value="${esc(sub.name)}" 
+          title="Click to rename subscription"
+          onchange="renameSub('${sub.id}',this.value)"
+          onclick="event.stopPropagation()">
+        <button class="icon-btn" title="Add Resource Group" onclick="addRg('${sub.id}')">📁+</button>
+        <button class="icon-btn danger" title="Delete Subscription" onclick="deleteSub('${sub.id}')">🗑</button>
       </div>
-      <div class="resource-chips">
-  `;
-  vnet.resources.forEach(res => {
-    const rType = RES_TYPES[res.type] || RES_TYPES.vm;
-    const isResSelected = state.selectedId === res.id;
-    html += `<div class="chip ${isHub ? 'hub-chip' : ''}" style="${isResSelected ? 'border-color:var(--azure-blue);background:var(--azure-blue);color:white;' : ''}" onclick="selectNode('${res.id}')">
-      🔹 ${esc(res.name)}
-    </div>`;
-  });
-  html += `</div>
-      <div class="add-res-container" style="margin-top:8px;">
-        <button class="btn" onclick="toggleDropdown('${vnet.id}')">➕ Add Resource</button>
-        <div class="res-dropdown" id="dropdown-${vnet.id}">`;
+      <div class="sub-body">`;
 
-  // Group resources by category
-  const cats = {};
-  Object.keys(RES_TYPES).forEach(k => {
-    const t = RES_TYPES[k];
-    if (!cats[t.cat]) cats[t.cat] = [];
-    cats[t.cat].push({ key: k, ...t });
-  });
-  Object.keys(cats).forEach(catKey => {
-    html += `<div class="res-dropdown-section">${RES_CATEGORIES[catKey] || catKey}</div>`;
-    cats[catKey].forEach(t => {
-      html += `<div class="res-option" onclick="addResource('${vnet.id}','${t.key}')">
-        <span style="width:16px;height:16px;background:${t.color}20;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${t.color}60;font-size:8px;">●</span>
-        ${t.label}
-      </div>`;
+    rgs.forEach((rg,ri)=>{
+      const rgVnets=getVnetsInRg(rg.id);
+      h+=`<div class="rg-block" id="rgblock-${rg.id}">
+        <div class="rg-header">
+          <span style="font-size:12px;">📁</span>
+          <input class="rg-name-input" value="${esc(rg.name)}"
+            title="Click to rename RG"
+            onchange="renameRg('${rg.id}',this.value)"
+            onclick="event.stopPropagation()">
+          <select class="rg-loc-select" onchange="setRgLocation('${rg.id}',this.value)" onclick="event.stopPropagation()">
+            ${['eastus','westeurope','westus2','northeurope','southeastasia','australiaeast','uksouth'].map(l=>`<option value="${l}"${rg.location===l?' selected':''}>${l}</option>`).join('')}
+          </select>
+          <button class="icon-btn danger" title="Delete RG" onclick="event.stopPropagation();deleteRg('${rg.id}')">🗑</button>
+        </div>
+        <div class="rg-body">`;
+
+      rgVnets.forEach(vnet=>{
+        const isHub=vnet.id==='hub';
+        const isSelVnet=state.selectedId===vnet.id;
+        h+=`<div class="vnet-card" style="border-left:3px solid ${vnet.color};${isSelVnet?'border-color:var(--azure-blue);box-shadow:0 0 5px rgba(0,120,212,0.3)':''}">
+          <div class="vnet-card-header">
+            <div class="vnet-dot" style="background:${vnet.color}"></div>
+            <input class="vnet-name-input" value="${esc(vnet.name)}"
+              onchange="updateVnet('${vnet.id}','name',this.value)"
+              onclick="selectNode('${vnet.id}')">
+            <input class="vnet-cidr-input" value="${esc(vnet.cidr)}"
+              onchange="updateVnet('${vnet.id}','cidr',this.value)"
+              onclick="selectNode('${vnet.id}')">
+            ${!isHub?`<button class="icon-btn danger" title="Delete Spoke" onclick="deleteSpoke('${vnet.id}')">🗑</button>`:''}
+          </div>
+          <div class="resource-chips">`;
+        vnet.resources.forEach(res=>{
+          const rt=RES_TYPES[res.type]||{color:'#888', icon:'❓'};
+          const isSel=state.selectedId===res.id;
+          h+=`<div class="chip${isHub?' hub-chip':''}" style="${isSel?'background:var(--azure-blue);color:white;border-color:var(--azure-blue);':''}" onclick="selectNode('${res.id}')">
+            <span style="font-size:10px;">${rt.icon}</span>
+            <span>${esc(res.name)}</span>
+          </div>`;
+        });
+        h+=`</div>
+          <div class="add-res-container" style="margin-top:10px;">
+            <button class="add-btn vnet-level" onclick="toggleDropdown('${vnet.id}')">➕ Add Resource</button>
+            <div class="res-dropdown" id="dropdown-${vnet.id}">`;
+        const cats={};
+        Object.keys(RES_TYPES).forEach(k=>{const t=RES_TYPES[k];if(!cats[t.cat])cats[t.cat]=[];cats[t.cat].push({key:k,...t});});
+        Object.keys(cats).forEach(cat=>{
+          h+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
+          cats[cat].forEach(t=>{h+=`<div class="res-option" onclick="addResource('${vnet.id}','${t.key}')"><span>${t.icon}</span> ${t.label}</div>`;});
+        });
+        h+=`</div></div></div>`;
+      });
+
+      h+=`<button class="add-btn vnet-level" onclick="addSpoke('${rg.id}')">➕ Add Spoke VNet</button>`;
+      h+=`</div></div>`;
     });
+
+    h+=`<button class="add-btn rg-level" onclick="addRg('${sub.id}')">📁 Add Resource Group</button>`;
+    h+=`</div></div>`;
   });
-  html += `</div></div>`;
-  if (!isHub) html += `<button class="btn danger" style="margin-top:6px;" onclick="deleteSpoke('${vnet.id}')">🗑 Delete Spoke</button>`;
-  html += `</div>`;
-  return html;
+
+  h+=`<button class="add-btn sub-level" onclick="addSub()">☁️ Add Subscription</button>`;
+  el.innerHTML=h;
 }
 
-// ============================================================
+function getVnetsInRg(rgId){
+  const result=[];
+  if(state.hub.rgId===rgId) result.push(state.hub);
+  state.spokes.forEach(s=>{if(s.rgId===rgId)result.push(s);});
+  return result;
+}
+
+// ================================================================
 // RIGHT EDITOR
-// ============================================================
-function renderEditor() {
-  const container = document.getElementById('editor-container');
-  if (!state.selectedId) {
-    container.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:10px;margin-top:20px;line-height:1.8;">← Click a resource or VNet<br>to edit its properties<br><br>Double-click to rename<br>any element on canvas</div>`;
+// ================================================================
+function renderEditor(){
+  const el=document.getElementById('editor-container');
+  if(!state.selectedId){
+    el.innerHTML=`<div style="text-align:center;color:var(--muted);font-size:11px;margin-top:20px;line-height:1.9;">← Click a resource or VNet<br>to edit its properties<br><br>Double-click to rename<br>on the canvas</div>`;
     return;
   }
-  let selectedObj = null, parentVnet = null, isVnet = false;
-  if (state.hub.id === state.selectedId) { selectedObj = state.hub; isVnet = true; }
-  else {
-    state.spokes.forEach(s => {
-      if (s.id === state.selectedId) { selectedObj = s; isVnet = true; }
-      const r = s.resources.find(r => r.id === state.selectedId);
-      if (r) { selectedObj = r; parentVnet = s; }
+  let obj=null,parent=null,isVnet=false;
+  if(state.hub.id===state.selectedId){obj=state.hub;isVnet=true;}
+  else{
+    state.spokes.forEach(s=>{
+      if(s.id===state.selectedId){obj=s;isVnet=true;}
+      const r=s.resources.find(r=>r.id===state.selectedId);
+      if(r){obj=r;parent=s;}
     });
-    const hr = state.hub.resources.find(r => r.id === state.selectedId);
-    if (hr) { selectedObj = hr; parentVnet = state.hub; }
+    const hr=state.hub.resources.find(r=>r.id===state.selectedId);
+    if(hr){obj=hr;parent=state.hub;}
   }
-  if (!selectedObj) { state.selectedId = null; return renderEditor(); }
+  if(!obj){state.selectedId=null;return renderEditor();}
 
-  let html = `<div class="editor-panel">`;
-  if (isVnet) {
-    const rg = state.resourceGroups.find(r => r.id === selectedObj.rgId) || {};
-    const rgOptions = state.resourceGroups.map(r => `<option value="${r.id}" ${selectedObj.rgId === r.id ? 'selected' : ''}>${r.name}</option>`).join('');
-    html += `
-      <div class="editor-header">🌐 VNet / Network</div>
-      <div class="editor-row"><span class="editor-label">VNet Name</span><input type="text" class="input-field" value="${esc(selectedObj.name)}" onchange="updateVnet('${selectedObj.id}','name',this.value)"></div>
-      <div class="editor-row"><span class="editor-label">CIDR Block</span><input type="text" class="input-field" value="${esc(selectedObj.cidr)}" onchange="updateVnet('${selectedObj.id}','cidr',this.value)"></div>
-      <div class="editor-row"><span class="editor-label">Resource Group</span><select class="input-field" onchange="updateVnet('${selectedObj.id}','rgId',this.value)">${rgOptions}</select></div>
-    `;
-    if (selectedObj.id !== 'hub') {
-      const isPeered = selectedObj.peering !== false;
-      html += `
-        <div class="editor-row">
-          <span class="editor-label">Hub Peering</span>
-          <button class="btn ${isPeered ? 'primary' : ''}" onclick="togglePeering('${selectedObj.id}')">
-            ${isPeered ? '🔗 Connected' : '🔌 Disconnected'}
-          </button>
-        </div>
-      `;
+  const allRgOpts=state.resourceGroups.map(rg=>{
+    const sub=state.subscriptions.find(s=>s.id===rg.subId);
+    return `<option value="${rg.id}" ${(isVnet?obj.rgId:parent?.rgId)===rg.id?'selected':''}>${sub?sub.name+' / ':''} ${rg.name}</option>`;
+  }).join('');
+
+  let h=`<div class="editor-panel">`;
+  if(isVnet){
+    h+=`<div class="editor-header">🌐 ${esc(obj.name)}</div>
+      <div class="editor-row"><span class="editor-label">VNet Name</span><input class="input-field" value="${esc(obj.name)}" onchange="updateVnet('${obj.id}','name',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">CIDR</span><input class="input-field" value="${esc(obj.cidr)}" onchange="updateVnet('${obj.id}','cidr',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">Resource Group</span><select class="input-field" onchange="updateVnet('${obj.id}','rgId',this.value)">${allRgOpts}</select></div>`;
+    if(obj.id!=='hub'){
+      const p=obj.peering!==false;
+      h+=`<div class="editor-row" style="margin-top:6px;"><span class="editor-label">Hub Peering</span>
+        <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:11px;font-weight:bold;border:1px solid ${p?'var(--azure-blue)':'var(--muted)'};background:${p?'rgba(0,120,212,.1)':'transparent'};color:${p?'var(--azure-blue)':'var(--muted)'};transition:0.2s;"
+          onclick="togglePeering('${obj.id}')">${p?'🔗 Connected to Hub':'🔌 Disconnected'}</button></div>
+        <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteSpoke('${obj.id}')">🗑 Delete Spoke</button>`;
     }
-  } else {
-    const rType = RES_TYPES[selectedObj.type] || RES_TYPES.vm;
-    html += `
-      <div class="editor-header"><span style="width:18px;height:18px;background:${rType.color}20;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${rType.color};font-size:9px;">●</span> ${rType.label}</div>
-      <div class="editor-row"><span class="editor-label">Resource Name</span><input type="text" class="input-field" value="${esc(selectedObj.name)}" onchange="updateResource('${parentVnet.id}','${selectedObj.id}','name',this.value)"></div>
-    `;
-    Object.keys(selectedObj.config).forEach(key => {
-      html += `<div class="editor-row" style="margin-top:4px;"><span class="editor-label">${key}</span><input type="text" class="input-field" value="${esc(selectedObj.config[key])}" onchange="updateResourceConfig('${parentVnet.id}','${selectedObj.id}','${key}',this.value)"></div>`;
+  }else{
+    const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓'};
+    h+=`<div class="editor-header"><span>${rt.icon}</span> ${rt.label}</div>
+      <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="updateResource('${parent.id}','${obj.id}','name',this.value)"></div>`;
+    Object.keys(obj.config).forEach(k=>{
+      h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="updateResConfig('${parent.id}','${obj.id}','${k}',this.value)"></div>`;
     });
-    html += `<button class="btn danger" onclick="deleteResource('${parentVnet.id}','${selectedObj.id}')">🗑 Delete Resource</button>`;
+    h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteResource('${parent.id}','${obj.id}')">🗑 Delete Resource</button>`;
   }
-  html += `</div>`;
-  container.innerHTML = html;
+  h+=`</div>`;
+  el.innerHTML=h;
 }
 
-// ============================================================
+// ================================================================
 // STATE MUTATIONS
-// ============================================================
-const COLORS = ['#00BCF2','#00B294','#FF8C00','#8764B8','#107C10','#E81123','#D83B01','#004B1C'];
-function saveState() { localStorage.setItem(SAVED_STATE_KEY, JSON.stringify(state)); }
-function fullUpdate() { saveState(); renderSidebar(); renderEditor(); draw(); }
-function resetDiagram() {
-  if (confirm('Reset to default diagram? All changes will be lost.')) {
-    localStorage.removeItem(SAVED_STATE_KEY); location.reload();
-  }
+// ================================================================
+function addSub(){
+  const n=state.subscriptions.length;
+  const id='sub-'+uid();
+  state.subscriptions.push({id,name:`Subscription ${n+1}`});
+  state.resourceGroups.push({id:'rg-'+uid(),name:'rg-new',location:'eastus',subId:id});
+  fullUpdate();
 }
-function esc(s) { return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function deleteSub(id){
+  if(state.subscriptions.length<=1){alert('Need at least one subscription.');return;}
+  if(!confirm('Delete subscription and all its resource groups? VNets will be moved.')) return;
+  const fallbackRg=state.resourceGroups.find(r=>r.subId!==id);
+  if(!fallbackRg){alert('Cannot delete: no other resource group available.');return;}
+  const subRgIds=state.resourceGroups.filter(r=>r.subId===id).map(r=>r.id);
+  if(state.hub.rgId&&subRgIds.includes(state.hub.rgId)) state.hub.rgId=fallbackRg.id;
+  state.spokes.forEach(s=>{if(subRgIds.includes(s.rgId))s.rgId=fallbackRg.id;});
+  state.resourceGroups=state.resourceGroups.filter(r=>r.subId!==id);
+  state.subscriptions=state.subscriptions.filter(s=>s.id!==id);
+  fullUpdate();
+}
+function renameSub(id,val){const s=state.subscriptions.find(s=>s.id===id);if(s){s.name=val;saveState();draw();}}
 
-function addSpoke() {
+function addRg(subId){
+  const n=state.resourceGroups.filter(r=>r.subId===subId).length;
+  state.resourceGroups.push({id:'rg-'+uid(),name:`rg-new-${n+1}`,location:'eastus',subId});
+  fullUpdate();
+}
+function deleteRg(id){
+  if(state.resourceGroups.length<=1){alert('Need at least one resource group.');return;}
+  const fallback=state.resourceGroups.find(r=>r.id!==id);
+  if(!fallback){alert('No fallback RG available.');return;}
+  if(!confirm('Delete resource group? VNets will move to: '+fallback.name)) return;
+  if(state.hub.rgId===id) state.hub.rgId=fallback.id;
+  state.spokes.forEach(s=>{if(s.rgId===id)s.rgId=fallback.id;});
+  state.resourceGroups=state.resourceGroups.filter(r=>r.id!==id);
+  fullUpdate();
+}
+function renameRg(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.name=val;saveState();draw();}}
+function setRgLocation(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.location=val;saveState();}}
+
+function addSpoke(rgId){
+  const n=state.spokes.length;
   state.spokes.push({
-    id: getUid(), name: `spoke-${state.spokes.length+1}-vnet`, cidr: `10.${state.spokes.length+1}.0.0/16`,
-    color: COLORS[state.spokes.length % COLORS.length], peering: true,
-    rgId: state.resourceGroups[0]?.id || 'rg-production', resources: []
+    id:uid(),name:`spoke-${n+1}-vnet`,cidr:`10.${n+1}.0.0/16`,
+    color:VNET_COLORS[n%VNET_COLORS.length],peering:true,
+    rgId:rgId||state.resourceGroups[0]?.id,resources:[]
   });
   fullUpdate();
 }
-function deleteSpoke(id) { state.spokes = state.spokes.filter(s => s.id !== id); state.selectedId = null; fullUpdate(); }
-function updateVnet(id, key, val) {
-  if (state.hub.id === id) state.hub[key] = val;
-  else { const sp = state.spokes.find(s => s.id === id); if (sp) sp[key] = val; }
+function deleteSpoke(id){state.spokes=state.spokes.filter(s=>s.id!==id);state.selectedId=null;fullUpdate();}
+function updateVnet(id,key,val){
+  if(state.hub.id===id)state.hub[key]=val;
+  else{const s=state.spokes.find(s=>s.id===id);if(s)s[key]=val;}
   fullUpdate();
 }
-function togglePeering(id) {
-  const sp = state.spokes.find(s => s.id === id);
-  if (sp) { sp.peering = !sp.peering; fullUpdate(); }
+function togglePeering(id){const s=state.spokes.find(s=>s.id===id);if(s){s.peering=!s.peering;fullUpdate();}}
+function toggleDropdown(id){
+  document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show'));
+  const dd=document.getElementById(`dropdown-${id}`);if(dd)dd.classList.toggle('show');
 }
-function toggleDropdown(id) {
-  document.querySelectorAll('.res-dropdown').forEach(d => d.classList.remove('show'));
-  const dd = document.getElementById(`dropdown-${id}`);
-  if (dd) dd.classList.toggle('show');
-}
-document.addEventListener('click', e => {
-  if (!e.target.closest('.add-res-container')) {
-    document.querySelectorAll('.res-dropdown').forEach(d => d.classList.remove('show'));
-  }
-});
-function addResource(vnetId, resType) {
-  const vnet = state.hub.id === vnetId ? state.hub : state.spokes.find(s => s.id === vnetId);
-  const rT = RES_TYPES[resType];
-  if (!rT || !vnet) return;
-  const newRes = { id: getUid(), type: resType, name: `${vnet.name.split('-')[0]}-${resType}`, config: { ...rT.config } };
-  vnet.resources.push(newRes);
-  document.querySelectorAll('.res-dropdown').forEach(d => d.classList.remove('show'));
-  preloadIcons(() => { selectNode(newRes.id); });
-}
-function deleteResource(vnetId, resId) {
-  const vnet = state.hub.id === vnetId ? state.hub : state.spokes.find(s => s.id === vnetId);
-  if (vnet) vnet.resources = vnet.resources.filter(r => r.id !== resId);
-  state.selectedId = null; fullUpdate();
-}
-function updateResource(vnetId, resId, key, val) {
-  const vnet = state.hub.id === vnetId ? state.hub : state.spokes.find(s => s.id === vnetId);
-  const res = vnet?.resources.find(r => r.id === resId);
-  if (res) { res[key] = val; fullUpdate(); }
-}
-function updateResourceConfig(vnetId, resId, configKey, val) {
-  const vnet = state.hub.id === vnetId ? state.hub : state.spokes.find(s => s.id === vnetId);
-  const res = vnet?.resources.find(r => r.id === resId);
-  if (res) { res.config[configKey] = val; saveState(); renderEditor(); }
-}
-function selectNode(id) { state.selectedId = id; fullUpdate(); }
+document.addEventListener('click',e=>{if(!e.target.closest('.add-res-container'))document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show'));});
 
-// Resource Groups management
-function addResourceGroup() {
-  const name = prompt('Resource Group name:', 'rg-new');
-  if (!name) return;
-  state.resourceGroups.push({ id: 'rg-'+getUid(), name, location: 'eastus' });
-  fullUpdate();
-  renderRgModal();
+function addResource(vnetId,resType){
+  const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
+  const rT=RES_TYPES[resType];
+  if(!rT||!vnet) return;
+  const nr={id:uid(),type:resType,name:`${vnet.name.split('-')[0]}-${resType}`,config:{...rT.config}};
+  vnet.resources.push(nr);
+  document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show'));
+  selectNode(nr.id);
 }
-function deleteRg(id) {
-  if (state.resourceGroups.length <= 1) { alert('Need at least one Resource Group.'); return; }
-  const fallback = state.resourceGroups.find(r => r.id !== id);
-  state.hub.rgId = state.hub.rgId === id ? fallback.id : state.hub.rgId;
-  state.spokes.forEach(s => { if (s.rgId === id) s.rgId = fallback.id; });
-  state.resourceGroups = state.resourceGroups.filter(r => r.id !== id);
-  fullUpdate(); renderRgModal();
+function deleteResource(vnetId,resId){
+  const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
+  if(vnet)vnet.resources=vnet.resources.filter(r=>r.id!==resId);
+  state.selectedId=null;fullUpdate();
 }
-function renderRgModal() {
-  const body = document.getElementById('rg-modal-body');
-  if (!body) return;
-  body.innerHTML = state.resourceGroups.map(rg => `
-    <div style="display:flex;gap:8px;align-items:center;padding:6px;background:var(--bg3);border-radius:4px;border:1px solid var(--border);">
-      <span style="font-size:14px;">📁</span>
-      <input class="input-field" style="flex:1;" value="${esc(rg.name)}" onchange="updateRgName('${rg.id}',this.value)">
-      <select class="input-field" style="width:110px;" onchange="updateRgLocation('${rg.id}',this.value)">
-        ${['eastus','westeurope','westus2','northeurope','southeastasia','australiaeast'].map(l => `<option value="${l}" ${rg.location===l?'selected':''}>${l}</option>`).join('')}
-      </select>
-      <button class="btn small danger" style="margin:0;" onclick="deleteRg('${rg.id}')">🗑</button>
-    </div>
-  `).join('');
+function updateResource(vnetId,resId,key,val){
+  const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
+  const r=vnet?.resources.find(r=>r.id===resId);if(r){r[key]=val;fullUpdate();}
 }
-function updateRgName(id, val) {
-  const rg = state.resourceGroups.find(r => r.id === id); if (rg) rg.name = val; saveState(); draw();
+function updateResConfig(vnetId,resId,k,val){
+  const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
+  const r=vnet?.resources.find(r=>r.id===resId);if(r){r.config[k]=val;saveState();renderEditor();}
 }
-function updateRgLocation(id, val) {
-  const rg = state.resourceGroups.find(r => r.id === id); if (rg) rg.location = val; saveState();
-}
-document.getElementById('add-rg-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('add-rg-modal')) document.getElementById('add-rg-modal').classList.remove('show');
-});
-document.getElementById('add-rg-modal').addEventListener('show', renderRgModal);
-// Override classList.add to also trigger modal render
-const origAdd = DOMTokenList.prototype.add;
-document.getElementById('add-rg-modal').classList.add = function(cls) {
-  origAdd.call(this, cls); if (cls === 'show') renderRgModal();
-};
+function selectNode(id){state.selectedId=id;fullUpdate();}
+function resetDiagram(){if(confirm('Are you sure you want to completely reset the diagram?')){localStorage.removeItem(KEY);location.reload();}}
 
-// ============================================================
-// CANVAS SETUP
-// ============================================================
-const canvas = document.getElementById('diagram-canvas');
-const ctx = canvas.getContext('2d');
+// ================================================================
+// CANVAS SETUP & LAYOUT ENGINE (Horizontal Subscriptions)
+// ================================================================
+const canvas=document.getElementById('diagram-canvas');
+const ctx=canvas.getContext('2d');
+function safeRR(c,x,y,w,h,r){if(typeof c.roundRect==='function')c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h);}
+function resize(){canvas.width=canvas.parentElement.clientWidth;canvas.height=canvas.parentElement.clientHeight;draw();}
+window.addEventListener('resize',resize);
 
-function safeRoundRect(c, x, y, w, h, r) {
-  if (typeof c.roundRect === 'function') { c.roundRect(x, y, w, h, r); }
-  else { c.rect(x, y, w, h); }
-}
-function resize() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; draw(); }
-window.addEventListener('resize', resize);
-
-// ============================================================
-// LAYOUT ENGINE
-// ============================================================
-function getRenderNodes() {
-  const cx = canvas.width / 2, cy = canvas.height / 2;
-  const nodes = [];
-
-  if (state.layout === 'grid') {
-    // --- GRID LAYOUT ---
-    const RES_W = 80, RES_H = 56, RES_PAD = 8;
-    const VNET_PAD_TOP = 44, VNET_PAD_BOT = 14, VNET_PAD_H = 16;
-    const VNET_GAP = 50, LAYER_GAP = 70;
-
-    function vnetWidth(vnet) { return Math.max(240, vnet.resources.length * (RES_W + RES_PAD) + VNET_PAD_H * 2); }
-    function vnetHeight(vnet) { return VNET_PAD_TOP + RES_H + VNET_PAD_BOT; }
-
-    const hW = vnetWidth(state.hub), hH = vnetHeight(state.hub);
-    const hubY = Math.max(cy - hH - LAYER_GAP / 2 - 30, 120);
-    nodes.push({ id: state.hub.id, isVnet: true, x: cx, y: hubY, width: hW, height: hH, label: state.hub.name, sub: state.hub.cidr, color: state.hub.color, peering: true, rgId: state.hub.rgId });
-
-    const resHubCount = state.hub.resources.length;
-    state.hub.resources.forEach((res, i) => {
-      const totalW = resHubCount * RES_W + (resHubCount - 1) * RES_PAD;
-      const rx = cx - totalW / 2 + RES_W / 2 + i * (RES_W + RES_PAD);
-      nodes.push({ id: res.id, isVnet: false, parentId: state.hub.id, x: rx, y: hubY + VNET_PAD_TOP + RES_H / 2 - 4, label: res.name, type: res.type, color: RES_TYPES[res.type]?.color || '#FFF', width: RES_W, height: RES_H });
+function getRenderNodes(){
+  const cx=canvas.width/2,cy=canvas.height/2,nodes=[];
+  
+  if(state.layout==='grid'){
+    const RW=84,RH=64,RP=12,VPT=48,VPB=18;
+    const VNET_GAP=60, RG_GAP=80, SUB_GAP=120;
+    
+    const vw=v=>Math.max(260,v.resources.length*(RW+RP)+20);
+    const vh=()=>VPT+RH+VPB;
+    
+    // BUILD HIERARCHICAL TREE TO CALCULATE WIDTHS
+    const tree = state.subscriptions.map(sub => {
+      const rgs = state.resourceGroups.filter(rg => rg.subId === sub.id).map(rg => {
+        const vnets = [];
+        if (state.hub.rgId === rg.id) vnets.push(state.hub);
+        vnets.push(...state.spokes.filter(sp => sp.rgId === rg.id));
+        
+        const rgWidth = vnets.length > 0 ? vnets.reduce((sum, v) => sum + vw(v), 0) + (vnets.length - 1) * VNET_GAP + 40 : 200;
+        return { ...rg, vnets, renderWidth: rgWidth };
+      });
+      const subWidth = rgs.length > 0 ? rgs.reduce((sum, rg) => sum + rg.renderWidth, 0) + (rgs.length - 1) * RG_GAP + 80 : 300;
+      return { ...sub, rgs, renderWidth: subWidth };
     });
 
-    // Spokes row
-    const spokeWidths = state.spokes.map(s => vnetWidth(s));
-    const totalSpokesW = spokeWidths.reduce((a, b) => a + b, 0) + VNET_GAP * (state.spokes.length - 1);
-    const spokeY = hubY + hH + LAYER_GAP;
-    let sx = cx - totalSpokesW / 2;
-
-    state.spokes.forEach((spoke, i) => {
-      const sW = spokeWidths[i], sH = vnetHeight(spoke);
-      const svx = sx + sW / 2;
-      nodes.push({ id: spoke.id, isVnet: true, parentId: state.hub.id, x: svx, y: spokeY, width: sW, height: sH, label: spoke.name, sub: spoke.cidr, color: spoke.color, peering: spoke.peering !== false, rgId: spoke.rgId });
-      const resCount = spoke.resources.length;
-      spoke.resources.forEach((res, j) => {
-        const totalW = resCount * RES_W + (resCount - 1) * RES_PAD;
-        const rx = svx - totalW / 2 + RES_W / 2 + j * (RES_W + RES_PAD);
-        nodes.push({ id: res.id, isVnet: false, parentId: spoke.id, x: rx, y: spokeY + VNET_PAD_TOP + RES_H / 2 - 4, label: res.name, type: res.type, color: RES_TYPES[res.type]?.color || '#FFF', width: RES_W, height: RES_H });
+    const totalWidth = tree.reduce((sum, sub) => sum + sub.renderWidth, 0) + (tree.length - 1) * SUB_GAP;
+    
+    // Assign Coordinates
+    const topY = Math.max(cy - 160, 150);
+    const bottomY = topY + 280;
+    
+    let curX = cx - totalWidth / 2;
+    
+    tree.forEach(sub => {
+      let rgX = curX + 40; // padding inside sub
+      sub.rgs.forEach(rg => {
+        let vnetX = rgX + 20; // padding inside rg
+        rg.vnets.forEach(vnet => {
+          const vWidth = vw(vnet);
+          const vx = vnetX + vWidth / 2;
+          const vy = (vnet.id === 'hub') ? topY : bottomY;
+          const isHub = vnet.id === 'hub';
+          
+          nodes.push({id:vnet.id, isVnet:true, x:vx, y:vy, width:vWidth, height:vh(), label:vnet.name, sub:vnet.cidr, color:vnet.color, peering:vnet.peering!==false, rgId:rg.id, subId:sub.id});
+          
+          vnet.resources.forEach((res,j)=>{
+            const tot=vnet.resources.length,tw=tot*RW+(tot-1)*RP;
+            nodes.push({id:res.id, isVnet:false, parentId:vnet.id, x:vx-tw/2+RW/2+j*(RW+RP), y:vy+VPT+RH/2-10, label:res.name, type:res.type, color:RES_TYPES[res.type]?.color||'#FFF', width:RW, height:RH});
+          });
+          
+          vnetX += vWidth + VNET_GAP;
+        });
+        rgX += rg.renderWidth + RG_GAP;
       });
-      sx += sW + VNET_GAP;
+      curX += sub.renderWidth + SUB_GAP;
     });
 
   } else {
-    // --- RADIAL LAYOUT ---
-    const r = Math.min(canvas.width, canvas.height) * 0.33;
-    nodes.push({ id: state.hub.id, isVnet: true, x: cx, y: cy, label: state.hub.name, sub: state.hub.cidr, color: state.hub.color, radius: 65, peering: true, rgId: state.hub.rgId });
-    state.hub.resources.forEach((res, i) => {
-      const angle = (i / Math.max(state.hub.resources.length, 1)) * Math.PI * 2 - Math.PI / 2;
-      nodes.push({ id: res.id, isVnet: false, parentId: state.hub.id, x: cx + Math.cos(angle) * 130, y: cy + Math.sin(angle) * 130, label: res.name, type: res.type, color: RES_TYPES[res.type]?.color || '#FFF', width: 80, height: 56 });
+    // Radial Layout (keeps everything grouped circularly)
+    const r=Math.min(canvas.width,canvas.height)*.34;
+    nodes.push({id:state.hub.id,isVnet:true,x:cx,y:cy,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,radius:70,peering:true,rgId:state.hub.rgId});
+    state.hub.resources.forEach((res,i)=>{
+      const angle=(i/Math.max(state.hub.resources.length,1))*Math.PI*2-Math.PI/2;
+      nodes.push({id:res.id,isVnet:false,parentId:state.hub.id,x:cx+Math.cos(angle)*135,y:cy+Math.sin(angle)*135,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:84,height:64});
     });
-    state.spokes.forEach((spoke, i) => {
-      const angle = state.spokes.length === 1 ? Math.PI / 2 : (i / state.spokes.length) * Math.PI * 2;
-      const sx = cx + Math.cos(angle) * r, sy = cy + Math.sin(angle) * r;
-      nodes.push({ id: spoke.id, isVnet: true, parentId: state.hub.id, x: sx, y: sy, label: spoke.name, sub: spoke.cidr, color: spoke.color, radius: 52, peering: spoke.peering !== false, rgId: spoke.rgId });
-      const perp = { x: -Math.sin(angle), y: Math.cos(angle) };
-      spoke.resources.forEach((res, j) => {
-        const t = spoke.resources.length > 1 ? (j * 85 - (spoke.resources.length - 1) * 42.5) : 0;
-        nodes.push({ id: res.id, isVnet: false, parentId: spoke.id, x: sx + Math.cos(angle) * 115 + perp.x * t, y: sy + Math.sin(angle) * 115 + perp.y * t, label: res.name, type: res.type, color: RES_TYPES[res.type]?.color || '#FFF', width: 80, height: 56 });
+    state.spokes.forEach((sp,i)=>{
+      const angle=state.spokes.length===1?Math.PI/2:(i/state.spokes.length)*Math.PI*2;
+      const sx=cx+Math.cos(angle)*r,sy=cy+Math.sin(angle)*r;
+      const perp={x:-Math.sin(angle),y:Math.cos(angle)};
+      nodes.push({id:sp.id,isVnet:true,parentId:state.hub.id,x:sx,y:sy,label:sp.name,sub:sp.cidr,color:sp.color,radius:55,peering:sp.peering!==false,rgId:sp.rgId});
+      sp.resources.forEach((res,j)=>{
+        const t=sp.resources.length>1?(j*90-(sp.resources.length-1)*45):0;
+        nodes.push({id:res.id,isVnet:false,parentId:sp.id,x:sx+Math.cos(angle)*125+perp.x*t,y:sy+Math.sin(angle)*125+perp.y*t,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:84,height:64});
       });
     });
   }
   return nodes;
 }
 
-// ============================================================
+// ================================================================
 // DRAWING ENGINE
-// ============================================================
-function getSubscriptionBounds(nodes) {
-  if (!nodes.length) return null;
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  nodes.forEach(n => {
-    const hw = n.isVnet ? (n.width || n.radius * 2 || 100) / 2 : n.width / 2;
-    const hh = n.isVnet ? (n.height || n.radius * 2 || 100) / 2 : n.height / 2;
-    minX = Math.min(minX, n.x - hw); minY = Math.min(minY, n.y - hh);
-    maxX = Math.max(maxX, n.x + hw); maxY = Math.max(maxY, n.y + hh);
-  });
-  return { x: minX - 24, y: minY - 40, w: maxX - minX + 48, h: maxY - minY + 64 };
-}
-
-function getRgBounds(rgId, nodes) {
-  const related = nodes.filter(n => n.isVnet && n.rgId === rgId);
-  if (!related.length) return null;
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  related.forEach(n => {
-    const hw = n.width ? n.width / 2 : n.radius || 60;
-    const hh = n.height ? n.height / 2 : n.radius || 60;
-    // Also include children (resources inside)
-    const children = nodes.filter(c => c.parentId === n.id && !c.isVnet);
-    children.forEach(c => {
-      minX = Math.min(minX, c.x - c.width / 2); minY = Math.min(minY, c.y - c.height / 2);
-      maxX = Math.max(maxX, c.x + c.width / 2); maxY = Math.max(maxY, c.y + c.height / 2);
+// ================================================================
+function getSubBounds(subId,nodes){
+  const related=nodes.filter(n=>n.isVnet&&n.subId===subId);
+  if(!related.length)return null;
+  let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
+  related.forEach(n=>{
+    const hw=n.width?n.width/2:n.radius||60,hh=n.height?n.height/2:n.radius||60;
+    mx=Math.min(mx,n.x-hw);my=Math.min(my,n.y-hh);Mx=Math.max(Mx,n.x+hw);My=Math.max(My,n.y+hh);
+    nodes.filter(c=>c.parentId===n.id&&!c.isVnet).forEach(c=>{
+      mx=Math.min(mx,c.x-c.width/2);my=Math.min(my,c.y-c.height/2);
+      Mx=Math.max(Mx,c.x+c.width/2);My=Math.max(My,c.y+c.height/2);
     });
-    minX = Math.min(minX, n.x - hw); minY = Math.min(minY, n.y - hh);
-    maxX = Math.max(maxX, n.x + hw); maxY = Math.max(maxY, n.y + hh);
   });
-  return { x: minX - 16, y: minY - 28, w: maxX - minX + 32, h: maxY - minY + 40 };
+  return{x:mx-40,y:my-60,w:Mx-mx+80,h:My-my+80};
+}
+function getRgBounds(rgId,nodes){
+  const related=nodes.filter(n=>n.isVnet&&n.rgId===rgId);
+  if(!related.length)return null;
+  let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
+  related.forEach(n=>{
+    const hw=n.width?n.width/2:n.radius||60,hh=n.height?n.height/2:n.radius||60;
+    mx=Math.min(mx,n.x-hw);my=Math.min(my,n.y-hh);Mx=Math.max(Mx,n.x+hw);My=Math.max(My,n.y+hh);
+    nodes.filter(c=>c.parentId===n.id&&!c.isVnet).forEach(c=>{
+      mx=Math.min(mx,c.x-c.width/2);my=Math.min(my,c.y-c.height/2);
+      Mx=Math.max(Mx,c.x+c.width/2);My=Math.max(My,c.y+c.height/2);
+    });
+  });
+  return{x:mx-20,y:my-35,w:Mx-mx+40,h:My-my+55};
 }
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.save();
-  ctx.translate(state.offset.x, state.offset.y);
-  ctx.scale(state.scale, state.scale);
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();ctx.translate(state.offset.x,state.offset.y);ctx.scale(state.scale,state.scale);
+  const nodes=getRenderNodes();
+  const map={};nodes.forEach(n=>map[n.id]=n);
+  const dw=state.theme==='drawio';
 
-  const nodes = getRenderNodes();
-  const map = {}; nodes.forEach(n => map[n.id] = n);
-  const isDrawio = state.theme === 'drawio';
-
-  // ---- Draw Subscription box ----
-  if (state.layout === 'grid') {
-    const bounds = getSubscriptionBounds(nodes);
-    if (bounds) {
-      ctx.beginPath();
-      safeRoundRect(ctx, bounds.x, bounds.y, bounds.w, bounds.h, 14);
-      ctx.fillStyle = isDrawio ? 'rgba(255,185,0,0.04)' : 'rgba(255,185,0,0.05)';
-      ctx.fill();
-      ctx.setLineDash([8, 5]);
-      ctx.strokeStyle = isDrawio ? 'rgba(255,185,0,0.5)' : 'rgba(255,185,0,0.4)';
-      ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
-
-      ctx.font = 'bold 10px Syne';
-      ctx.fillStyle = isDrawio ? '#B45309' : '#FFB900';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText('☁ ' + state.subscription.name, bounds.x + 14, bounds.y + 18);
-    }
-
-    // ---- Draw Resource Group boxes ----
-    state.resourceGroups.forEach(rg => {
-      const b = getRgBounds(rg.id, nodes);
-      if (!b) return;
-      ctx.beginPath();
-      safeRoundRect(ctx, b.x, b.y, b.w, b.h, 8);
-      ctx.fillStyle = isDrawio ? 'rgba(135,100,184,0.04)' : 'rgba(135,100,184,0.06)';
-      ctx.fill();
-      ctx.setLineDash([5, 4]);
-      ctx.strokeStyle = isDrawio ? 'rgba(135,100,184,0.5)' : 'rgba(135,100,184,0.4)';
-      ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
-
-      ctx.font = '9px JetBrains Mono';
-      ctx.fillStyle = isDrawio ? '#8764B8' : '#B08BE8';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText('📁 ' + rg.name, b.x + 8, b.y + 13);
+  if(state.layout==='grid'){
+    // SUBSCRIPTION BOXES
+    state.subscriptions.forEach((sub,si)=>{
+      const b=getSubBounds(sub.id,nodes);
+      if(!b)return;
+      const col=SUB_COLORS[si%SUB_COLORS.length];
+      ctx.beginPath();safeRR(ctx,b.x,b.y,b.w,b.h,16);
+      ctx.fillStyle=dw?`rgba(255,185,0,0.02)`:`rgba(255,185,0,0.03)`;ctx.fill();
+      ctx.setLineDash([8,6]);ctx.strokeStyle=dw?`rgba(255,185,0,0.4)`:col+'60';ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+      ctx.font='bold 11px Syne';ctx.fillStyle=dw?'#B45309':col;
+      ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText('☁️ '+sub.name,b.x+15,b.y+18);
+    });
+    // RG BOXES
+    state.resourceGroups.forEach((rg,ri)=>{
+      const b=getRgBounds(rg.id,nodes);
+      if(!b)return;
+      const col=RG_COLORS[ri%RG_COLORS.length];
+      ctx.beginPath();safeRR(ctx,b.x,b.y,b.w,b.h,10);
+      ctx.fillStyle=dw?'rgba(135,100,184,0.03)':'rgba(135,100,184,0.05)';ctx.fill();
+      ctx.setLineDash([5,5]);ctx.strokeStyle=dw?'rgba(135,100,184,0.4)':'rgba(135,100,184,0.5)';ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
+      ctx.font='9px JetBrains Mono';ctx.fillStyle=dw?'#8764B8':'#B08BE8';
+      ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText('📁 '+rg.name,b.x+8,b.y+12);
     });
   }
 
-  // ---- Draw Connection Lines ----
-  nodes.forEach(n => {
-    if (!n.parentId || !map[n.parentId]) return;
-    if (n.isVnet && n.peering === false) return;
-    const p = map[n.parentId];
+  // LINES (Peerings)
+  nodes.forEach(n=>{
+    if(!n.parentId||!map[n.parentId])return;
+    if(n.isVnet&&n.peering===false)return;
+    
+    const p=map[n.parentId]; // The HUB
     ctx.beginPath();
-
-    if (state.layout === 'grid' && n.isVnet) {
-      const midY = p.y + (p.height / 2) + 30;
-      ctx.moveTo(p.x, p.y + p.height / 2);
-      ctx.lineTo(p.x, midY);
-      ctx.lineTo(n.x, midY);
-      ctx.lineTo(n.x, n.y - n.height / 2);
-    } else if (state.layout === 'grid' && !n.isVnet) {
-      return;
+    if(state.layout==='grid'&&n.isVnet){
+      // ORTHOGONAL LINES THAT CAN CROSS SUBSCRIPTIONS
+      // We route them down to a specific "bus" line below the Hub
+      const busY = p.y + p.height/2 + 40; 
+      ctx.moveTo(p.x, p.y + p.height/2);
+      ctx.lineTo(p.x, busY);
+      ctx.lineTo(n.x, busY);
+      ctx.lineTo(n.x, n.y - n.height/2);
+    }else if(state.layout==='grid'){return;} // Resources inside grid boxes don't need connecting lines
+    else{ctx.moveTo(n.x,n.y);ctx.lineTo(p.x,p.y);}
+    
+    if(dw){
+      ctx.strokeStyle=n.isVnet?'#9CA3AF':'#D1D5DB';ctx.lineWidth=n.isVnet?2:1;
+      if(!n.isVnet)ctx.setLineDash([4,4]);
     } else {
-      ctx.moveTo(n.x, n.y); ctx.lineTo(p.x, p.y);
+      if(n.isVnet){
+        const g=ctx.createLinearGradient(p.x,p.y,n.x,n.y);
+        g.addColorStop(0,'rgba(0,120,212,.6)');g.addColorStop(1,n.color+'80');
+        ctx.strokeStyle=g;ctx.lineWidth=2;
+      } else{
+        ctx.strokeStyle=n.color+'60';ctx.lineWidth=1;ctx.setLineDash([3,6]);
+      }
     }
-
-    if (isDrawio) {
-      ctx.strokeStyle = n.isVnet ? '#6B7280' : '#D1D5DB';
-      ctx.lineWidth = n.isVnet ? 2 : 1;
-      if (!n.isVnet) ctx.setLineDash([4, 4]);
-    } else {
-      if (n.isVnet) {
-        const g = ctx.createLinearGradient(p.x, p.y, n.x, n.y);
-        g.addColorStop(0, 'rgba(0,120,212,0.6)'); g.addColorStop(1, n.color + '80');
-        ctx.strokeStyle = g; ctx.lineWidth = 2;
-      } else { ctx.strokeStyle = n.color + '60'; ctx.lineWidth = 1; ctx.setLineDash([3, 6]); }
-    }
-    ctx.stroke(); ctx.setLineDash([]);
-
-    // Peering label on line
-    if (state.layout === 'grid' && n.isVnet && n.peering !== false && isDrawio) {
-      const midY = p.y + (p.height / 2) + 30;
-      ctx.font = '8px JetBrains Mono';
-      ctx.fillStyle = '#6B7280';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      ctx.fillText('VNet Peering', (p.x + n.x) / 2, midY - 2);
+    ctx.stroke();ctx.setLineDash([]);
+    
+    if(state.layout==='grid'&&n.isVnet&&n.peering!==false&&dw){
+      const busY = p.y + p.height/2 + 40;
+      ctx.font='8px JetBrains Mono';ctx.fillStyle='#9CA3AF';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('VNet Peering',(p.x+n.x)/2,busY-4);
     }
   });
 
-  // ---- Draw Nodes ----
-  nodes.forEach(n => drawNode(n));
+  // DRAW NODES
+  nodes.forEach(n=>drawNode(n));
   ctx.restore();
 }
 
-function drawNode(n) {
-  const isSelected = state.selectedId === n.id;
-  const isDrawio = state.theme === 'drawio';
+function drawNode(n){
+  const isSel=state.selectedId===n.id,dw=state.theme==='drawio';
   ctx.save();
-
-  if (isSelected) {
-    ctx.shadowColor = isDrawio ? 'rgba(0,120,212,0.5)' : n.color;
-    ctx.shadowBlur = 12;
-  }
-
-  if (!n.isVnet) {
-    // ---- RESOURCE NODE ----
-    const rt = RES_TYPES[n.type] || {};
-    ctx.beginPath();
-    safeRoundRect(ctx, n.x - n.width / 2, n.y - n.height / 2, n.width, n.height, 6);
-
-    if (isDrawio) {
-      ctx.fillStyle = '#FFFFFF';
-      if (!isSelected) { ctx.shadowColor = 'rgba(0,0,0,0.08)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 2; }
+  if(isSel){ctx.shadowColor=dw?'rgba(0,120,212,.4)':n.color||'#0078D4';ctx.shadowBlur=15;}
+  
+  if(!n.isVnet){
+    // RESOURCES
+    const rt=RES_TYPES[n.type]||{icon:'❓'};
+    ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
+    if(dw){
+      ctx.fillStyle='#FFFFFF';
+      if(!isSel){ctx.shadowColor='rgba(0,0,0,.08)';ctx.shadowBlur=5;ctx.shadowOffsetY=3;}
       ctx.fill();
-      ctx.strokeStyle = isSelected ? '#0078D4' : '#E5E7EB';
-      ctx.lineWidth = isSelected ? 2 : 1; ctx.stroke();
-      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-
-      // Top accent bar
-      ctx.beginPath();
-      safeRoundRect(ctx, n.x - n.width / 2, n.y - n.height / 2, n.width, 3, { tl: 6, tr: 6, bl: 0, br: 0 });
-      ctx.fillStyle = rt.color || '#0078D4'; ctx.fill();
-    } else {
-      ctx.fillStyle = (rt.color || '#0078D4') + '22'; ctx.fill();
-      ctx.strokeStyle = isSelected ? (rt.color || '#0078D4') : (rt.color || '#0078D4') + '80';
-      ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle=isSel?'#0078D4':'#E5E7EB';ctx.lineWidth=isSel?2:1;ctx.stroke();
+      ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+      // Top colored bar
+      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,4,{tl:6,tr:6,bl:0,br:0});
+      ctx.fillStyle=rt.color||'#0078D4';ctx.fill();
+    }else{
+      ctx.fillStyle=(rt.color||'#0078D4')+'25';ctx.fill();
+      ctx.strokeStyle=isSel?(rt.color||'#0078D4'):(rt.color||'#0078D4')+'80';ctx.lineWidth=1.5;ctx.stroke();
     }
-
-    ctx.shadowBlur = 0;
-
-    // Draw Microsoft icon
-    const iconKey = rt.icon;
-    if (iconKey && iconImages[iconKey] && iconImages[iconKey].complete && iconImages[iconKey].naturalWidth > 0) {
-      const iSize = 20;
-      ctx.drawImage(iconImages[iconKey], n.x - iSize / 2, n.y - n.height / 2 + 8, iSize, iSize);
-    } else {
-      // Fallback colored circle
-      ctx.beginPath();
-      ctx.arc(n.x, n.y - 6, 8, 0, Math.PI * 2);
-      ctx.fillStyle = (rt.color || '#0078D4') + '40';
-      ctx.fill();
-      ctx.strokeStyle = rt.color || '#0078D4';
-      ctx.lineWidth = 1.5; ctx.stroke();
-    }
-
-    // Label
-    ctx.shadowBlur = 0;
-    ctx.font = 'bold 8px JetBrains Mono';
-    ctx.fillStyle = isDrawio ? '#374151' : '#FFFFFF';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const lbl = n.label.length > 12 ? n.label.slice(0, 11) + '…' : n.label;
-    ctx.fillText(lbl, n.x, n.y + n.height / 2 - 16);
-
-  } else {
-    // ---- VNET / HUB NODE ----
-    if (state.layout === 'grid') {
-      ctx.beginPath();
-      safeRoundRect(ctx, n.x - n.width / 2, n.y - n.height / 2, n.width, n.height, 10);
-
-      if (isDrawio) {
-        ctx.fillStyle = n.id === 'hub' ? 'rgba(0,120,212,0.04)' : 'rgba(255,255,255,0.6)';
-        ctx.fill();
-        ctx.setLineDash([7, 5]);
-        ctx.strokeStyle = isSelected ? '#0078D4' : n.color + 'CC';
-        ctx.lineWidth = isSelected ? 2.5 : 1.5; ctx.stroke(); ctx.setLineDash([]);
-      } else {
-        ctx.fillStyle = n.color + '12'; ctx.fill();
-        ctx.setLineDash([7, 5]);
-        ctx.strokeStyle = isSelected ? n.color : n.color + '70';
-        ctx.lineWidth = isSelected ? 2.5 : 2; ctx.stroke(); ctx.setLineDash([]);
+    ctx.shadowBlur=0;
+    
+    // Draw Text & Emoji
+    ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(rt.icon, n.x, n.y - 8);
+    
+    ctx.font='bold 9px JetBrains Mono';ctx.fillStyle=dw?'#374151':'#FFF';
+    ctx.textAlign='center';ctx.textBaseline='top';
+    const lbl=n.label.length>12?n.label.slice(0,11)+'…':n.label;
+    ctx.fillText(lbl,n.x,n.y+n.height/2-18);
+    
+  }else{
+    // VNETS
+    if(state.layout==='grid'){
+      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,12);
+      if(dw){
+        ctx.fillStyle=n.id==='hub'?'rgba(0,120,212,0.03)':'rgba(255,255,255,0.7)';ctx.fill();
+        ctx.setLineDash([6,6]);ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=isSel?2.5:2;ctx.stroke();ctx.setLineDash([]);
+      }else{
+        ctx.fillStyle=n.color+'10';ctx.fill();
+        ctx.setLineDash([6,6]);ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=isSel?2.5:2;ctx.stroke();ctx.setLineDash([]);
       }
-      ctx.shadowBlur = 0;
-
-      // VNet label
-      ctx.font = 'bold 11px Syne';
-      ctx.fillStyle = isDrawio ? '#111827' : (n.id === 'hub' ? '#E8F4FD' : n.color);
-      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ctx.fillText(n.label, n.x - n.width / 2 + 12, n.y - n.height / 2 + 10);
-
-      ctx.font = '9px JetBrains Mono';
-      ctx.fillStyle = isDrawio ? '#9CA3AF' : 'rgba(255,255,255,0.6)';
-      ctx.fillText(n.sub, n.x - n.width / 2 + 12, n.y - n.height / 2 + 24);
-
-    } else {
-      // Radial circles
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-      if (isDrawio) {
-        ctx.fillStyle = '#FFFFFF';
-        if (!isSelected) { ctx.shadowColor = 'rgba(0,0,0,0.06)'; ctx.shadowBlur = 8; }
-        ctx.fill(); ctx.shadowBlur = 0;
-        ctx.setLineDash([6, 5]); ctx.strokeStyle = isSelected ? '#0078D4' : n.color + 'CC';
-        ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
-      } else {
-        if (n.id === 'hub') {
-          const g = ctx.createRadialGradient(n.x - 10, n.y - 10, 0, n.x, n.y, n.radius);
-          g.addColorStop(0, '#1A8FE3'); g.addColorStop(1, '#003A5C'); ctx.fillStyle = g;
-        } else ctx.fillStyle = n.color + '25';
-        ctx.fill();
-        ctx.setLineDash([6, 5]); ctx.strokeStyle = isSelected ? n.color : n.color + '80';
-        ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
+      ctx.shadowBlur=0;
+      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#111827':(n.id==='hub'?'#E8F4FD':n.color);
+      ctx.textAlign='left';ctx.textBaseline='top';
+      ctx.fillText(n.label,n.x-n.width/2+14,n.y-n.height/2+12);
+      ctx.font='10px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,.6)';
+      ctx.fillText(n.sub,n.x-n.width/2+14,n.y-n.height/2+28);
+    }else{
+      ctx.beginPath();ctx.arc(n.x,n.y,n.radius,0,Math.PI*2);
+      if(dw){
+        ctx.fillStyle='#FFFFFF';if(!isSel){ctx.shadowColor='rgba(0,0,0,.06)';ctx.shadowBlur=8;}
+        ctx.fill();ctx.shadowBlur=0;
+        ctx.setLineDash([6,6]);ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]);
+      }else{
+        if(n.id==='hub'){const g=ctx.createRadialGradient(n.x-10,n.y-10,0,n.x,n.y,n.radius);g.addColorStop(0,'#1A8FE3');g.addColorStop(1,'#003A5C');ctx.fillStyle=g;}
+        else ctx.fillStyle=n.color+'25';ctx.fill();
+        ctx.setLineDash([6,6]);ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]);
       }
-      ctx.shadowBlur = 0;
-      ctx.font = 'bold 11px Syne';
-      ctx.fillStyle = isDrawio ? '#111827' : (n.id === 'hub' ? '#E8F4FD' : n.color);
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(n.label, n.x, n.y - 8);
-      ctx.font = '9px JetBrains Mono';
-      ctx.fillStyle = isDrawio ? '#9CA3AF' : 'rgba(255,255,255,0.6)';
-      ctx.fillText(n.sub, n.x, n.y + 10);
+      ctx.shadowBlur=0;
+      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#111827':(n.id==='hub'?'#E8F4FD':n.color);
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(n.label,n.x,n.y-10);
+      ctx.font='10px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,.6)';
+      ctx.fillText(n.sub,n.x,n.y+10);
     }
   }
   ctx.restore();
 }
 
-// ============================================================
+// ================================================================
 // CANVAS INTERACTIONS
-// ============================================================
-canvas.addEventListener('mousedown', e => {
-  const rect = canvas.getBoundingClientRect();
-  const px = (e.clientX - rect.left - state.offset.x) / state.scale;
-  const py = (e.clientY - rect.top - state.offset.y) / state.scale;
-  const nodes = getRenderNodes();
-  let hit = null;
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
-    if (!n.isVnet) {
-      if (Math.abs(px - n.x) < n.width / 2 && Math.abs(py - n.y) < n.height / 2) { hit = n; break; }
-    } else if (state.layout === 'grid') {
-      if (Math.abs(px - n.x) < n.width / 2 && Math.abs(py - n.y) < n.height / 2) { hit = n; break; }
-    } else {
-      if (Math.sqrt((px - n.x) ** 2 + (py - n.y) ** 2) < n.radius) { hit = n; break; }
-    }
+// ================================================================
+canvas.addEventListener('mousedown',e=>{
+  const r=canvas.getBoundingClientRect();
+  const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
+  const nodes=getRenderNodes();
+  let hit=null;
+  for(let i=nodes.length-1;i>=0;i--){
+    const n=nodes[i];
+    if(!n.isVnet){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
+    else if(state.layout==='grid'){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
+    else{if(Math.sqrt((px-n.x)**2+(py-n.y)**2)<n.radius){hit=n;break;}}
   }
-  if (hit) { selectNode(hit.id); }
-  else {
-    state.selectedId = null; fullUpdate();
-    state.dragging = true; state.dragStart = { x: e.clientX, y: e.clientY };
-    state.offsetStart = { ...state.offset };
-    canvas.style.cursor = 'grabbing';
+  if(hit)selectNode(hit.id);
+  else{state.selectedId=null;fullUpdate();state.dragging=true;state.dragStart={x:e.clientX,y:e.clientY};state.offsetStart={...state.offset};canvas.style.cursor='grabbing';}
+});
+
+canvas.addEventListener('dblclick',e=>{
+  const r=canvas.getBoundingClientRect();
+  const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
+  const nodes=getRenderNodes();
+  for(let i=nodes.length-1;i>=0;i--){
+    const n=nodes[i];
+    let hit=!n.isVnet?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2):
+      state.layout==='grid'?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2):
+      (Math.sqrt((px-n.x)**2+(py-n.y)**2)<n.radius);
+    if(hit){startInlineRename(n,e.clientX,e.clientY);break;}
   }
 });
 
-canvas.addEventListener('dblclick', e => {
-  const rect = canvas.getBoundingClientRect();
-  const px = (e.clientX - rect.left - state.offset.x) / state.scale;
-  const py = (e.clientY - rect.top - state.offset.y) / state.scale;
-  const nodes = getRenderNodes();
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
-    let hit = false;
-    if (!n.isVnet) hit = Math.abs(px - n.x) < n.width / 2 && Math.abs(py - n.y) < n.height / 2;
-    else if (state.layout === 'grid') hit = Math.abs(px - n.x) < n.width / 2 && Math.abs(py - n.y) < n.height / 2;
-    else hit = Math.sqrt((px - n.x) ** 2 + (py - n.y) ** 2) < n.radius;
-    if (hit) { startInlineRename(n, e.clientX, e.clientY); break; }
-  }
-});
-
-function startInlineRename(node, cx, cy) {
-  const overlay = document.getElementById('rename-overlay');
-  const input = document.getElementById('rename-input');
-  overlay.style.display = 'block';
-  overlay.style.left = (cx - 60) + 'px';
-  overlay.style.top = (cy - 16) + 'px';
-  input.value = node.label;
-  input.focus(); input.select();
-  const finish = () => {
-    const val = input.value.trim();
-    if (val) {
-      if (node.isVnet) updateVnet(node.id, 'name', val);
-      else {
-        let parentId = node.parentId;
-        if (!parentId) return;
-        updateResource(parentId, node.id, 'name', val);
-      }
+function startInlineRename(node,cx,cy){
+  const ov=document.getElementById('rename-overlay'),inp=document.getElementById('rename-input');
+  ov.style.display='block';ov.style.left=(cx-60)+'px';ov.style.top=(cy-16)+'px';
+  inp.value=node.label;inp.focus();inp.select();
+  const finish=()=>{
+    const v=inp.value.trim();
+    if(v){
+      if(node.isVnet)updateVnet(node.id,'name',v);
+      else if(node.parentId)updateResource(node.parentId,node.id,'name',v);
     }
-    overlay.style.display = 'none';
-    input.removeEventListener('blur', finish);
-    input.removeEventListener('keydown', keydown);
+    ov.style.display='none';inp.removeEventListener('blur',finish);inp.removeEventListener('keydown',kd);
   };
-  const keydown = e => { if (e.key === 'Enter') finish(); if (e.key === 'Escape') { overlay.style.display = 'none'; input.removeEventListener('blur', finish); input.removeEventListener('keydown', keydown); } };
-  input.addEventListener('blur', finish);
-  input.addEventListener('keydown', keydown);
+  const kd=e=>{if(e.key==='Enter')finish();if(e.key==='Escape'){ov.style.display='none';inp.removeEventListener('blur',finish);inp.removeEventListener('keydown',kd);}};
+  inp.addEventListener('blur',finish);inp.addEventListener('keydown',kd);
 }
 
-canvas.addEventListener('mousemove', e => {
-  if (!state.dragging) return;
-  state.offset.x = state.offsetStart.x + (e.clientX - state.dragStart.x);
-  state.offset.y = state.offsetStart.y + (e.clientY - state.dragStart.y);
-  draw();
-});
-canvas.addEventListener('mouseup', () => { if (state.dragging) { state.dragging = false; saveState(); } canvas.style.cursor = 'grab'; });
-canvas.addEventListener('mouseleave', () => { if (state.dragging) { state.dragging = false; saveState(); } canvas.style.cursor = 'grab'; });
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  const factor = e.deltaY < 0 ? 1.1 : 0.9;
-  state.scale = Math.max(0.2, Math.min(3, state.scale * factor));
-  saveState(); draw();
-}, { passive: false });
+canvas.addEventListener('mousemove',e=>{if(!state.dragging)return;state.offset.x=state.offsetStart.x+(e.clientX-state.dragStart.x);state.offset.y=state.offsetStart.y+(e.clientY-state.dragStart.y);draw();});
+canvas.addEventListener('mouseup',()=>{if(state.dragging){state.dragging=false;saveState();}canvas.style.cursor='grab';});
+canvas.addEventListener('mouseleave',()=>{if(state.dragging){state.dragging=false;saveState();}canvas.style.cursor='grab';});
+canvas.addEventListener('wheel',e=>{e.preventDefault();state.scale=Math.max(.2,Math.min(3,state.scale*(e.deltaY<0?1.1:.9)));saveState();draw();},{passive:false});
 
-function fitToScreen() {
-  state.offset = { x: 0, y: 0 }; state.scale = 1; saveState(); draw();
+// ================================================================
+// EXPORTS (PNG, PowerShell, Bicep)
+// ================================================================
+function exportPng(){
+  const ec=document.createElement('canvas');ec.width=canvas.width*2;ec.height=canvas.height*2;
+  const c=ec.getContext('2d');c.scale(2,2);
+  c.fillStyle=state.theme==='drawio'?'#F0F2F5':'#060D18';c.fillRect(0,0,canvas.width,canvas.height);
+  
+  c.strokeStyle=state.theme==='drawio'?'rgba(0,0,0,0.04)':'rgba(0,120,212,0.04)';c.lineWidth=1;
+  for(let x=0;x<canvas.width;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,canvas.height);c.stroke();}
+  for(let y=0;y<canvas.height;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(canvas.width,y);c.stroke();}
+
+  c.drawImage(canvas,0,0,canvas.width,canvas.height);
+  const a=document.createElement('a');a.download=`azure-architecture-${Date.now()}.png`;a.href=ec.toDataURL();a.click();
 }
 
-// ============================================================
-// EXPORT: PNG
-// ============================================================
-function exportPng() {
-  const expCanvas = document.createElement('canvas');
-  expCanvas.width = canvas.width * 2; expCanvas.height = canvas.height * 2;
-  const ec = expCanvas.getContext('2d');
-  ec.scale(2, 2);
-  ec.fillStyle = state.theme === 'drawio' ? '#F0F2F5' : '#060D18';
-  ec.fillRect(0, 0, canvas.width, canvas.height);
-  ec.drawImage(canvas, 0, 0, canvas.width, canvas.height);
-  const link = document.createElement('a');
-  link.download = `azure-architecture-${Date.now()}.png`;
-  link.href = expCanvas.toDataURL('image/png');
-  link.click();
-}
-
-// ============================================================
-// EXPORT: POWERSHELL
-// ============================================================
-function generatePowerShell() {
-  const sub = state.subscription.name;
-  let lines = [];
-  lines.push(`# ============================================================`);
-  lines.push(`# Azure Deployment Script - Generated by Azure Architecture Builder`);
-  lines.push(`# Subscription: ${sub}`);
+function generatePowerShell(){
+  const lines=[];
+  lines.push(`# Azure PowerShell Deployment Script`);
   lines.push(`# Generated: ${new Date().toISOString()}`);
-  lines.push(`# ============================================================`);
   lines.push(``);
-  lines.push(`# Connect to Azure (uncomment if needed)`);
-  lines.push(`# Connect-AzAccount`);
-  lines.push(`# Set-AzContext -SubscriptionName "${sub}"`);
-  lines.push(``);
-  lines.push(`$location = "eastus"  # Modify as needed`);
-  lines.push(``);
-
-  // Resource Groups
-  lines.push(`# ---- Resource Groups ----`);
-  state.resourceGroups.forEach(rg => {
-    lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location || 'eastus'}" -ErrorAction SilentlyContinue`);
-  });
-  lines.push(``);
-
-  // Hub VNet
-  const hubRg = state.resourceGroups.find(r => r.id === state.hub.rgId) || state.resourceGroups[0];
-  lines.push(`# ---- Hub VNet: ${state.hub.name} ----`);
-  lines.push(`$hubVnet = New-AzVirtualNetwork \`
-  -Name "${state.hub.name}" \`
-  -ResourceGroupName "${hubRg?.name}" \`
-  -Location "${hubRg?.location || 'eastus'}" \`
-  -AddressPrefix "${state.hub.cidr}"`);
-  lines.push(``);
-
-  // Hub resources
-  state.hub.resources.forEach(res => lines.push(...genResourcePs(res, hubRg?.name, state.hub.name)));
-
-  // Spoke VNets
-  state.spokes.forEach(spoke => {
-    const spokeRg = state.resourceGroups.find(r => r.id === spoke.rgId) || state.resourceGroups[0];
-    lines.push(`# ---- Spoke VNet: ${spoke.name} ----`);
-    lines.push(`$spokeVnet_${spoke.name.replace(/[^a-zA-Z0-9]/g, '_')} = New-AzVirtualNetwork \`
-  -Name "${spoke.name}" \`
-  -ResourceGroupName "${spokeRg?.name}" \`
-  -Location "${spokeRg?.location || 'eastus'}" \`
-  -AddressPrefix "${spoke.cidr}"`);
-    lines.push(``);
-
-    if (spoke.peering !== false) {
-      lines.push(`# VNet Peering: ${spoke.name} <-> ${state.hub.name}`);
-      lines.push(`Add-AzVirtualNetworkPeering -Name "${spoke.name}-to-hub" \`
-  -VirtualNetwork $hubVnet \`
-  -RemoteVirtualNetworkId $spokeVnet_${spoke.name.replace(/[^a-zA-Z0-9]/g, '_')}.Id \`
-  -AllowGatewayTransit $true`);
-      lines.push(`Add-AzVirtualNetworkPeering -Name "hub-to-${spoke.name}" \`
-  -VirtualNetwork $spokeVnet_${spoke.name.replace(/[^a-zA-Z0-9]/g, '_')} \`
-  -RemoteVirtualNetworkId $hubVnet.Id \`
-  -UseRemoteGateways $true`);
-      lines.push(``);
-    }
-
-    spoke.resources.forEach(res => lines.push(...genResourcePs(res, spokeRg?.name, spoke.name)));
-  });
-
-  lines.push(`# ============================================================`);
-  lines.push(`Write-Host "Deployment complete!" -ForegroundColor Green`);
-  return lines.join('\n');
-}
-
-function genResourcePs(res, rgName, vnetName) {
-  const lines = [];
-  const t = RES_TYPES[res.type];
-  if (!t) return lines;
-  lines.push(`# ${t.label}: ${res.name}`);
-
-  switch (res.type) {
-    case 'vm': case 'vmss':
-      lines.push(`New-AzVM \`
-  -ResourceGroupName "${rgName}" \`
-  -Name "${res.name}" \`
-  -Location $location \`
-  -VirtualNetworkName "${vnetName}" \`
-  -Size "${res.config.size || 'Standard_D2s_v3'}"
-  # OS: ${res.config.os || 'Linux'}`);
-      break;
-    case 'aks':
-      lines.push(`New-AzAksCluster \`
-  -ResourceGroupName "${rgName}" \`
-  -Name "${res.name}" \`
-  -NodeCount ${res.config.nodes || 3} \`
-  -KubernetesVersion "${res.config.version || '1.29'}" \`
-  -NodeVmSize "Standard_D2s_v3"`);
-      break;
-    case 'sql':
-      lines.push(`New-AzSqlServer -ResourceGroupName "${rgName}" -ServerName "${res.name}-srv" -Location $location -SqlAdministratorCredentials (Get-Credential)
-New-AzSqlDatabase \`
-  -ResourceGroupName "${rgName}" \`
-  -ServerName "${res.name}-srv" \`
-  -DatabaseName "${res.name}" \`
-  -Edition "GeneralPurpose" \`
-  -VCore ${res.config.vcores || 4}`);
-      break;
-    case 'kv':
-      lines.push(`New-AzKeyVault \`
-  -Name "${res.name}" \`
-  -ResourceGroupName "${rgName}" \`
-  -Location $location \`
-  -Sku "${res.config.sku || 'Standard'}" \`
-  -EnableRbacAuthorization`);
-      break;
-    case 'sa': case 'adls':
-      lines.push(`New-AzStorageAccount \`
-  -ResourceGroupName "${rgName}" \`
-  -Name "${res.name.replace(/[^a-z0-9]/g,'').toLowerCase().slice(0,24)}" \`
-  -Location $location \`
-  -SkuName "${res.config.replication === 'ZRS' ? 'Standard_ZRS' : 'Standard_LRS'}" \`
-  -Kind StorageV2${res.type === 'adls' ? ` \`
-  -EnableHierarchicalNamespace $true` : ''}`);
-      break;
-    case 'app':
-      lines.push(`New-AzAppServicePlan -ResourceGroupName "${rgName}" -Name "${res.name}-plan" -Location $location -Tier "PremiumV3" -WorkerSize Small
-New-AzWebApp -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location -AppServicePlan "${res.name}-plan"`);
-      break;
-    case 'fa':
-      lines.push(`New-AzFunctionApp \`
-  -ResourceGroupName "${rgName}" \`
-  -Name "${res.name}" \`
-  -Location $location \`
-  -Runtime "dotnet" \`
-  -StorageAccountName "<storage-account-name>"`);
-      break;
-    case 'fw':
-      lines.push(`New-AzFirewall \`
-  -Name "${res.name}" \`
-  -ResourceGroupName "${rgName}" \`
-  -Location $location \`
-  -Sku Premium \`
-  -VirtualNetworkName "${vnetName}"`);
-      break;
-    case 'agw':
-      lines.push(`# App Gateway requires subnet, public IP, etc. See: https://docs.microsoft.com/azure/application-gateway
-New-AzApplicationGateway -Name "${res.name}" -ResourceGroupName "${rgName}" -Location $location \`
-  -Sku @{Name="WAF_v2"; Tier="WAF_v2"; Capacity=1}`);
-      break;
-    case 'lb':
-      lines.push(`New-AzLoadBalancer -Name "${res.name}" -ResourceGroupName "${rgName}" -Location $location -Sku Standard`);
-      break;
-    case 'gw':
-      lines.push(`# VPN Gateway requires GatewaySubnet. See docs.
-New-AzVirtualNetworkGateway -Name "${res.name}" -ResourceGroupName "${rgName}" -Location $location \`
-  -GatewayType Vpn -VpnType RouteBased -GatewaySku "${res.config.sku || 'VpnGw2AZ'}"`);
-      break;
-    case 'bas':
-      lines.push(`New-AzBastion -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location \`
-  -VirtualNetworkId (Get-AzVirtualNetwork -Name "${vnetName}" -ResourceGroupName "${rgName}").Id \`
-  -Sku Standard`);
-      break;
-    case 'pe':
-      lines.push(`# Private Endpoint - adjust PrivateLinkServiceId to target resource
-New-AzPrivateEndpoint -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location \`
-  -Subnet (Get-AzVirtualNetwork -Name "${vnetName}" -ResourceGroupName "${rgName}").Subnets[0] \`
-  -PrivateLinkServiceConnection @{ Name="${res.name}-conn"; PrivateLinkServiceId="<resource-id>"; GroupIds=@("${res.config.subresource || 'blob'}") }`);
-      break;
-    case 'cosmos':
-      lines.push(`New-AzCosmosDBAccount \`
-  -ResourceGroupName "${rgName}" \`
-  -Name "${res.name}" \`
-  -Location $location \`
-  -DefaultConsistencyLevel "${res.config.consistency || 'Session'}" \`
-  -EnableMultipleWriteLocations $false`);
-      break;
-    case 'apim':
-      lines.push(`New-AzApiManagement -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location \`
-  -Organization "MyOrg" -AdminEmail "admin@example.com" \`
-  -Sku "${res.config.tier || 'Developer'}"`);
-      break;
-    case 'sb':
-      lines.push(`New-AzServiceBusNamespace -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location -SkuName "${res.config.tier || 'Standard'}"`);
-      break;
-    case 'evh':
-      lines.push(`New-AzEventHubNamespace -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location -SkuName "${res.config.tier || 'Standard'}"`);
-      break;
-    case 'redis':
-      lines.push(`New-AzRedisCache -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location -Size "P1" -Sku Premium`);
-      break;
-    case 'foundry': case 'openai':
-      lines.push(`New-AzCognitiveServicesAccount \`
-  -ResourceGroupName "${rgName}" \`
-  -Name "${res.name}" \`
-  -Type "${res.type === 'openai' ? 'OpenAI' : 'AIServices'}" \`
-  -SkuName "S0" \`
-  -Location $location`);
-      break;
-    case 'docintel':
-      lines.push(`New-AzCognitiveServicesAccount \`
-  -ResourceGroupName "${rgName}" \`
-  -Name "${res.name}" \`
-  -Type "FormRecognizer" \`
-  -SkuName "S0" \`
-  -Location $location`);
-      break;
-    case 'search':
-      lines.push(`New-AzSearchService -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location -Sku "${res.config.tier || 'standard'}"`);
-      break;
-    case 'monitor':
-      lines.push(`New-AzOperationalInsightsWorkspace -ResourceGroupName "${rgName}" -Name "${res.name}" -Location $location -Sku PerGB2018 -RetentionInDays ${res.config.retentionDays || 90}`);
-      break;
-    default:
-      lines.push(`# ${t.label} - Manual deployment required. Resource: ${res.name}`);
-  }
-  lines.push('');
-  return lines;
-}
-
-function openPsModal() {
-  document.getElementById('ps-output').textContent = generatePowerShell();
-  document.getElementById('ps-modal').classList.add('show');
-}
-
-// ============================================================
-// EXPORT: BICEP
-// ============================================================
-function generateBicep() {
-  let lines = [];
-  lines.push(`// ============================================================`);
-  lines.push(`// Azure Bicep Template - Azure Architecture Builder`);
-  lines.push(`// Subscription: ${state.subscription.name}`);
-  lines.push(`// Generated: ${new Date().toISOString()}`);
-  lines.push(`// ============================================================`);
-  lines.push(``);
-  lines.push(`targetScope = 'subscription'`);
-  lines.push(``);
-  lines.push(`@description('Primary location for resources')`);
-  lines.push(`param location string = 'eastus'`);
-  lines.push(``);
-
-  // Resource Groups
-  state.resourceGroups.forEach(rg => {
-    lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {`);
-    lines.push(`  name: '${rg.name}'`);
-    lines.push(`  location: '${rg.location || 'eastus'}'`);
-    lines.push(`}`);
-    lines.push(``);
-  });
-
-  // VNets as modules
-  const allVnets = [state.hub, ...state.spokes];
-  allVnets.forEach(vnet => {
-    const rg = state.resourceGroups.find(r => r.id === vnet.rgId) || state.resourceGroups[0];
-    const varName = vnet.name.replace(/[^a-zA-Z0-9]/g, '_');
-    lines.push(`module ${varName} 'br/public:avm/res/network/virtual-network:0.1.1' = {`);
-    lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
-    lines.push(`  name: '${vnet.name}-deploy'`);
-    lines.push(`  params: {`);
-    lines.push(`    name: '${vnet.name}'`);
-    lines.push(`    location: location`);
-    lines.push(`    addressPrefixes: ['${vnet.cidr}']`);
-    lines.push(`    subnets: [`);
-    lines.push(`      { name: 'default', addressPrefix: '${vnet.cidr.replace(/\/\d+$/, '')}/24'.replace('0/24','0/24') }`);
-    lines.push(`    ]`);
-    lines.push(`  }`);
-    lines.push(`}`);
-    lines.push(``);
-
-    vnet.resources.forEach(res => {
-      const t = RES_TYPES[res.type];
-      if (!t) return;
-      const rVar = res.name.replace(/[^a-zA-Z0-9]/g, '_');
-      lines.push(`// ${t.label}: ${res.name}`);
-      switch (res.type) {
-        case 'kv':
-          lines.push(`module ${rVar} 'br/public:avm/res/key-vault/vault:0.3.4' = {`);
-          lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
-          lines.push(`  name: '${res.name}-deploy'`);
-          lines.push(`  params: { name: '${res.name}', location: location, enableRbacAuthorization: true }`);
-          lines.push(`}`);
-          break;
-        case 'sa': case 'adls':
-          lines.push(`module ${rVar} 'br/public:avm/res/storage/storage-account:0.8.3' = {`);
-          lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
-          lines.push(`  name: '${res.name}-deploy'`);
-          lines.push(`  params: { name: '${res.name.replace(/[^a-z0-9]/g,'').toLowerCase().slice(0,24)}', location: location, skuName: 'Standard_ZRS' }`);
-          lines.push(`}`);
-          break;
-        case 'sql':
-          lines.push(`module ${rVar} 'br/public:avm/res/sql/server:0.2.0' = {`);
-          lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
-          lines.push(`  name: '${res.name}-deploy'`);
-          lines.push(`  params: { name: '${res.name}', location: location, administratorLogin: 'sqladmin' }`);
-          lines.push(`}`);
-          break;
-        default:
-          lines.push(`// TODO: Add Bicep module for ${t.label} '${res.name}'`);
-      }
-      lines.push(``);
+  
+  state.subscriptions.forEach(sub=>{
+    lines.push(`# ============ SUBSCRIPTION: ${sub.name} ============`);
+    lines.push(`# Set-AzContext -SubscriptionName "${sub.name}"\n`);
+    const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
+    subRgs.forEach(rg=>{
+      lines.push(`# -- Resource Group: ${rg.name} --`);
+      lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location}" -ErrorAction SilentlyContinue\n`);
+      getVnetsInRg(rg.id).forEach(vnet=>{
+        const isHub=vnet.id==='hub';
+        const varN=`$vnet_${vnet.name.replace(/[^a-zA-Z0-9]/g,'_')}`;
+        lines.push(`${varN} = New-AzVirtualNetwork -Name "${vnet.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AddressPrefix "${vnet.cidr}"`);
+        if(!isHub&&vnet.peering!==false){
+          lines.push(`Add-AzVirtualNetworkPeering -Name "${vnet.name}-to-hub" -VirtualNetwork $vnet_${state.hub.name.replace(/[^a-zA-Z0-9]/g,'_')} -RemoteVirtualNetworkId ${varN}.Id`);
+        }
+        vnet.resources.forEach(res=>{
+          const t=RES_TYPES[res.type]||{label:'Resource'};
+          lines.push(`# Deploying ${t.label}: ${res.name}`);
+        });
+        lines.push('');
+      });
     });
   });
-
   return lines.join('\n');
 }
 
-function openBicepModal() {
-  document.getElementById('bicep-output').textContent = generateBicep();
-  document.getElementById('bicep-modal').classList.add('show');
-}
-
-// ============================================================
-// MODAL UTILITIES
-// ============================================================
-function copyText(id) {
-  const text = document.getElementById(id).textContent;
-  navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!'));
-}
-function downloadText(id, filename) {
-  const text = document.getElementById(id).textContent;
-  const blob = new Blob([text], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename; a.click();
-}
-['ps-modal','bicep-modal'].forEach(id => {
-  document.getElementById(id).addEventListener('click', e => {
-    if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('show');
+function generateBicep(){
+  const lines=[
+    `// Bicep Template — Azure Architecture Builder`,
+    `targetScope = 'subscription'\n`
+  ];
+  state.subscriptions.forEach(sub=>{
+    lines.push(`// --- Subscription: ${sub.name} ---`);
+    const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
+    subRgs.forEach(rg=>{
+      lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {`);
+      lines.push(`  name: '${rg.name}'\n  location: '${rg.location}'\n}\n`);
+      
+      getVnetsInRg(rg.id).forEach(vnet=>{
+        lines.push(`// VNet: ${vnet.name}`);
+        vnet.resources.forEach(res => {
+          const t=RES_TYPES[res.type];
+          lines.push(`// module ${res.name.replace(/[^a-zA-Z0-9]/g,'_')} 'br/public:avm/res/...'`);
+        });
+        lines.push('');
+      });
+    });
   });
-});
+  return lines.join('\n');
+}
 
-// ============================================================
+function openPsModal(){document.getElementById('ps-output').textContent=generatePowerShell();document.getElementById('ps-modal').classList.add('show');}
+function openBicepModal(){document.getElementById('bicep-output').textContent=generateBicep();document.getElementById('bicep-modal').classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+['ps-modal','bicep-modal'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeModal(id);}));
+function copyText(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>alert('Copied successfully!'));}
+function downloadText(id,fn){const b=new Blob([document.getElementById(id).textContent],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;a.click();}
+
+// ================================================================
 // INIT
-// ============================================================
-preloadIcons(() => {
-  setTimeout(resize, 50);
-  fullUpdate();
-});
+// ================================================================
 setTimeout(resize, 100);
+fullUpdate();
 </script>
 </body>
 </html>
