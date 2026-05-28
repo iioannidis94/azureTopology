@@ -80,7 +80,7 @@
   
   /* VNET CARD */
   .vnet-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);}
-  .vnet-card-header{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .vnet-card-header{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
   .vnet-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
   .vnet-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;min-width:0;transition:0.2s;padding:2px 4px;border-radius:3px;}
   .vnet-name-input:focus, .vnet-name-input:hover{border-color:rgba(0,120,212,0.4);background:var(--bg2);}
@@ -97,11 +97,12 @@
   .subnet-cidr-input{width:80px;background:transparent;border:1px solid transparent;color:var(--azure-blue);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;outline:none;text-align:center;}
   .subnet-cidr-input:focus, .subnet-cidr-input:hover{border-color:var(--border);background:var(--bg2);}
 
-  .resource-chips{display:flex;flex-wrap:wrap;gap:4px;}
-  .chip{font-size:9px;padding:4px 6px;border-radius:4px;background:rgba(0,120,212,.08);border:1px solid rgba(0,120,212,.3);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;transition:.15s;max-width:115px;}
+  .resource-chips{display:flex;flex-wrap:wrap;gap:5px;}
+  .chip{font-size:9px;padding:4px 8px;border-radius:4px;background:rgba(0,120,212,.08);border:1px solid rgba(0,120,212,.3);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s;max-width:115px;}
   body:not(.theme-drawio) .chip{color:white;background:rgba(0,120,212,.18);}
   .chip:hover{background:var(--azure-blue);color:white!important;border-color:var(--azure-blue);}
   .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  
   .chip.hub-chip{background:rgba(255,140,0,.08);border-color:rgba(255,140,0,.4);}
   body:not(.theme-drawio) .chip.hub-chip{background:rgba(255,140,0,.18);}
   .chip.hub-chip:hover{background:#FF8C00;color:white!important;border-color:#FF8C00;}
@@ -174,7 +175,6 @@
   .modal-btn.secondary{background:transparent;border:1px solid var(--muted);color:var(--muted);}
   .modal-btn:hover{opacity:.85;transform:translateY(-1px);}
   
-  /* RENAME OVERLAY */
   #rename-overlay{display:none;position:fixed;z-index:500;}
   #rename-input{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;border:2px solid #0078D4;border-radius:6px;background:#fff;color:#111;outline:none;min-width:140px;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
   
@@ -312,9 +312,9 @@ function loadAzureIcons(callback) {
 }
 
 // ================================================================
-// STATE
+// STATE (V13 - Safely handling Subnets Structure)
 // ================================================================
-const KEY='azureBuilderV12'; 
+const KEY='azureBuilderV13'; 
 
 const defaultState={
   theme:'drawio', layout:'grid',
@@ -359,7 +359,11 @@ function fullUpdate(){ saveState(); updateCost(); renderSidebar(); renderEditor(
 function updateCost() {
   let total = 0;
   [state.hub, ...state.spokes].forEach(vnet => {
-    vnet.subnets.forEach(sn => { sn.resources.forEach(r => { if(RES_TYPES[r.type]?.cost) total += RES_TYPES[r.type].cost; }); });
+    (vnet.subnets || []).forEach(sn => { 
+        (sn.resources || []).forEach(r => { 
+            if(RES_TYPES[r.type] && RES_TYPES[r.type].cost) total += RES_TYPES[r.type].cost; 
+        }); 
+    });
   });
   document.getElementById('cost-display').innerText = `$${total.toLocaleString()}`;
 }
@@ -452,7 +456,7 @@ function renderSidebar(){
             ${!isHub?`<button class="icon-btn danger" title="Delete Spoke" onclick="deleteSpoke('${vnet.id}')">🗑</button>`:''}
           </div>`;
 
-        vnet.subnets.forEach(sn => {
+        (vnet.subnets || []).forEach(sn => {
           const isSelSn = state.selectedId === sn.id;
           h += `<div class="subnet-card" style="${isSelSn?'border-color:var(--azure-blue);':''}">
                   <div class="subnet-header">
@@ -461,7 +465,7 @@ function renderSidebar(){
                     <input class="subnet-cidr-input" value="${esc(sn.cidr)}" onchange="updateSubnet('${vnet.id}','${sn.id}','cidr',this.value)" onclick="selectNode('${sn.id}')">
                   </div>
                   <div class="resource-chips">`;
-          sn.resources.forEach(res=>{
+          (sn.resources || []).forEach(res=>{
             const rt=RES_TYPES[res.type] || RES_TYPES.vm;
             const isSelRes=state.selectedId===res.id;
             h+=`<div class="chip${isHub?' hub-chip':''}" style="${isSelRes?'background:var(--azure-blue);color:white;border-color:var(--azure-blue);':''}" onclick="selectNode('${res.id}')">
@@ -532,9 +536,9 @@ function renderEditor(){
   const allVnets = [state.hub, ...state.spokes];
   for (let v of allVnets) {
     if (v.id === state.selectedId) { obj=v; typeObj='vnet'; break; }
-    for (let sn of v.subnets) {
+    for (let sn of (v.subnets || [])) {
       if (sn.id === state.selectedId) { obj=sn; parent=v; typeObj='subnet'; break; }
-      for (let r of sn.resources) {
+      for (let r of (sn.resources || [])) {
         if (r.id === state.selectedId) { obj=r; parent=sn; typeObj='resource'; break; }
       }
       if (obj) break;
@@ -601,21 +605,22 @@ function renderEditor(){
 }
 
 // ================================================================
-// STATE MUTATIONS
+// CORE ENGINE FUNCTIONS (UTILITIES, MUTATIONS, CANVAS & DRAG)
 // ================================================================
-function toggleOnPrem() { state.onPrem.enabled = !state.onPrem.enabled; fullUpdate(); }
-function toggleTheme(){ state.theme=state.theme==='drawio'?'dark':'drawio'; document.body.classList.toggle('theme-drawio',state.theme==='drawio'); fullUpdate(); }
-function toggleLayout(){ state.layout=state.layout==='grid'?'radial':'grid'; state.offset={x:0,y:0}; state.scale=1; fullUpdate(); }
-function fitToScreen(){state.offset={x:0,y:0};state.scale=1;saveState();draw();}
+function toggleDropdown(id){ 
+  document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); 
+  const dd=document.getElementById(`dropdown-${id}`);
+  if(dd) {
+    dd.classList.add('show');
+    const searchInp = dd.querySelector('.search-input');
+    if(searchInp) { searchInp.value = ""; filterDropdownOptions(id, ""); searchInp.focus(); }
+  }
+}
 
-function addSub(){ const n=state.subscriptions.length; const id='sub-'+uid(); state.subscriptions.push({id,name:`Subscription ${n+1}`}); state.resourceGroups.push({id:'rg-'+uid(),name:'rg-new',location:'eastus',subId:id}); fullUpdate(); }
-function deleteSub(id){ if(state.subscriptions.length<=1){alert('Need at least one subscription.');return;} if(!confirm('Delete subscription? VNets will be moved.')) return; const fallbackRg=state.resourceGroups.find(r=>r.subId!==id); if(!fallbackRg){alert('Cannot delete.');return;} const subRgIds=state.resourceGroups.filter(r=>r.subId===id).map(r=>r.id); if(state.hub.rgId&&subRgIds.includes(state.hub.rgId)) state.hub.rgId=fallbackRg.id; state.spokes.forEach(s=>{if(subRgIds.includes(s.rgId))s.rgId=fallbackRg.id;}); state.resourceGroups=state.resourceGroups.filter(r=>r.subId!==id); state.subscriptions=state.subscriptions.filter(s=>s.id!==id); fullUpdate(); }
-function renameSub(id,val){const s=state.subscriptions.find(s=>s.id===id);if(s){s.name=val;saveState();draw();}}
-
-function addRg(subId){ const n=state.resourceGroups.filter(r=>r.subId===subId).length; state.resourceGroups.push({id:'rg-'+uid(),name:`rg-new-${n+1}`,location:'eastus',subId}); fullUpdate(); }
-function deleteRg(id){ if(state.resourceGroups.length<=1){alert('Need at least one resource group.');return;} const fallback=state.resourceGroups.find(r=>r.id!==id); if(!fallback){alert('No fallback.');return;} if(!confirm('Delete resource group?')) return; if(state.hub.rgId===id) state.hub.rgId=fallback.id; state.spokes.forEach(s=>{if(s.rgId===id)s.rgId=fallback.id;}); state.resourceGroups=state.resourceGroups.filter(r=>r.id!==id); fullUpdate(); }
-function renameRg(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.name=val;saveState();draw();}}
-function setRgLocation(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.location=val;saveState();}}
+function updateVnet(id,key,val){ const v=[state.hub,...state.spokes].find(v=>v.id===id); if(v)v[key]=val; fullUpdate(); }
+function updateSubnet(vnetId, snId, key, val) { const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); const sn = vnet?.subnets.find(s=>s.id===snId); if(sn){ sn[key]=val; fullUpdate(); } }
+function updateResource(resId,key,val){ [state.hub,...state.spokes].forEach(v => (v.subnets||[]).forEach(sn => { const r=(sn.resources||[]).find(r=>r.id===resId); if(r)r[key]=val; })); fullUpdate(); }
+function updateResConfig(resId,configKey,val){ [state.hub,...state.spokes].forEach(v => (v.subnets||[]).forEach(sn => { const r=(sn.resources||[]).find(r=>r.id===resId); if(r)r.config[configKey]=val; })); saveState(); renderEditor(); }
 
 function addSpoke(rgId){
   const n=state.spokes.length;
@@ -623,75 +628,29 @@ function addSpoke(rgId){
   fullUpdate();
 }
 function deleteSpoke(id){ state.spokes=state.spokes.filter(s=>s.id!==id); [state.hub, ...state.spokes].forEach(v => { if (v.peerings) v.peerings = v.peerings.filter(pId => pId !== id); }); state.selectedId=null; fullUpdate(); }
-function updateVnet(id,key,val){ const v=[state.hub,...state.spokes].find(v=>v.id===id); if(v)v[key]=val; fullUpdate(); }
-
-function togglePeering(id1, id2) {
-  const v1 = [state.hub,...state.spokes].find(s => s.id === id1);
-  const v2 = [state.hub,...state.spokes].find(s => s.id === id2);
-  if (!v1 || !v2) return;
-  v1.peerings = v1.peerings || []; v2.peerings = v2.peerings || [];
-  const hasPeering = v1.peerings.includes(id2) || v2.peerings.includes(id1);
-  if (hasPeering) { v1.peerings = v1.peerings.filter(p => p !== id2); v2.peerings = v2.peerings.filter(p => p !== id1); } 
-  else { v1.peerings.push(id2); }
-  fullUpdate();
-}
-
 function addSubnet(vnetId){ const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); if(vnet) { vnet.subnets.push({id:uid(), name:`subnet-${vnet.subnets.length+1}`, cidr:'10.x.x.x/24', resources:[]}); fullUpdate(); } }
 function deleteSubnet(vnetId, snId){ const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); if(vnet) { vnet.subnets = vnet.subnets.filter(s => s.id !== snId); state.selectedId=null; fullUpdate(); } }
-function updateSubnet(vnetId, snId, key, val) { const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); const sn = vnet?.subnets.find(s=>s.id===snId); if(sn){ sn[key]=val; fullUpdate(); } }
-
 function addResource(vnetId, snId, resType){ const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId); const sn = vnet?.subnets.find(s=>s.id===snId); const rT=RES_TYPES[resType]; if(sn && rT) { const nr={id:uid(),type:resType,name:`${sn.name.split('-')[0]}-${resType}`,config:{...rT.config}}; sn.resources.push(nr); document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); selectNode(nr.id); } }
-function deleteResource(resId){ [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { sn.resources = sn.resources.filter(r => r.id !== resId); })); state.selectedId=null; fullUpdate(); }
-function updateResource(resId,key,val){ [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { const r=sn.resources.find(r=>r.id===resId); if(r)r[key]=val; })); fullUpdate(); }
-function updateResConfig(resId,configKey,val){ [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { const r=sn.resources.find(r=>r.id===resId); if(r)r.config[configKey]=val; })); saveState(); renderEditor(); }
-
-function selectNode(id){state.selectedId=id;fullUpdate();}
-function resetDiagram(){if(confirm('Delete all changes and reset to default?')){localStorage.removeItem(KEY);location.reload();}}
-function resetPositions(){if(confirm('Clear Drag&Drop positions and return to auto-layout?')){state.customPos={};fullUpdate();}}
-
-// ================================================================
-// CANVAS SETUP & LAYOUT ENGINE 
-// ================================================================
-const canvas=document.getElementById('diagram-canvas');
-const ctx=canvas.getContext('2d');
-function safeRR(c,x,y,w,h,r){if(typeof c.roundRect==='function')c.roundRect(x,y,w,h,r);else c.rect(x,y,w,h);}
-function resize(){canvas.width=canvas.parentElement.clientWidth;canvas.height=canvas.parentElement.clientHeight;draw();}
-window.addEventListener('resize',resize);
+function deleteResource(resId){ [state.hub,...state.spokes].forEach(v => (v.subnets||[]).forEach(sn => { sn.resources = (sn.resources||[]).filter(r => r.id !== resId); })); state.selectedId=null; fullUpdate(); }
 
 function getRenderNodes(){
   const cx=canvas.width/2,cy=canvas.height/2,nodes=[];
-  
   if(state.layout==='grid'){
-    const RW=84,RH=64,RP=10; 
-    const SPT=30, SPB=12, SPL=12; 
-    const VPT=45, VPB=18, VGAP=60, SGAP=15; 
-    const RG_GAP=80, SUB_GAP=120;
-    
-    const sw = (sn) => Math.max(140, sn.resources.length * (RW+RP) + SPL*2 - RP);
+    const RW=84,RH=64,RP=10, SPT=30, SPB=12, SPL=12, VPT=45, VPB=18, VGAP=60, SGAP=15, RG_GAP=80, SUB_GAP=120;
+    const sw = (sn) => Math.max(140, (sn.resources||[]).length * (RW+RP) + SPL*2 - RP);
     const sh = () => SPT + RH + SPB;
-
-    const vw = (v) => {
-      if(v.subnets.length===0) return 200;
-      return v.subnets.reduce((sum, sn) => sum + sw(sn), 0) + (v.subnets.length-1)*SGAP + SPL*2;
-    };
+    const vw = (v) => { if((v.subnets||[]).length===0) return 200; return v.subnets.reduce((sum, sn) => sum + sw(sn), 0) + (v.subnets.length-1)*SGAP + SPL*2; };
     const vh = () => VPT + sh() + VPB;
     
     const tree = state.subscriptions.map(sub => {
       const rgs = state.resourceGroups.filter(rg => rg.subId === sub.id).map(rg => {
-        const vnets = [];
-        if (state.hub.rgId === rg.id) vnets.push(state.hub);
-        vnets.push(...state.spokes.filter(sp => sp.rgId === rg.id));
-        const rgWidth = vnets.length > 0 ? vnets.reduce((sum, v) => sum + vw(v), 0) + (vnets.length - 1) * VGAP + 40 : 200;
-        return { ...rg, vnets, renderWidth: rgWidth };
+        const vnets = []; if (state.hub.rgId === rg.id) vnets.push(state.hub); vnets.push(...state.spokes.filter(sp => sp.rgId === rg.id));
+        return { ...rg, vnets, renderWidth: vnets.length > 0 ? vnets.reduce((sum, v) => sum + vw(v), 0) + (vnets.length - 1) * VGAP + 40 : 200 };
       });
-      const subWidth = rgs.length > 0 ? rgs.reduce((sum, rg) => sum + rg.renderWidth, 0) + (rgs.length - 1) * RG_GAP + 80 : 300;
-      return { ...sub, rgs, renderWidth: subWidth };
+      return { ...sub, rgs, renderWidth: rgs.length > 0 ? rgs.reduce((sum, rg) => sum + rg.renderWidth, 0) + (rgs.length - 1) * RG_GAP + 80 : 300 };
     });
-
     const totalWidth = tree.reduce((sum, sub) => sum + sub.renderWidth, 0) + (tree.length - 1) * SUB_GAP;
-    const topY = Math.max(cy - 160, 150);
-    const bottomY = topY + 300;
-    
+    const topY = Math.max(cy - 160, 150); const bottomY = topY + 300;
     let curX = cx - totalWidth / 2;
     
     tree.forEach(sub => {
@@ -699,49 +658,36 @@ function getRenderNodes(){
       sub.rgs.forEach(rg => {
         let vnetX = rgX + 20; 
         rg.vnets.forEach(vnet => {
-          const vWidth = vw(vnet);
-          const vx = vnetX + vWidth / 2;
-          const vy = (vnet.id === 'hub') ? topY : bottomY;
-          
+          const vWidth = vw(vnet); const vx = vnetX + vWidth / 2; const vy = (vnet.id === 'hub') ? topY : bottomY;
           nodes.push({id:vnet.id, isVnet:true, x:vx, y:vy, width:vWidth, height:vh(), label:vnet.name, sub:vnet.cidr, color:vnet.color, peerings:vnet.peerings||[], rgId:rg.id, subId:sub.id});
-          
           let snX = vnetX + SPL;
-          vnet.subnets.forEach((sn, j) => {
-            const snW = sw(sn);
-            const cxSn = snX + snW/2;
+          (vnet.subnets||[]).forEach((sn, j) => {
+            const snW = sw(sn); const cxSn = snX + snW/2;
             nodes.push({id:sn.id, isSubnet:true, parentId:vnet.id, x:cxSn, y:vy+VPT+sh()/2 - (vh()/2), width:snW, height:sh(), label:sn.name, sub:sn.cidr, color:vnet.color});
-            
-            sn.resources.forEach((res,k)=>{
+            (sn.resources||[]).forEach((res,k)=>{
               const tot=sn.resources.length,tw=tot*RW+(tot-1)*RP;
               nodes.push({id:res.id, isVnet:false, parentId:sn.id, x:cxSn-tw/2+RW/2+k*(RW+RP), y:vy+VPT+SPT+RH/2 - (vh()/2), label:res.name, type:res.type, color:RES_TYPES[res.type]?.color||'#FFF', width:RW, height:RH});
             });
             snX += snW + SGAP;
           });
-          
           vnetX += vWidth + VGAP;
         });
         rgX += rg.renderWidth + RG_GAP;
       });
       curX += sub.renderWidth + SUB_GAP;
     });
-
   } else {
     const r=Math.min(canvas.width,canvas.height)*.34;
     nodes.push({id:state.hub.id,isVnet:true,x:cx,y:cy,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,radius:70,peerings:state.hub.peerings||[],rgId:state.hub.rgId});
-    
-    let hRes = []; state.hub.subnets.forEach(sn => hRes.push(...sn.resources));
+    let hRes = []; (state.hub.subnets||[]).forEach(sn => hRes.push(...(sn.resources||[])));
     hRes.forEach((res,i)=>{
       const angle=(i/Math.max(hRes.length,1))*Math.PI*2-Math.PI/2;
       nodes.push({id:res.id,isVnet:false,parentId:state.hub.id,x:cx+Math.cos(angle)*135,y:cy+Math.sin(angle)*135,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:84,height:64});
     });
-
     state.spokes.forEach((sp,i)=>{
-      const angle=state.spokes.length===1?Math.PI/2:(i/state.spokes.length)*Math.PI*2;
-      const sx=cx+Math.cos(angle)*r,sy=cy+Math.sin(angle)*r;
-      const perp={x:-Math.sin(angle),y:Math.cos(angle)};
+      const angle=state.spokes.length===1?Math.PI/2:(i/state.spokes.length)*Math.PI*2; const sx=cx+Math.cos(angle)*r,sy=cy+Math.sin(angle)*r; const perp={x:-Math.sin(angle),y:Math.cos(angle)};
       nodes.push({id:sp.id,isVnet:true,x:sx,y:sy,label:sp.name,sub:sp.cidr,color:sp.color,radius:55,peerings:sp.peerings||[],rgId:sp.rgId});
-      
-      let sRes = []; sp.subnets.forEach(sn => sRes.push(...sn.resources));
+      let sRes = []; (sp.subnets||[]).forEach(sn => sRes.push(...(sn.resources||[])));
       sRes.forEach((res,j)=>{
         const t=sRes.length>1?(j*90-(sRes.length-1)*45):0;
         nodes.push({id:res.id,isVnet:false,parentId:sp.id,x:sx+Math.cos(angle)*125+perp.x*t,y:sy+Math.sin(angle)*125+perp.y*t,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:84,height:64});
@@ -751,50 +697,11 @@ function getRenderNodes(){
 
   if (state.onPrem.enabled) {
     const hubNode = nodes.find(n => n.id === 'hub');
-    const hx = hubNode ? hubNode.x : cx;
-    const hy = hubNode ? hubNode.y : cy;
-    nodes.push({
-      id: state.onPrem.id, isVnet: false, isOnPrem: true, parentId: 'hub', 
-      x: hx - 320, y: hy, width: 140, height: 80, 
-      label: state.onPrem.name, sub: state.onPrem.cidr, color: '#107C10'
-    });
+    nodes.push({ id: state.onPrem.id, isVnet: false, isOnPrem: true, parentId: 'hub', x: (hubNode?hubNode.x:cx) - 320, y: (hubNode?hubNode.y:cy), width: 140, height: 80, label: state.onPrem.name, sub: state.onPrem.cidr, color: '#107C10' });
   }
-
   if (!state.customPos) state.customPos = {};
-  nodes.forEach(n => {
-    if (state.customPos[n.id]) { n.x = state.customPos[n.id].x; n.y = state.customPos[n.id].y; }
-  });
-
+  nodes.forEach(n => { if (state.customPos[n.id]) { n.x = state.customPos[n.id].x; n.y = state.customPos[n.id].y; } });
   return nodes;
-}
-
-function getSubBounds(subId,nodes){
-  const related=nodes.filter(n=>n.isVnet&&n.subId===subId);
-  if(!related.length)return null;
-  let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
-  related.forEach(n=>{
-    const hw=n.width?n.width/2:n.radius||60,hh=n.height?n.height/2:n.radius||60;
-    mx=Math.min(mx,n.x-hw);my=Math.min(my,n.y-hh);Mx=Math.max(Mx,n.x+hw);My=Math.max(My,n.y+hh);
-    nodes.filter(c=>c.parentId===n.id&&!c.isVnet&&!c.isOnPrem).forEach(c=>{
-      mx=Math.min(mx,c.x-c.width/2);my=Math.min(my,c.y-c.height/2);
-      Mx=Math.max(Mx,c.x+c.width/2);My=Math.max(My,c.y+c.height/2);
-    });
-  });
-  return{x:mx-30,y:my-50,w:Mx-mx+60,h:My-my+70};
-}
-function getRgBounds(rgId,nodes){
-  const related=nodes.filter(n=>n.isVnet&&n.rgId===rgId);
-  if(!related.length)return null;
-  let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
-  related.forEach(n=>{
-    const hw=n.width?n.width/2:n.radius||60,hh=n.height?n.height/2:n.radius||60;
-    mx=Math.min(mx,n.x-hw);my=Math.min(my,n.y-hh);Mx=Math.max(Mx,n.x+hw);My=Math.max(My,n.y+hh);
-    nodes.filter(c=>c.parentId===n.id&&!c.isVnet&&!c.isOnPrem).forEach(c=>{
-      mx=Math.min(mx,c.x-c.width/2);my=Math.min(my,c.y-c.height/2);
-      Mx=Math.max(Mx,c.x+c.width/2);My=Math.max(My,c.y+c.height/2);
-    });
-  });
-  return{x:mx-15,y:my-30,w:Mx-mx+30,h:My-my+45};
 }
 
 function draw(){
@@ -829,7 +736,6 @@ function draw(){
     });
   }
 
-  // 1. Draw Resource Links (Resource -> Subnet/VNet depending on layout)
   nodes.forEach(n => {
     if (!n.isVnet && !n.isSubnet && n.parentId && map[n.parentId] && !n.isOnPrem) {
       if (state.layout === 'grid') return; 
@@ -845,7 +751,6 @@ function draw(){
     }
   });
 
-  // 2. Draw Any-to-Any VNet Peerings & On-Prem
   const drawnLines = new Set();
   nodes.forEach(n => {
     if (n.isOnPrem && n.parentId && map[n.parentId]) {
@@ -861,7 +766,6 @@ function draw(){
       n.peerings.forEach(pId => {
         const target = map[pId];
         if (!target) return;
-        
         const lineKey = [n.id, target.id].sort().join('|');
         if (drawnLines.has(lineKey)) return;
         drawnLines.add(lineKey);
@@ -876,11 +780,9 @@ function draw(){
             if (spokeN.y > hubN.y) {
               const busY = hubN.y + hubN.height/2 + 40;
               ctx.moveTo(hubN.x, hubN.y + hubN.height/2);
-              ctx.lineTo(hubN.x, busY);
-              ctx.lineTo(spokeN.x, busY);
+              ctx.lineTo(hubN.x, busY); ctx.lineTo(spokeN.x, busY);
               ctx.lineTo(spokeN.x, spokeN.y - spokeN.height/2);
-              midX = (hubN.x + spokeN.x) / 2;
-              midY = busY - 4;
+              midX = (hubN.x + spokeN.x) / 2; midY = busY - 4;
             } else {
               ctx.moveTo(n.x, n.y); ctx.lineTo(target.x, target.y);
               midX = (n.x + target.x) / 2; midY = (n.y + target.y) / 2 - 4;
@@ -890,8 +792,7 @@ function draw(){
             const dist = Math.abs(n.x - target.x);
             const curveY = Math.max(n.y, target.y) + n.height/2 + 40 + (dist * 0.1);
             ctx.quadraticCurveTo((n.x + target.x)/2, curveY, target.x, target.y + target.height/2);
-            midX = (n.x + target.x) / 2;
-            midY = 0.25*(n.y + n.height/2) + 0.5*curveY + 0.25*(target.y + target.height/2) - 4;
+            midX = (n.x + target.x) / 2; midY = 0.25*(n.y + n.height/2) + 0.5*curveY + 0.25*(target.y + target.height/2) - 4;
           }
         } else {
           ctx.moveTo(n.x, n.y); ctx.lineTo(target.x, target.y);
@@ -899,28 +800,17 @@ function draw(){
           midY = (n.y + target.y) / 2 - 4;
         }
 
-        if (dw) {
-          ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 2;
-        } else {
-          const g = ctx.createLinearGradient(n.x, n.y, target.x, target.y);
-          g.addColorStop(0, 'rgba(0,120,212,0.6)'); g.addColorStop(1, target.color + 'A0');
-          ctx.strokeStyle = g; ctx.lineWidth = 2;
-        }
+        if (dw) { ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 2; } 
+        else { const g = ctx.createLinearGradient(n.x, n.y, target.x, target.y); g.addColorStop(0, 'rgba(0,120,212,0.6)'); g.addColorStop(1, target.color + 'A0'); ctx.strokeStyle = g; ctx.lineWidth = 2; }
         ctx.stroke();
 
-        if (dw) {
-          ctx.font = '8px JetBrains Mono'; ctx.fillStyle = '#9CA3AF';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-          ctx.fillText('Peering', midX, midY);
-        }
+        if (dw) { ctx.font = '8px JetBrains Mono'; ctx.fillStyle = '#9CA3AF'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText('Peering', midX, midY); }
       });
     }
   });
 
-  // DRAW NODES
   nodes.filter(n => n.isSubnet).forEach(n => drawSubnet(n, dw));
   nodes.filter(n => !n.isSubnet).forEach(n => drawNode(n, dw));
-  
   ctx.restore();
 }
 
@@ -945,149 +835,65 @@ function drawNode(n, dw){
   const isSel=state.selectedId===n.id;
   ctx.save();
   if(isSel){ctx.shadowColor=dw?'rgba(0,120,212,.4)':n.color||'#0078D4';ctx.shadowBlur=15;}
-  
   if (n.isOnPrem) {
     ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,8);
-    if(dw){
-      ctx.fillStyle='#FFFFFF'; ctx.fill();
-      ctx.strokeStyle=isSel?n.color:'#D1D5DB';ctx.lineWidth=2;ctx.stroke();
-      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,6,{tl:8,tr:8,bl:0,br:0});
-      ctx.fillStyle=n.color;ctx.fill();
-    }else{
-      ctx.fillStyle=n.color+'20';ctx.fill();
-      ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=2;ctx.stroke();
-    }
-    ctx.shadowBlur=0;
-    ctx.font='28px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('🏢', n.x, n.y - 10);
-    ctx.font='bold 10px Syne';ctx.fillStyle=dw?'#111827':'#FFF';
-    ctx.fillText(n.label,n.x,n.y+16);
-    ctx.font='9px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,0.7)';
-    ctx.fillText(n.sub,n.x,n.y+28);
+    if(dw){ ctx.fillStyle='#FFFFFF'; ctx.fill(); ctx.strokeStyle=isSel?n.color:'#D1D5DB';ctx.lineWidth=2;ctx.stroke(); ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,6,{tl:8,tr:8,bl:0,br:0});ctx.fillStyle=n.color;ctx.fill(); }
+    else{ ctx.fillStyle=n.color+'20';ctx.fill(); ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=2;ctx.stroke(); }
+    ctx.font='28px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🏢', n.x, n.y - 10);
+    ctx.font='bold 10px Syne';ctx.fillStyle=dw?'#111827':'#FFF';ctx.fillText(n.label,n.x,n.y+16);
+    ctx.font='9px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,0.7)';ctx.fillText(n.sub,n.x,n.y+28);
   }
   else if(!n.isVnet){
     const rt=RES_TYPES[n.type]||{icon:'❓'};
     ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
-    if(dw){
-      ctx.fillStyle='#FFFFFF';
-      if(!isSel){ctx.shadowColor='rgba(0,0,0,.08)';ctx.shadowBlur=5;ctx.shadowOffsetY=3;}
-      ctx.fill();
-      ctx.strokeStyle=isSel?'#0078D4':'#E5E7EB';ctx.lineWidth=isSel?2:1;ctx.stroke();
-      ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,4,{tl:6,tr:6,bl:0,br:0});
-      ctx.fillStyle=rt.color||'#0078D4';ctx.fill();
-    }else{
-      ctx.fillStyle=(rt.color||'#0078D4')+'25';ctx.fill();
-      ctx.strokeStyle=isSel?(rt.color||'#0078D4'):(rt.color||'#0078D4')+'80';ctx.lineWidth=1.5;ctx.stroke();
-    }
-    ctx.shadowBlur=0;
+    if(dw){ ctx.fillStyle='#FFFFFF'; if(!isSel){ctx.shadowColor='rgba(0,0,0,.08)';ctx.shadowBlur=5;ctx.shadowOffsetY=3;}ctx.fill();ctx.strokeStyle=isSel?'#0078D4':'#E5E7EB';ctx.lineWidth=isSel?2:1;ctx.stroke();ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,4,{tl:6,tr:6,bl:0,br:0});ctx.fillStyle=rt.color||'#0078D4';ctx.fill(); }
+    else{ ctx.fillStyle=(rt.color||'#0078D4')+'25';ctx.fill();ctx.strokeStyle=isSel?(rt.color||'#0078D4'):(rt.color||'#0078D4')+'80';ctx.lineWidth=1.5;ctx.stroke(); }
     
     const img = loadedImages[n.type];
-    if(img && img.complete && img.naturalWidth > 0){
-      ctx.drawImage(img, n.x - 12, n.y - 18, 24, 24);
-    } else {
-      ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(rt.icon, n.x, n.y - 8);
-    }
-    
-    ctx.font='bold 9px JetBrains Mono';ctx.fillStyle=dw?'#374151':'#FFF';
-    ctx.textAlign='center';ctx.textBaseline='top';
-    const lbl=n.label.length>12?n.label.slice(0,11)+'…':n.label;
-    ctx.fillText(lbl,n.x,n.y+n.height/2-18);
-    
+    if(img && img.complete && img.naturalWidth > 0){ ctx.drawImage(img, n.x - 12, n.y - 18, 24, 24); } 
+    else { ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(rt.icon, n.x, n.y - 8); }
+    ctx.font='bold 9px JetBrains Mono';ctx.fillStyle=dw?'#374151':'#FFF';ctx.textAlign='center';ctx.textBaseline='top';
+    const lbl=n.label.length>12?n.label.slice(0,11)+'…':n.label;ctx.fillText(lbl,n.x,n.y+n.height/2-18);
   }else{
     if(state.layout==='grid'){
       ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,12);
-      if(dw){
-        ctx.fillStyle=n.id==='hub'?'rgba(0,120,212,0.03)':'rgba(255,255,255,0.9)';ctx.fill();
-        ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=isSel?2.5:2;ctx.stroke();
-      }else{
-        ctx.fillStyle=n.color+'10';ctx.fill();
-        ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=isSel?2.5:2;ctx.stroke();
-      }
-      ctx.shadowBlur=0;
-      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#111827':(n.id==='hub'?'#E8F4FD':n.color);
-      ctx.textAlign='left';ctx.textBaseline='top';
-      ctx.fillText(n.label,n.x-n.width/2+14,n.y-n.height/2+12);
-      ctx.font='10px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,.6)';
-      ctx.fillText(n.sub,n.x-n.width/2+14,n.y-n.height/2+28);
+      if(dw){ ctx.fillStyle=n.id==='hub'?'rgba(0,120,212,0.03)':'rgba(255,255,255,0.7)';ctx.fill();ctx.setLineDash([6,6]);ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=isSel?2.5:2;ctx.stroke();ctx.setLineDash([]); }
+      else{ ctx.fillStyle=n.color+'10';ctx.fill();ctx.setLineDash([6,6]);ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=isSel?2.5:2;ctx.stroke();ctx.setLineDash([]); }
+      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#111827':(n.id==='hub'?'#E8F4FD':n.color);ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(n.label,n.x-n.width/2+14,n.y-n.height/2+12);
+      ctx.font='10px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,.6)';ctx.fillText(n.sub,n.x-n.width/2+14,n.y-n.height/2+28);
     }else{
       ctx.beginPath();ctx.arc(n.x,n.y,n.radius,0,Math.PI*2);
-      if(dw){
-        ctx.fillStyle='#FFFFFF';if(!isSel){ctx.shadowColor='rgba(0,0,0,.06)';ctx.shadowBlur=8;}
-        ctx.fill();ctx.shadowBlur=0;
-        ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=2.5;ctx.stroke();
-      }else{
-        if(n.id==='hub'){const g=ctx.createRadialGradient(n.x-10,n.y-10,0,n.x,n.y,n.radius);g.addColorStop(0,'#1A8FE3');g.addColorStop(1,'#003A5C');ctx.fillStyle=g;}
-        else ctx.fillStyle=n.color+'25';ctx.fill();
-        ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=2.5;ctx.stroke();
-      }
-      ctx.shadowBlur=0;
-      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#111827':(n.id==='hub'?'#E8F4FD':n.color);
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(n.label,n.x,n.y-10);
-      ctx.font='10px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,.6)';
-      ctx.fillText(n.sub,n.x,n.y+10);
+      if(dw){ ctx.fillStyle='#FFFFFF';if(!isSel){ctx.shadowColor='rgba(0,0,0,.06)';ctx.shadowBlur=8;}ctx.fill();ctx.shadowBlur=0;ctx.setLineDash([6,6]);ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]); }
+      else{ if(n.id==='hub'){const g=ctx.createRadialGradient(n.x-10,n.y-10,0,n.x,n.y,n.radius);g.addColorStop(0,'#1A8FE3');g.addColorStop(1,'#003A5C');ctx.fillStyle=g;}else ctx.fillStyle=n.color+'25';ctx.fill();ctx.setLineDash([6,6]);ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]); }
+      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#111827':(n.id==='hub'?'#E8F4FD':n.color);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.label,n.x,n.y-10);
+      ctx.font='10px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,.6)';ctx.fillText(n.sub,n.x,n.y+10);
     }
   }
   ctx.restore();
 }
 
-// ================================================================
-// CANVAS INTERACTIONS (DRAG & DROP)
-// ================================================================
 canvas.addEventListener('mousedown',e=>{
-  const r=canvas.getBoundingClientRect();
-  const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
-  const nodes=getRenderNodes();
-  let hit=null;
-  for(let i=nodes.length-1;i>=0;i--){
-    const n=nodes[i];
-    if(n.isSubnet){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
-    else if(!n.isVnet && !n.isOnPrem){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
-    else if(state.layout==='grid' || n.isOnPrem){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
-    else{if(Math.sqrt((px-n.x)**2+(py-n.y)**2)<n.radius){hit=n;break;}}
-  }
-  if(hit){
-    selectNode(hit.id);
-    state.dragNodeId = hit.id;
-    state.dragNodeStart = state.customPos[hit.id] || {x: hit.x, y: hit.y};
-    state.mouseStart = {x: px, y: py};
-  } else {
-    state.selectedId=null; fullUpdate();
-    state.dragging=true; state.dragStart={x:e.clientX,y:e.clientY}; state.offsetStart={...state.offset};
-    canvas.style.cursor='grabbing';
-  }
+  const r=canvas.getBoundingClientRect(); const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale; const nodes=getRenderNodes(); let hit=null;
+  for(let i=nodes.length-1;i>=0;i--){ const n=nodes[i]; if(n.isSubnet){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}} else if(!n.isVnet && !n.isOnPrem){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}} else if(state.layout==='grid' || n.isOnPrem){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}} else{if(Math.sqrt((px-n.x)**2+(py-n.y)**2)<n.radius){hit=n;break;}} }
+  if(hit){ selectNode(hit.id); state.dragNodeId = hit.id; state.dragNodeStart = state.customPos[hit.id] || {x: hit.x, y: hit.y}; state.mouseStart = {x: px, y: py}; } 
+  else { state.selectedId=null; fullUpdate(); state.dragging=true; state.dragStart={x:e.clientX,y:e.clientY}; state.offsetStart={...state.offset}; canvas.style.cursor='grabbing'; }
 });
-
 canvas.addEventListener('dblclick',e=>{
   if (state.selectedId === 'onprem') return;
-  const r=canvas.getBoundingClientRect();
-  const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
-  const nodes=getRenderNodes();
-  for(let i=nodes.length-1;i>=0;i--){
-    const n=nodes[i];
-    if (n.isOnPrem) continue;
-    let hit=n.isSubnet?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2):
-      !n.isVnet?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2):
-      state.layout==='grid'?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2):
-      (Math.sqrt((px-n.x)**2+(py-n.y)**2)<n.radius);
-    if(hit){startInlineRename(n,e.clientX,e.clientY);break;}
-  }
+  const r=canvas.getBoundingClientRect(); const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale; const nodes=getRenderNodes();
+  for(let i=nodes.length-1;i>=0;i--){ const n=nodes[i]; if (n.isOnPrem) continue; let hit=n.isSubnet?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2): !n.isVnet?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2): state.layout==='grid'?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2): (Math.sqrt((px-n.x)**2+(py-n.y)**2)<n.radius); if(hit){startInlineRename(n,e.clientX,e.clientY);break;} }
 });
 
 function startInlineRename(node,cx,cy){
   const ov=document.getElementById('rename-overlay'),inp=document.getElementById('rename-input');
-  ov.style.display='block';ov.style.left=(cx-60)+'px';ov.style.top=(cy-16)+'px';
-  inp.value=node.label;inp.focus();inp.select();
+  ov.style.display='block';ov.style.left=(cx-60)+'px';ov.style.top=(cy-16)+'px'; inp.value=node.label;inp.focus();inp.select();
   const finish=()=>{
     const v=inp.value.trim();
     if(v){
       if(node.isVnet)updateVnet(node.id,'name',v);
       else if(node.isSubnet)updateSubnet(node.parentId,node.id,'name',v);
       else if(node.parentId){
-        let parentVnetId = null;
-        [state.hub,...state.spokes].forEach(vnet=>{ if(vnet.subnets.some(sn=>sn.id===node.parentId)) parentVnetId=vnet.id; });
+        let parentVnetId = null; [state.hub,...state.spokes].forEach(vnet=>{ if((vnet.subnets||[]).some(sn=>sn.id===node.parentId)) parentVnetId=vnet.id; });
         if(parentVnetId) updateResource(node.id,'name',v);
       }
     }
@@ -1098,121 +904,50 @@ function startInlineRename(node,cx,cy){
 }
 
 canvas.addEventListener('mousemove',e=>{
-  if (state.dragNodeId) {
-    const r=canvas.getBoundingClientRect();
-    const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
-    state.customPos[state.dragNodeId] = {
-      x: state.dragNodeStart.x + (px - state.mouseStart.x),
-      y: state.dragNodeStart.y + (py - state.mouseStart.y)
-    };
-    draw();
-  } else if (state.dragging) {
-    state.offset.x=state.offsetStart.x+(e.clientX-state.dragStart.x);
-    state.offset.y=state.offsetStart.y+(e.clientY-state.dragStart.y);
-    draw();
-  }
+  if (state.dragNodeId) { const r=canvas.getBoundingClientRect(); const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale; state.customPos[state.dragNodeId] = { x: state.dragNodeStart.x + (px - state.mouseStart.x), y: state.dragNodeStart.y + (py - state.mouseStart.y) }; draw(); } 
+  else if (state.dragging) { state.offset.x=state.offsetStart.x+(e.clientX-state.dragStart.x); state.offset.y=state.offsetStart.y+(e.clientY-state.dragStart.y); draw(); }
 });
-
-canvas.addEventListener('mouseup',()=>{ if(state.dragNodeId) { state.dragNodeId = null; saveState(); } if(state.dragging){state.dragging=false;saveState();} canvas.style.cursor='grab'; });
-canvas.addEventListener('mouseleave',()=>{ if(state.dragNodeId) { state.dragNodeId = null; saveState(); } if(state.dragging){state.dragging=false;saveState();} canvas.style.cursor='grab'; });
+canvas.addEventListener('mouseup',()=>{ if(state.dragNodeId){state.dragNodeId=null;saveState();} if(state.dragging){state.dragging=false;saveState();} canvas.style.cursor='grab'; });
+canvas.addEventListener('mouseleave',()=>{ if(state.dragNodeId){state.dragNodeId=null;saveState();} if(state.dragging){state.dragging=false;saveState();} canvas.style.cursor='grab'; });
 canvas.addEventListener('wheel',e=>{e.preventDefault();state.scale=Math.max(.2,Math.min(3,state.scale*(e.deltaY<0?1.1:.9)));saveState();draw();},{passive:false});
 
-// ================================================================
-// EXPORTS (PNG, PowerShell, Bicep)
-// ================================================================
-function exportPng(){
-  const ec=document.createElement('canvas');ec.width=canvas.width*2;ec.height=canvas.height*2;
-  const c=ec.getContext('2d');c.scale(2,2);
-  c.fillStyle=state.theme==='drawio'?'#F0F2F5':'#060D18';c.fillRect(0,0,canvas.width,canvas.height);
-  
-  c.strokeStyle=state.theme==='drawio'?'rgba(0,0,0,0.04)':'rgba(0,120,212,0.04)';c.lineWidth=1;
-  for(let x=0;x<canvas.width;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,canvas.height);c.stroke();}
-  for(let y=0;y<canvas.height;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(canvas.width,y);c.stroke();}
-
-  c.drawImage(canvas,0,0,canvas.width,canvas.height);
-  const a=document.createElement('a');a.download=`azure-architecture-${Date.now()}.png`;a.href=ec.toDataURL();a.click();
-}
-
+function exportPng(){ const ec=document.createElement('canvas');ec.width=canvas.width*2;ec.height=canvas.height*2; const c=ec.getContext('2d');c.scale(2,2); c.fillStyle=state.theme==='drawio'?'#F0F2F5':'#060D18';c.fillRect(0,0,canvas.width,canvas.height); c.strokeStyle=state.theme==='drawio'?'rgba(0,0,0,0.04)':'rgba(0,120,212,0.04)';c.lineWidth=1; for(let x=0;x<canvas.width;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,canvas.height);c.stroke();} for(let y=0;y<canvas.height;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(canvas.width,y);c.stroke();} c.drawImage(canvas,0,0,canvas.width,canvas.height); const a=document.createElement('a');a.download=`azure-architecture-${Date.now()}.png`;a.href=ec.toDataURL();a.click(); }
 function generatePowerShell(){
-  const lines=[`# Azure PowerShell Deployment Script\n# Generated: ${new Date().toISOString()}\n`];
-  const allVnets = [state.hub, ...state.spokes];
-
+  const lines=[`# Azure PowerShell Deployment Script\n# Generated: ${new Date().toISOString()}\n`]; const allVnets = [state.hub, ...state.spokes];
   state.subscriptions.forEach(sub=>{
-    lines.push(`# ============ SUBSCRIPTION: ${sub.name} ============`);
-    lines.push(`# Set-AzContext -SubscriptionName "${sub.name}"\n`);
+    lines.push(`# ============ SUBSCRIPTION: ${sub.name} ============`); lines.push(`# Set-AzContext -SubscriptionName "${sub.name}"\n`);
     const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
     subRgs.forEach(rg=>{
-      lines.push(`# -- Resource Group: ${rg.name} --`);
-      lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location}" -ErrorAction SilentlyContinue\n`);
+      lines.push(`# -- Resource Group: ${rg.name} --`); lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location}" -ErrorAction SilentlyContinue\n`);
       getVnetsInRg(rg.id).forEach(vnet=>{
         const varN=`$vnet_${vnet.name.replace(/[^a-zA-Z0-9]/g,'_')}`;
-        
         lines.push(`$subnets = @()`);
-        vnet.subnets.forEach(sn => {
-          lines.push(`$subnets += New-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -AddressPrefix "${sn.cidr}"`);
-        });
-
+        (vnet.subnets||[]).forEach(sn => { lines.push(`$subnets += New-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -AddressPrefix "${sn.cidr}"`); });
         lines.push(`${varN} = New-AzVirtualNetwork -Name "${vnet.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AddressPrefix "${vnet.cidr}" -Subnet $subnets`);
-        
-        if (vnet.peerings && vnet.peerings.length > 0) {
-            vnet.peerings.forEach(pId => {
-                const target = allVnets.find(v => v.id === pId);
-                if (target) {
-                    lines.push(`Add-AzVirtualNetworkPeering -Name "${vnet.name}-to-${target.name}" -VirtualNetwork ${varN} -RemoteVirtualNetworkId $vnet_${target.name.replace(/[^a-zA-Z0-9]/g,'_')}.Id -ErrorAction SilentlyContinue`);
-                }
-            });
-        }
-
-        vnet.subnets.forEach(sn => {
-          sn.resources.forEach(res => {
-            const t=RES_TYPES[res.type]||{label:'Resource'};
-            lines.push(`# Deploying ${t.label}: ${res.name} (Subnet: ${sn.name})`);
-          });
-        });
+        if (vnet.peerings && vnet.peerings.length > 0) { vnet.peerings.forEach(pId => { const target = allVnets.find(v => v.id === pId); if (target) { lines.push(`Add-AzVirtualNetworkPeering -Name "${vnet.name}-to-${target.name}" -VirtualNetwork ${varN} -RemoteVirtualNetworkId $vnet_${target.name.replace(/[^a-zA-Z0-9]/g,'_')}.Id -ErrorAction SilentlyContinue`); } }); }
+        (vnet.subnets||[]).forEach(sn => { (sn.resources||[]).forEach(res => { const t=RES_TYPES[res.type]||{label:'Resource'}; lines.push(`# Deploying ${t.label}: ${res.name} (Subnet: ${sn.name})`); }); });
         lines.push('');
       });
     });
   });
-
-  if (state.onPrem.enabled) {
-    lines.push(`# ============ HYBRID CONNECTIVITY ============`);
-    lines.push(`# On-Premises Local Network Gateway`);
-    lines.push(`New-AzLocalNetworkGateway -Name "lng-${state.onPrem.name.replace(/[^a-zA-Z0-9]/g,'')}" -ResourceGroupName "${state.resourceGroups[0].name}" -Location "eastus" -GatewayIpAddress "8.8.8.8" -AddressPrefix @("${state.onPrem.cidr}")`);
-  }
+  if (state.onPrem.enabled) { lines.push(`# ============ HYBRID CONNECTIVITY ============`); lines.push(`# On-Premises Local Network Gateway`); lines.push(`New-AzLocalNetworkGateway -Name "lng-${state.onPrem.name.replace(/[^a-zA-Z0-9]/g,'')}" -ResourceGroupName "${state.resourceGroups[0].name}" -Location "eastus" -GatewayIpAddress "8.8.8.8" -AddressPrefix @("${state.onPrem.cidr}")`); }
   return lines.join('\n');
 }
-
 function generateBicep(){
-  const lines=[
-    `// Bicep Template — Azure Architecture Builder`,
-    `targetScope = 'subscription'\n`
-  ];
+  const lines=[`// Bicep Template — Azure Architecture Builder\ntargetScope = 'subscription'\n`];
   state.subscriptions.forEach(sub=>{
     lines.push(`// --- Subscription: ${sub.name} ---`);
     const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
     subRgs.forEach(rg=>{
-      lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {`);
-      lines.push(`  name: '${rg.name}'\n  location: '${rg.location}'\n}\n`);
-      
+      lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {\n  name: '${rg.name}'\n  location: '${rg.location}'\n}\n`);
       getVnetsInRg(rg.id).forEach(vnet=>{
-        lines.push(`// VNet: ${vnet.name}`);
-        lines.push(`// Subnets: ` + vnet.subnets.map(s => s.name).join(', '));
-        vnet.subnets.forEach(sn => {
-          sn.resources.forEach(res => {
-            const t=RES_TYPES[res.type];
-            lines.push(`// module ${res.name.replace(/[^a-zA-Z0-9]/g,'_')} 'br/public:avm/res/...'`);
-          });
-        });
+        lines.push(`// VNet: ${vnet.name}`); lines.push(`// Subnets: ` + (vnet.subnets||[]).map(s => s.name).join(', '));
+        (vnet.subnets||[]).forEach(sn => { (sn.resources||[]).forEach(res => { lines.push(`// module ${res.name.replace(/[^a-zA-Z0-9]/g,'_')} 'br/public:avm/res/...'`); }); });
         lines.push('');
       });
     });
   });
-
-  if (state.onPrem.enabled) {
-    lines.push(`// --- Hybrid Connectivity: ${state.onPrem.name} ---`);
-    lines.push(`// Local Network Gateway for CIDR: ${state.onPrem.cidr}`);
-  }
-
+  if (state.onPrem.enabled) { lines.push(`// --- Hybrid Connectivity: ${state.onPrem.name} ---`); lines.push(`// Local Network Gateway for CIDR: ${state.onPrem.cidr}`); }
   return lines.join('\n');
 }
 
@@ -1223,13 +958,7 @@ function closeModal(id){document.getElementById(id).classList.remove('show');}
 function copyText(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>alert('Copied successfully!'));}
 function downloadText(id,fn){const b=new Blob([document.getElementById(id).textContent],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;a.click();}
 
-// ================================================================
-// INIT & LOAD REAL ICONS
-// ================================================================
-loadAzureIcons(() => {
-  setTimeout(resize, 100);
-  fullUpdate();
-});
+loadAzureIcons(() => { setTimeout(resize, 100); fullUpdate(); });
 </script>
 </body>
 </html>
