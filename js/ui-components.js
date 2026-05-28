@@ -710,13 +710,24 @@ export function addResource(vnetId, snId, resType){
   const sn = vnet?.subnets.find(s=>s.id===snId);
   const rT=RES_TYPES[resType];
   if(sn && rT) {
+    // Clear custom positions for existing resources in this subnet so they re-layout together
+    if(state.customPos){
+      sn.resources.forEach(r => { delete state.customPos[r.id]; });
+    }
     const nr={id:uid(),type:resType,name:`${sn.name.split('-')[0]}-${resType}`,config:{...rT.config}};
     sn.resources.push(nr); document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); selectNode(nr.id);
   }
 }
 export function deleteResource(resId){
-  [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => { sn.resources = sn.resources.filter(r => r.id !== resId); }));
+  [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => {
+    if(sn.resources.some(r => r.id === resId)){
+      // Clear custom positions for sibling resources so they re-layout properly
+      if(state.customPos) sn.resources.forEach(r => { delete state.customPos[r.id]; });
+    }
+    sn.resources = sn.resources.filter(r => r.id !== resId);
+  }));
   if(state.rgResources) state.rgResources = state.rgResources.filter(r => r.id !== resId);
+  if(state.customPos) delete state.customPos[resId];
   state.selectedId=null; fullUpdate();
 }
 export function updateResource(resId,key,val){
