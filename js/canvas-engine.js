@@ -174,6 +174,38 @@ function getRenderNodes(){
     }
   });
 
+  // Resolve subnet collisions within same VNet: push overlapping subnets apart horizontally
+  if(state.layout==='grid'){
+    nodes.filter(n=>n.isVnet).forEach(vnetNode=>{
+      const childSubnets=nodes.filter(n=>n.isSubnet&&n.parentId===vnetNode.id);
+      if(childSubnets.length<2)return;
+      // Sort subnets by x position (left to right)
+      childSubnets.sort((a,b)=>a.x-b.x);
+      const gap=15; // minimum gap between subnets
+      let changed=true, iterations=0;
+      while(changed && iterations<20){
+        changed=false; iterations++;
+        for(let i=0;i<childSubnets.length-1;i++){
+          const a=childSubnets[i], b=childSubnets[i+1];
+          const aRight=a.x+a.width/2;
+          const bLeft=b.x-b.width/2;
+          const overlap=aRight+gap-bLeft;
+          if(overlap>0){
+            // Push b (and all subnets to its right) to the right
+            const shift=overlap;
+            for(let j=i+1;j<childSubnets.length;j++){
+              childSubnets[j].x+=shift;
+              // Also move resources inside this subnet
+              const childRes=nodes.filter(n=>!n.isVnet&&!n.isSubnet&&n.parentId===childSubnets[j].id);
+              childRes.forEach(r=>{r.x+=shift;});
+            }
+            changed=true;
+          }
+        }
+      }
+    });
+  }
+
   // Expand VNet bounds to contain all its subnets (like RGs expand to contain VNets)
   if(state.layout==='grid'){
     nodes.filter(n=>n.isVnet).forEach(vnetNode=>{
@@ -194,6 +226,38 @@ function getRenderNodes(){
       const cySubs=(my+My)/2;
       vnetNode.x=cxSubs;
       vnetNode.y=cySubs - (padT-padB)/2;
+    });
+
+    // Resolve VNet-to-VNet collisions within same RG: push overlapping VNets apart horizontally
+    const rgIds=new Set(nodes.filter(n=>n.isVnet&&n.rgId).map(n=>n.rgId));
+    rgIds.forEach(rgId=>{
+      const rgVnets=nodes.filter(n=>n.isVnet&&n.rgId===rgId);
+      if(rgVnets.length<2)return;
+      rgVnets.sort((a,b)=>a.x-b.x);
+      const vGap=60;
+      let changed=true, iterations=0;
+      while(changed && iterations<20){
+        changed=false; iterations++;
+        for(let i=0;i<rgVnets.length-1;i++){
+          const a=rgVnets[i], b=rgVnets[i+1];
+          const aRight=a.x+a.width/2;
+          const bLeft=b.x-b.width/2;
+          const overlap=aRight+vGap-bLeft;
+          if(overlap>0){
+            const shift=overlap;
+            for(let j=i+1;j<rgVnets.length;j++){
+              const vn=rgVnets[j];
+              vn.x+=shift;
+              // Move children (subnets + resources) along with VNet
+              nodes.filter(n=>n.isSubnet&&n.parentId===vn.id).forEach(sn=>{
+                sn.x+=shift;
+                nodes.filter(r=>!r.isVnet&&!r.isSubnet&&r.parentId===sn.id).forEach(r=>{r.x+=shift;});
+              });
+            }
+            changed=true;
+          }
+        }
+      }
     });
   }
 
@@ -234,9 +298,9 @@ export function draw(){
       if(!b)return;
       const col=SUB_COLORS[si%SUB_COLORS.length];
       ctx.beginPath();safeRR(ctx,b.x,b.y,b.w,b.h,16);
-      ctx.fillStyle=dw?`rgba(255,185,0,0.04)`:`rgba(255,185,0,0.05)`;ctx.fill();
-      ctx.setLineDash([8,6]);ctx.strokeStyle=dw?`rgba(255,185,0,0.6)`:col+'80';ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]);
-      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#B45309':col;
+      ctx.fillStyle=dw?`rgba(255,185,0,0.08)`:`rgba(255,185,0,0.05)`;ctx.fill();
+      ctx.setLineDash([8,6]);ctx.strokeStyle=dw?`rgba(255,185,0,0.8)`:col+'80';ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]);
+      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#92400E':col;
       ctx.textAlign='left';ctx.textBaseline='middle';
       ctx.fillText('☁️ '+sub.name,b.x+15,b.y+18);
     });
@@ -245,9 +309,9 @@ export function draw(){
       if(!b)return;
       const col=RG_COLORS[ri%RG_COLORS.length];
       ctx.beginPath();safeRR(ctx,b.x,b.y,b.w,b.h,10);
-      ctx.fillStyle=dw?'rgba(135,100,184,0.05)':'rgba(135,100,184,0.08)';ctx.fill();
-      ctx.strokeStyle=dw?'rgba(135,100,184,0.6)':'rgba(135,100,184,0.7)';ctx.lineWidth=2;ctx.stroke();
-      ctx.font='bold 10px JetBrains Mono';ctx.fillStyle=dw?'#8764B8':'#B08BE8';
+      ctx.fillStyle=dw?'rgba(135,100,184,0.08)':'rgba(135,100,184,0.08)';ctx.fill();
+      ctx.strokeStyle=dw?'rgba(135,100,184,0.8)':'rgba(135,100,184,0.7)';ctx.lineWidth=2;ctx.stroke();
+      ctx.font='bold 10px JetBrains Mono';ctx.fillStyle=dw?'#6B21A8':'#B08BE8';
       ctx.textAlign='left';ctx.textBaseline='middle';
       ctx.fillText('📁 '+rg.name,b.x+8,b.y+12);
     });
@@ -323,17 +387,17 @@ function drawSubnet(n, dw) {
   ctx.save();
   ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
   if(dw){
-    ctx.fillStyle = isSel?'rgba(0,120,212,0.10)':(n.color+'20'); ctx.fill();
-    ctx.strokeStyle=isSel?'#0078D4':(n.color+'CC'); ctx.lineWidth=isSel?2:1.5; ctx.stroke();
+    ctx.fillStyle = isSel?'rgba(0,120,212,0.14)':(n.color+'30'); ctx.fill();
+    ctx.strokeStyle=isSel?'#0078D4':n.color; ctx.lineWidth=isSel?2.5:2; ctx.stroke();
   } else {
     ctx.fillStyle = isSel?(n.color+'25'):(n.color+'14'); ctx.fill();
     ctx.strokeStyle=isSel?n.color:(n.color+'88'); ctx.lineWidth=isSel?2:1.5; ctx.stroke();
   }
-  ctx.font='bold 10px JetBrains Mono'; ctx.fillStyle=dw?'#374151':'rgba(255,255,255,0.90)';
+  ctx.font='bold 10px JetBrains Mono'; ctx.fillStyle=dw?'#1F2937':'rgba(255,255,255,0.90)';
   ctx.textAlign='left'; ctx.textBaseline='top';
   ctx.fillText('⬚ '+n.label, n.x-n.width/2+8, n.y-n.height/2+6);
   if(n.sub){
-    ctx.font='9px JetBrains Mono'; ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,0.65)';
+    ctx.font='9px JetBrains Mono'; ctx.fillStyle=dw?'#4B5563':'rgba(255,255,255,0.65)';
     ctx.fillText(n.sub, n.x-n.width/2+8, n.y-n.height/2+19);
   }
   ctx.restore();
@@ -368,11 +432,11 @@ function drawNode(n, dw){
     ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,8);
     if(dw){
       ctx.fillStyle='#FFFFFF';
-      if(!isSel){ctx.shadowColor='rgba(0,0,0,.12)';ctx.shadowBlur=8;ctx.shadowOffsetY=3;}
+      if(!isSel){ctx.shadowColor='rgba(0,0,0,.15)';ctx.shadowBlur=10;ctx.shadowOffsetY=3;}
       ctx.fill();
-      ctx.strokeStyle=isSel?'#0078D4':'#D1D5DB';ctx.lineWidth=isSel?2.5:1.5;ctx.stroke();
+      ctx.strokeStyle=isSel?'#0078D4':(rt.color||'#0078D4')+'88';ctx.lineWidth=isSel?2.5:1.8;ctx.stroke();
       ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,5,{tl:8,tr:8,bl:0,br:0});
+      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,6,{tl:8,tr:8,bl:0,br:0});
       ctx.fillStyle=rt.color||'#0078D4';ctx.fill();
     }else{
       ctx.fillStyle=(rt.color||'#0078D4')+'30';ctx.fill();
@@ -397,8 +461,8 @@ function drawNode(n, dw){
     if(state.layout==='grid'){
       ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,12);
       if(dw){
-        ctx.fillStyle=n.color+'18';ctx.fill();
-        ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=isSel?2.5:2;ctx.stroke();
+        ctx.fillStyle=n.color+'22';ctx.fill();
+        ctx.strokeStyle=isSel?'#0078D4':n.color;ctx.lineWidth=isSel?2.5:2.2;ctx.stroke();
       }else{
         ctx.fillStyle=n.color+'18';ctx.fill();
         ctx.strokeStyle=isSel?n.color:n.color+'90';ctx.lineWidth=isSel?2.5:2;ctx.stroke();

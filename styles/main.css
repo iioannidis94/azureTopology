@@ -5,8 +5,8 @@
     --border:rgba(0,120,212,0.3);--text:#E8F4FD;--muted:#7BA3C0;--card-bg:rgba(10,22,40,0.95);
   }
   body.theme-drawio {
-    --bg:#F0F2F5;--bg2:#FFFFFF;--bg3:#F8F9FA;
-    --border:#D1D5DB;--text:#111827;--muted:#6B7280;
+    --bg:#FAFBFC;--bg2:#FFFFFF;--bg3:#F3F5F7;
+    --border:#E2E6EA;--text:#1A2233;--muted:#5C6B7A;
     --card-bg:#FFFFFF;--azure-light:#0078D4;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
