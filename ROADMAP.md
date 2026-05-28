@@ -162,7 +162,7 @@
 
 **Priority:** High
 
-Τα πάντα είναι σε ένα αρχείο (~87KB). Αυτό δυσκολεύει τη συντήρηση.
+Τα πάντα είναι σε ένα μεγάλο αρχείο. Αυτό δυσκολεύει τη συντήρηση.
 
 - [ ] `styles/` - CSS σε ξεχωριστά αρχεία (themes, components, layout)
 - [ ] `js/canvas-engine.js` - Canvas rendering & interactions
