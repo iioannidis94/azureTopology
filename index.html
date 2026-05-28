@@ -205,20 +205,28 @@
   
   /* SECURITY POSTURE PANEL */
   .security-panel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;}
+  .security-panel.collapsed{display:none;}
+  .security-section-title{cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;}
+  .security-section-title:hover{color:var(--azure-light);}
   .security-score{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
   .security-score-badge{font-family:'Syne';font-size:20px;font-weight:800;padding:4px 12px;border-radius:6px;min-width:48px;text-align:center;}
   .security-score-badge.good{background:rgba(0,200,81,.15);color:var(--success);border:1px solid var(--success);}
   .security-score-badge.warning{background:rgba(255,185,0,.15);color:#FFB900;border:1px solid #FFB900;}
   .security-score-badge.danger{background:rgba(255,68,68,.15);color:var(--danger);border:1px solid var(--danger);}
   .security-score-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:bold;}
-  .security-item{display:flex;align-items:flex-start;gap:8px;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);transition:.2s;}
+  .security-item{display:flex;align-items:flex-start;gap:8px;padding:8px;border-radius:6px;border:1px solid var(--border);border-left:3px solid var(--border);background:var(--bg2);transition:.2s;}
   .security-item:hover{border-color:var(--azure-blue);}
+  .security-item.warning{border-left-color:var(--danger);}
+  .security-item.suggestion{border-left-color:#FFB900;}
+  .security-item.recommendation{border-left-color:var(--azure-blue);}
+  .security-item.clickable{cursor:pointer;}
+  .security-item.clickable:hover{background:rgba(0,120,212,.08);}
   .security-item .sev-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
   .security-item .sev-text{font-size:10px;line-height:1.5;color:var(--text);}
   .security-item .sev-label{font-size:8px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;padding:2px 5px;border-radius:3px;display:inline-block;margin-bottom:2px;}
-  .security-item .sev-label.warning{background:rgba(255,185,0,.15);color:#FFB900;}
-  .security-item .sev-label.suggestion{background:rgba(0,120,212,.15);color:var(--azure-blue);}
-  .security-item .sev-label.recommendation{background:rgba(0,200,81,.15);color:var(--success);}
+  .security-item .sev-label.warning{background:rgba(255,68,68,.15);color:var(--danger);}
+  .security-item .sev-label.suggestion{background:rgba(255,185,0,.15);color:#FFB900;}
+  .security-item .sev-label.recommendation{background:rgba(0,120,212,.15);color:var(--azure-blue);}
   .security-empty{text-align:center;color:var(--success);font-size:11px;padding:12px;font-weight:bold;}
 
   ::-webkit-scrollbar{width:5px;height:5px;}
@@ -315,7 +323,7 @@
     </div>
     <a id="pricing-calculator-link" class="calculator-link is-hidden" href="https://azure.microsoft.com/en-us/pricing/calculator" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">🔗</span> View in Azure Pricing Calculator</a>
 
-    <div class="tree-section-title">// Security Posture</div>
+    <div class="tree-section-title security-section-title" onclick="toggleSecurityPanel()">// Security Posture <span id="security-panel-toggle" style="font-size:8px;color:var(--muted);">▼</span></div>
     <div class="security-panel" id="security-panel">
       <div class="security-empty">✅ No issues detected</div>
     </div>
@@ -572,7 +580,7 @@ function analyzeSecurityPosture() {
       sn.resources.filter(r => r.type === 'sql' || r.type === 'cosmos').forEach(r => {
         const vnetHasPe = vnetHasType(vnet, 'pe');
         if (!vnetHasPe) {
-          findings.push({ severity: 'warning', icon: '⚠️', message: `${r.name} has no Private Endpoint in ${vnet.name}. Data may be exposed over public internet.` });
+          findings.push({ severity: 'warning', icon: '⚠️', message: `${r.name} has no Private Endpoint in ${vnet.name}. Data may be exposed over public internet.`, resId: r.id });
         }
       });
     });
@@ -581,10 +589,10 @@ function analyzeSecurityPosture() {
   // 2. VM without NSG → warning
   allVnets.forEach(vnet => {
     vnet.subnets.forEach(sn => {
-      const hasVm = sn.resources.some(r => r.type === 'vm' || r.type === 'vmss');
+      const vms = sn.resources.filter(r => r.type === 'vm' || r.type === 'vmss');
       const hasNsg = subnetHasType(sn, 'nsg');
-      if (hasVm && !hasNsg) {
-        findings.push({ severity: 'warning', icon: '⚠️', message: `Subnet "${sn.name}" has VMs without a Network Security Group. Traffic is unrestricted.` });
+      if (vms.length > 0 && !hasNsg) {
+        findings.push({ severity: 'warning', icon: '⚠️', message: `Subnet "${sn.name}" has VMs without a Network Security Group. Traffic is unrestricted.`, resId: vms[0].id });
       }
     });
   });
@@ -594,7 +602,8 @@ function analyzeSecurityPosture() {
     const hasApp = vnetHasType(vnet, 'app');
     const hasWaf = vnetHasType(vnet, 'agw') || vnetHasType(vnet, 'afd');
     if (hasApp && !hasWaf) {
-      findings.push({ severity: 'suggestion', icon: '💡', message: `App Service in ${vnet.name} has no WAF (App Gateway) or Front Door. Consider adding one for DDoS and OWASP protection.` });
+      const firstApp = vnetResources(vnet).find(r => r.type === 'app');
+      findings.push({ severity: 'suggestion', icon: '💡', message: `App Service in ${vnet.name} has no WAF (App Gateway) or Front Door. Consider adding one for DDoS and OWASP protection.`, resId: firstApp?.id });
     }
   });
 
@@ -603,13 +612,31 @@ function analyzeSecurityPosture() {
     const hasKv = vnetHasType(vnet, 'kv');
     const hasPe = vnetHasType(vnet, 'pe');
     if (hasKv && !hasPe) {
-      findings.push({ severity: 'recommendation', icon: '🔐', message: `Key Vault in ${vnet.name} has no Private Endpoint. Restrict access to private network for better security.` });
+      const firstKv = vnetResources(vnet).find(r => r.type === 'kv');
+      findings.push({ severity: 'recommendation', icon: '🔐', message: `Key Vault in ${vnet.name} has no Private Endpoint. Restrict access to private network for better security.`, resId: firstKv?.id });
     }
   });
 
   // 5. Hub without Firewall → recommendation
   if (!vnetHasType(state.hub, 'fw') && !vnetHasType(state.hub, 'nva')) {
-    findings.push({ severity: 'recommendation', icon: '🛡️', message: `Hub VNet "${state.hub.name}" has no Azure Firewall or NVA. All traffic between spokes is unfiltered.` });
+    findings.push({ severity: 'recommendation', icon: '🛡️', message: `Hub VNet "${state.hub.name}" has no Azure Firewall or NVA. All traffic between spokes is unfiltered.`, resId: state.hub.id });
+  }
+
+  // 6. Storage Account without Private Endpoint → suggestion
+  allVnets.forEach(vnet => {
+    vnetResources(vnet).filter(r => r.type === 'sa' || r.type === 'adls').forEach(r => {
+      const vnetHasPe = vnetHasType(vnet, 'pe');
+      if (!vnetHasPe) {
+        findings.push({ severity: 'suggestion', icon: '💡', message: `Storage Account "${r.name}" has no Private Endpoint in ${vnet.name}. Consider adding private connectivity.`, resId: r.id });
+      }
+    });
+  });
+
+  // 7. AKS without Key Vault in architecture → suggestion
+  const allResources = getAllDiagramResources();
+  const aksResource = allResources.find(r => r.type === 'aks');
+  if (aksResource && !allResources.some(r => r.type === 'kv')) {
+    findings.push({ severity: 'suggestion', icon: '💡', message: `AKS Cluster "${aksResource.name}" detected without Key Vault in the architecture. Consider adding Key Vault for secrets management.`, resId: aksResource.id });
   }
 
   return findings;
@@ -635,13 +662,26 @@ function renderSecurityPanel() {
   else if (suggestions + recommendations > 0) { grade = 'B+'; gradeClass = 'warning'; }
   else { grade = 'A+'; gradeClass = 'good'; }
 
-  let h = `<div class="security-score"><div class="security-score-badge ${gradeClass}">${grade}</div><div class="security-score-label">Security Score<br><span style="font-size:9px;font-weight:normal;">${warnings} warning${warnings!==1?'s':''}, ${suggestions + recommendations} suggestion${(suggestions+recommendations)!==1?'s':''}</span></div></div>`;
+  const summaryParts = [];
+  if (warnings > 0) summaryParts.push(`${warnings} warning${warnings!==1?'s':''}`);
+  if (suggestions > 0) summaryParts.push(`${suggestions} suggestion${suggestions!==1?'s':''}`);
+  if (recommendations > 0) summaryParts.push(`${recommendations} recommendation${recommendations!==1?'s':''}`);
+
+  let h = `<div class="security-score"><div class="security-score-badge ${gradeClass}">${grade}</div><div class="security-score-label">Security Score<br><span style="font-size:9px;font-weight:normal;">${summaryParts.join(', ')}</span></div></div>`;
 
   findings.forEach(f => {
-    h += `<div class="security-item"><span class="sev-icon">${f.icon}</span><div class="sev-text"><span class="sev-label ${f.severity}">${f.severity}</span><br>${esc(f.message)}</div></div>`;
+    const clickable = f.resId ? ` clickable" onclick="selectNode('${f.resId}')" title="Click to select resource` : ``;
+    h += `<div class="security-item ${f.severity}${clickable}"><span class="sev-icon">${f.icon}</span><div class="sev-text"><span class="sev-label ${f.severity}">${f.severity}</span><br>${esc(f.message)}</div></div>`;
   });
 
   panel.innerHTML = h;
+}
+
+function toggleSecurityPanel() {
+  const panel = document.getElementById('security-panel');
+  const toggle = document.getElementById('security-panel-toggle');
+  const collapsed = panel.classList.toggle('collapsed');
+  toggle.textContent = collapsed ? '▶' : '▼';
 }
 
 // ================================================================
