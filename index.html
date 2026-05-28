@@ -170,11 +170,11 @@ const RES_TYPES = {
 // ============================================================
 // DYNAMIC STATE & LOCAL STORAGE
 // ============================================================
-const SAVED_STATE_KEY = 'azureBuilderStateV3'; 
+const SAVED_STATE_KEY = 'azureBuilderStateV4'; 
 
 const defaultState = {
   theme: 'drawio', 
-  layout: 'grid', // 'radial' ή 'grid'
+  layout: 'grid', 
   hub: {
     id: 'hub', name: 'Hub VNet', cidr: '10.0.0.0/16', color: '#0078D4',
     resources: [
@@ -184,14 +184,14 @@ const defaultState = {
   },
   spokes: [
     {
-      id: 'spoke-1', name: 'Production', cidr: '10.1.0.0/16', color: '#00BCF2',
+      id: 'spoke-1', name: 'Production', cidr: '10.1.0.0/16', color: '#00BCF2', peering: true,
       resources: [
         { id: 'res-s1', type: 'vm', name: 'Prod VMs', config: { ...RES_TYPES.vm.config } },
         { id: 'res-s2', type: 'sql', name: 'Prod DB', config: { ...RES_TYPES.sql.config } }
       ]
     },
     {
-      id: 'spoke-2', name: 'Dev / Test', cidr: '10.2.0.0/16', color: '#00B294',
+      id: 'spoke-2', name: 'Dev / Test', cidr: '10.2.0.0/16', color: '#00B294', peering: true,
       resources: [
         { id: 'res-s3', type: 'app', name: 'Dev API', config: { ...RES_TYPES.app.config } }
       ]
@@ -234,7 +234,6 @@ function toggleTheme() {
 
 function toggleLayout() {
   state.layout = state.layout === 'grid' ? 'radial' : 'grid';
-  // Reset pan/zoom when switching layouts so it centers nicely
   state.offset = { x: 0, y: 0 };
   state.scale = 1;
   fullUpdate();
@@ -328,6 +327,15 @@ function renderEditor() {
       <div class="editor-row"><span class="editor-label">CIDR Block</span><input type="text" class="input-field" value="${selectedObj.cidr}" onchange="updateVnet('${selectedObj.id}', 'cidr', this.value)"></div>
     `;
     if (selectedObj.id !== 'hub') {
+      const isPeered = selectedObj.peering !== false;
+      html += `
+        <div class="editor-row" style="margin-top:10px;">
+          <span class="editor-label">Hub Peering</span>
+          <button class="btn ${isPeered ? 'primary' : ''}" onclick="togglePeering('${selectedObj.id}')">
+            ${isPeered ? '🔗 Connected' : '🔌 Disconnected'}
+          </button>
+        </div>
+      `;
       html += `<button class="btn danger" onclick="deleteSpoke('${selectedObj.id}')">🗑️ Delete Spoke</button>`;
     }
   } else {
@@ -368,7 +376,7 @@ function resetDiagram() {
 function addSpoke() {
   state.spokes.push({
     id: getUid(), name: `Spoke ${state.spokes.length + 1}`, cidr: `10.${state.spokes.length + 1}.0.0/16`,
-    color: colors[state.spokes.length % colors.length], resources: []
+    color: colors[state.spokes.length % colors.length], peering: true, resources: []
   });
   fullUpdate();
 }
@@ -378,6 +386,13 @@ function updateVnet(id, key, val) {
   if (state.hub.id === id) state.hub[key] = val;
   else { const sp = state.spokes.find(s => s.id === id); if (sp) sp[key] = val; }
   fullUpdate();
+}
+function togglePeering(id) {
+  const sp = state.spokes.find(s => s.id === id);
+  if (sp) {
+    sp.peering = sp.peering === false ? true : false;
+    fullUpdate();
+  }
 }
 function toggleDropdown(id) {
   document.querySelectorAll('.res-dropdown').forEach(d => d.classList.remove('show'));
@@ -454,15 +469,15 @@ function getRenderNodes() {
     // --------------------------------------------------------
     // GRID / ARCHITECTURAL LAYOUT
     // --------------------------------------------------------
-    const topY = Math.max(cy - 180, 150); // Hub Y
-    const bottomY = topY + 280; // Spokes Y
+    const topY = Math.max(cy - 180, 150); 
+    const bottomY = topY + 280; 
 
     // 1. HUB VNET
     const hResCount = state.hub.resources.length;
     const hWidth = Math.max(260, hResCount * 90 + 40);
     const hHeight = 140;
     
-    nodes.push({ id: state.hub.id, isVnet: true, x: cx, y: topY, width: hWidth, height: hHeight, label: state.hub.name, sub: state.hub.cidr, color: state.hub.color });
+    nodes.push({ id: state.hub.id, isVnet: true, x: cx, y: topY, width: hWidth, height: hHeight, label: state.hub.name, sub: state.hub.cidr, color: state.hub.color, peering: true });
     
     state.hub.resources.forEach((res, i) => {
       const rx = cx - (hResCount*90)/2 + 45 + i * 90;
@@ -482,7 +497,7 @@ function getRenderNodes() {
       const sHeight = 140;
       const sx = currentX + sWidth / 2;
       
-      nodes.push({ id: spoke.id, isVnet: true, x: sx, y: bottomY, width: sWidth, height: sHeight, label: spoke.name, sub: spoke.cidr, color: spoke.color });
+      nodes.push({ id: spoke.id, isVnet: true, parentId: state.hub.id, x: sx, y: bottomY, width: sWidth, height: sHeight, label: spoke.name, sub: spoke.cidr, color: spoke.color, peering: spoke.peering !== false });
       
       const sResCount = spoke.resources.length;
       spoke.resources.forEach((res, j) => {
@@ -498,7 +513,7 @@ function getRenderNodes() {
     // RADIAL / SPIDER WEB LAYOUT
     // --------------------------------------------------------
     const r = Math.min(canvas.width, canvas.height) * 0.35;
-    nodes.push({ id: state.hub.id, isVnet: true, x: cx, y: cy, label: state.hub.name, sub: state.hub.cidr, color: state.hub.color, radius: 70 });
+    nodes.push({ id: state.hub.id, isVnet: true, x: cx, y: cy, label: state.hub.name, sub: state.hub.cidr, color: state.hub.color, radius: 70, peering: true });
     
     const hResCount = state.hub.resources.length;
     state.hub.resources.forEach((res, i) => {
@@ -513,7 +528,7 @@ function getRenderNodes() {
       const sx = cx + Math.cos(angle) * r;
       const sy = cy + Math.sin(angle) * r;
       
-      nodes.push({ id: spoke.id, isVnet: true, parentId: state.hub.id, x: sx, y: sy, label: spoke.name, sub: spoke.cidr, color: spoke.color, radius: 55 });
+      nodes.push({ id: spoke.id, isVnet: true, parentId: state.hub.id, x: sx, y: sy, label: spoke.name, sub: spoke.cidr, color: spoke.color, radius: 55, peering: spoke.peering !== false });
 
       const sResCount = spoke.resources.length;
       const spacing = 85;
@@ -549,6 +564,9 @@ function draw() {
   // Draw Lines (Peerings & Resource Links)
   nodes.forEach(n => {
     if (n.parentId && map[n.parentId]) {
+      // If node is a VNet and peering is false, do not draw the connection
+      if (n.isVnet && !n.peering) return;
+
       const p = map[n.parentId];
       ctx.beginPath();
       
@@ -559,8 +577,6 @@ function draw() {
         ctx.lineTo(n.x, p.y + p.height/2 + 30); 
         ctx.lineTo(n.x, n.y - n.height/2); 
       } else if (isGrid && !n.isVnet) {
-        // No visible lines connecting resources inside the box in grid mode, 
-        // the visual containment implies connection.
         return; 
       } else {
         // Radial straight lines
@@ -636,7 +652,6 @@ function drawNode(n) {
   } else {
     // ---------------- VNET NODE ----------------
     if (isGrid) {
-      // GRID MODE: Large Rectangles containing resources
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(n.x - n.width/2, n.y - n.height/2, n.width, n.height, 12);
       else ctx.rect(n.x - n.width/2, n.y - n.height/2, n.width, n.height);
@@ -654,7 +669,6 @@ function drawNode(n) {
       }
       ctx.shadowBlur = 0;
 
-      // Text in Top-Left
       ctx.font = 'bold 12px Syne'; 
       ctx.fillStyle = isDrawio ? '#111827' : (n.id==='hub' ? '#E8F4FD' : n.color);
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -665,7 +679,6 @@ function drawNode(n) {
       ctx.fillText(n.sub, n.x - n.width/2 + 16, n.y - n.height/2 + 32);
 
     } else {
-      // RADIAL MODE: Circles
       ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI*2);
       if (isDrawio) {
         ctx.fillStyle = '#FFFFFF';
@@ -675,82 +688,4 @@ function drawNode(n) {
         ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
       } else {
         if (n.id === 'hub') {
-          const g = ctx.createRadialGradient(n.x-10, n.y-10, 0, n.x, n.y, n.radius);
-          g.addColorStop(0, '#1A8FE3'); g.addColorStop(1, '#003A5C'); ctx.fillStyle = g;
-        } else ctx.fillStyle = n.color + '25';
-        ctx.fill();
-        ctx.strokeStyle = isSelected ? n.color : n.color + '80'; ctx.lineWidth = 2; ctx.stroke();
-      }
-      ctx.shadowBlur = 0;
-
-      // Text in Center
-      ctx.font = 'bold 12px Syne'; 
-      ctx.fillStyle = isDrawio ? '#111827' : (n.id==='hub' ? '#E8F4FD' : n.color);
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(n.label, n.x, n.y - 8);
-      ctx.font = '10px JetBrains Mono'; 
-      ctx.fillStyle = isDrawio ? '#6B7280' : 'rgba(255,255,255,0.7)';
-      ctx.fillText(n.sub, n.x, n.y + 12);
-    }
-  }
-  ctx.restore();
-}
-
-// ============================================================
-// CANVAS INTERACTIONS (PAN, ZOOM, HIT TEST)
-// ============================================================
-canvas.addEventListener('mousedown', e => {
-  const rect = canvas.getBoundingClientRect();
-  const px = (e.clientX - rect.left - state.offset.x) / state.scale;
-  const py = (e.clientY - rect.top - state.offset.y) / state.scale;
-  
-  const nodes = getRenderNodes();
-  let hit = null;
-  // Ελέγχουμε πρώτα τα resources (που είναι από πάνω) και μετά τα VNets
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
-    if (!n.isVnet) {
-      if (Math.abs(px - n.x) < n.width/2 && Math.abs(py - n.y) < n.height/2) hit = n;
-    } else {
-      if (state.layout === 'grid') {
-        if (Math.abs(px - n.x) < n.width/2 && Math.abs(py - n.y) < n.height/2) hit = n;
-      } else {
-        if (Math.sqrt((px-n.x)**2 + (py-n.y)**2) < n.radius) hit = n;
-      }
-    }
-    if (hit) break;
-  }
-
-  if (hit) { selectNode(hit.id); }
-  else {
-    state.selectedId = null; fullUpdate();
-    state.dragging = true; state.dragStart = {x: e.clientX, y: e.clientY};
-    state.offsetStart = {...state.offset};
-    canvas.style.cursor = 'grabbing';
-  }
-});
-
-canvas.addEventListener('mousemove', e => {
-  if (!state.dragging) return;
-  state.offset.x = state.offsetStart.x + (e.clientX - state.dragStart.x);
-  state.offset.y = state.offsetStart.y + (e.clientY - state.dragStart.y);
-  draw();
-});
-
-canvas.addEventListener('mouseup', () => { if(state.dragging) { state.dragging = false; saveState(); } canvas.style.cursor = 'grab'; });
-canvas.addEventListener('mouseleave', () => { if(state.dragging) { state.dragging = false; saveState(); } canvas.style.cursor = 'grab'; });
-
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  const factor = e.deltaY < 0 ? 1.1 : 0.9;
-  state.scale = Math.max(0.3, Math.min(2.5, state.scale * factor));
-  saveState(); 
-  draw();
-}, { passive: false });
-
-// INIT
-fullUpdate();
-
-</script>
-</body>
-</html>
+          const g = ctx.createRadialGradient(n.x-10, n.y-10,
