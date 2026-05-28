@@ -151,7 +151,7 @@ try{
 // ================================================================
 // UTILITY FUNCTIONS
 // ================================================================
-export const uid=()=>'id-'+Math.random().toString(36).substr(2,9);
+export const uid=()=>'id-'+Math.random().toString(36).substring(2,11);
 export const esc=s=>String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 export function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
