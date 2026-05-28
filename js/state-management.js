@@ -136,14 +136,14 @@ const defaultState={
       ]
     }
   ],
-  selectedId:null, offset:{x:0,y:0}, scale:1, dragging:false, dragStart:{x:0,y:0}, offsetStart:{x:0,y:0}, dragNodeId:null
+  selectedId:null, offset:{x:0,y:0}, scale:1, dragging:false, dragStart:{x:0,y:0}, offsetStart:{x:0,y:0}, dragNodeId:null, dragGroup:null
 };
 
 export let state;
 try{
   const s=localStorage.getItem(KEY);
   state=s?JSON.parse(s):JSON.parse(JSON.stringify(defaultState));
-  state.dragging=false; state.dragNodeId=null;
+  state.dragging=false; state.dragNodeId=null; state.dragGroup=null;
   if(state.theme==='dark') document.body.classList.remove('theme-drawio');
   else document.body.classList.add('theme-drawio');
 }catch(e){state=JSON.parse(JSON.stringify(defaultState));}
