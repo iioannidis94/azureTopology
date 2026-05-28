@@ -291,7 +291,7 @@ function drawSubnet(n, dw) {
   ctx.save();
   ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
   if(dw){
-    ctx.fillStyle = isSel?'rgba(0,120,212,0.10)':(n.color+'15'); ctx.fill();
+    ctx.fillStyle = isSel?'rgba(0,120,212,0.10)':(n.color+'20'); ctx.fill();
     ctx.strokeStyle=isSel?'#0078D4':(n.color+'CC'); ctx.lineWidth=isSel?2:1.5; ctx.stroke();
   } else {
     ctx.fillStyle = isSel?(n.color+'25'):(n.color+'14'); ctx.fill();
@@ -365,7 +365,7 @@ function drawNode(n, dw){
     if(state.layout==='grid'){
       ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,12);
       if(dw){
-        ctx.fillStyle=n.color+'08';ctx.fill();
+        ctx.fillStyle=n.color+'18';ctx.fill();
         ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=isSel?2.5:2;ctx.stroke();
       }else{
         ctx.fillStyle=n.color+'18';ctx.fill();
@@ -380,7 +380,8 @@ function drawNode(n, dw){
     }else{
       ctx.beginPath();ctx.arc(n.x,n.y,n.radius,0,Math.PI*2);
       if(dw){
-        ctx.fillStyle='#FFFFFF';if(!isSel){ctx.shadowColor='rgba(0,0,0,.06)';ctx.shadowBlur=8;}
+        const gDw=ctx.createRadialGradient(n.x-10,n.y-10,0,n.x,n.y,n.radius);gDw.addColorStop(0,n.color+'30');gDw.addColorStop(1,n.color+'12');ctx.fillStyle=gDw;
+        if(!isSel){ctx.shadowColor='rgba(0,0,0,.06)';ctx.shadowBlur=8;}
         ctx.fill();ctx.shadowBlur=0;
         ctx.strokeStyle=isSel?'#0078D4':n.color+'CC';ctx.lineWidth=2.5;ctx.stroke();
       }else{
