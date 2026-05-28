@@ -290,3 +290,5 @@
   .rg-res-title{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;font-weight:600;}
   .rg-chip{margin:2px 4px;}
   .dns-record-row{display:flex;align-items:center;}
+  @keyframes cost-flash { 0%{background:rgba(0,200,81,0.3);} 100%{background:transparent;} }
+  .cost-updated{animation:cost-flash 0.6s ease-out;border-radius:4px;}
