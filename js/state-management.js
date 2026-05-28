@@ -100,7 +100,7 @@ export const RG_COLORS=['#8764B8','#0078D4','#00B294','#FF8C00','#E81123'];
 export const VNET_COLORS=['#0078D4','#00BCF2','#00B294','#FF8C00','#8764B8','#107C10'];
 
 const defaultState={
-  theme:'drawio', layout:'grid',
+  theme:'dark', layout:'grid',
   onPrem: { enabled: false, id: 'onprem', name: 'Corp Datacenter', cidr: '192.168.0.0/16' },
   customPos: {}, 
   subscriptions:[
