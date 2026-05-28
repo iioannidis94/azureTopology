@@ -1,4 +1,4 @@
-import { state, esc, uid, fullUpdate, saveState, getVnetsInRg, getRgResources, RES_TYPES, RES_CATEGORIES, AZURE_ICON_BASE, VNET_COLORS, SUB_COLORS, isValidCidr, checkCidrOverlap, nextAvailableVnetCidr, nextAvailableSubnetCidr, parseCidr } from './state-management.js';
+import { state, esc, uid, fullUpdate, saveState, getVnetsInRg, getRgResources, RES_TYPES, RES_CATEGORIES, AZURE_ICON_BASE, VNET_COLORS, SUB_COLORS, isValidCidr, checkCidrOverlap, nextAvailableVnetCidr, nextAvailableSubnetCidr, nextAvailableSubnetCidrFromParsed, parseCidr } from './state-management.js';
 import { selectNode } from './canvas-engine.js';
 
 // ================================================================
@@ -422,9 +422,11 @@ export function setRgLocation(id,val){const rg=state.resourceGroups.find(r=>r.id
 export function addSpoke(rgId){
   const n=state.spokes.length;
   const cidr = nextAvailableVnetCidr();
+  const spokeId = uid();
+  // Temporarily create the spoke to calculate subnet CIDR using the same logic
   const p = parseCidr(cidr);
-  const subnetCidr = p ? `${(p.network>>>24)&255}.${(p.network>>>16)&255}.1.0/24` : `10.${n+1}.1.0/24`;
-  state.spokes.push({ id:uid(),name:`spoke-${n+1}-vnet`,cidr, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], rgId:rgId||state.resourceGroups[0]?.id,
+  const subnetCidr = p ? nextAvailableSubnetCidrFromParsed(p, []) : `10.${n+1}.1.0/24`;
+  state.spokes.push({ id:spokeId,name:`spoke-${n+1}-vnet`,cidr, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], rgId:rgId||state.resourceGroups[0]?.id,
     subnets: [{id:uid(), name:'default', cidr:subnetCidr, resources:[]}]
   });
   fullUpdate();

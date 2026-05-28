@@ -284,6 +284,10 @@ export function nextAvailableSubnetCidr(vnetId) {
   const vnetParsed = parseCidr(vnet.cidr);
   if (!vnetParsed) return '10.0.0.0/24';
   const existingSubnets = vnet.subnets.map(sn => sn.cidr).filter(c => parseCidr(c));
+  return nextAvailableSubnetCidrFromParsed(vnetParsed, existingSubnets);
+}
+
+export function nextAvailableSubnetCidrFromParsed(vnetParsed, existingSubnets) {
   const subnetPrefix = 24;
   const subnetSize = (1 << (32 - subnetPrefix)) >>> 0;
   let candidate = vnetParsed.network;
