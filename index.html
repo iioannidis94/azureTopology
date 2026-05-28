@@ -635,7 +635,8 @@ function analyzeSecurityPosture() {
   // 7. AKS without Key Vault in architecture → suggestion
   const allResources = getAllDiagramResources();
   const aksResource = allResources.find(r => r.type === 'aks');
-  if (aksResource && !allResources.some(r => r.type === 'kv')) {
+  const hasKvAnywhere = allResources.some(r => r.type === 'kv');
+  if (aksResource && !hasKvAnywhere) {
     findings.push({ severity: 'suggestion', icon: '💡', message: `AKS Cluster "${aksResource.name}" detected without Key Vault in the architecture. Consider adding Key Vault for secrets management.`, resId: aksResource.id });
   }
 
@@ -670,8 +671,9 @@ function renderSecurityPanel() {
   let h = `<div class="security-score"><div class="security-score-badge ${gradeClass}">${grade}</div><div class="security-score-label">Security Score<br><span style="font-size:9px;font-weight:normal;">${summaryParts.join(', ')}</span></div></div>`;
 
   findings.forEach(f => {
-    const clickable = f.resId ? ` clickable" onclick="selectNode('${f.resId}')" title="Click to select resource` : ``;
-    h += `<div class="security-item ${f.severity}${clickable}"><span class="sev-icon">${f.icon}</span><div class="sev-text"><span class="sev-label ${f.severity}">${f.severity}</span><br>${esc(f.message)}</div></div>`;
+    const classes = `security-item ${f.severity}${f.resId ? ' clickable' : ''}`;
+    const extraAttrs = f.resId ? ` onclick="selectNode('${f.resId}')" title="Click to select resource"` : '';
+    h += `<div class="${classes}"${extraAttrs}><span class="sev-icon">${f.icon}</span><div class="sev-text"><span class="sev-label ${f.severity}">${f.severity}</span><br>${esc(f.message)}</div></div>`;
   });
 
   panel.innerHTML = h;
