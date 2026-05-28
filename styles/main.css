@@ -220,6 +220,8 @@
   .security-item .sev-label.warning{background:rgba(255,68,68,.15);color:var(--danger);}
   .security-item .sev-label.suggestion{background:rgba(255,185,0,.15);color:#FFB900;}
   .security-item .sev-label.recommendation{background:rgba(0,120,212,.15);color:var(--azure-blue);}
+  .security-item.error{border-left-color:#D13438;}
+  .security-item .sev-label.error{background:rgba(209,52,56,.15);color:#D13438;}
   .security-empty{text-align:center;color:var(--success);font-size:11px;padding:12px;font-weight:bold;}
 
   ::-webkit-scrollbar{width:5px;height:5px;}
