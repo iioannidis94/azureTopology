@@ -29,15 +29,15 @@
   <div class="canvas-area"><canvas id="diagram-canvas"></canvas></div>
   <div class="sidebar right" id="sidebar-right">
     
-    <div class="tree-section-title">// Cost Estimator</div>
-    <div class="cost-estimator">
+    <div class="tree-section-title cost-section-title" onclick="window._toggleCostPanel()">// Cost Estimator <span id="cost-panel-toggle" style="font-size:8px;color:var(--muted);">▶</span></div>
+    <div class="cost-estimator collapsed" id="cost-panel">
       <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Est. Monthly Cost</div>
       <div class="cost-value" id="cost-display">$0</div>
+      <a id="pricing-calculator-link" class="calculator-link is-hidden" href="https://azure.microsoft.com/en-us/pricing/calculator" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">🔗</span> View in Azure Pricing Calculator</a>
     </div>
-    <a id="pricing-calculator-link" class="calculator-link is-hidden" href="https://azure.microsoft.com/en-us/pricing/calculator" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">🔗</span> View in Azure Pricing Calculator</a>
 
-    <div class="tree-section-title security-section-title" onclick="window._toggleSecurityPanel()">// Security Posture <span id="security-panel-toggle" style="font-size:8px;color:var(--muted);">▼</span></div>
-    <div class="security-panel" id="security-panel">
+    <div class="tree-section-title security-section-title" onclick="window._toggleSecurityPanel()">// Security Posture <span id="security-panel-toggle" style="font-size:8px;color:var(--muted);">▶</span></div>
+    <div class="security-panel collapsed" id="security-panel">
       <div class="security-empty">✅ No issues detected</div>
     </div>
 

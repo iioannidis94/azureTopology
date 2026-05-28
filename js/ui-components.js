@@ -124,6 +124,13 @@ export function toggleSecurityPanel() {
   toggle.textContent = collapsed ? '▶' : '▼';
 }
 
+export function toggleCostPanel() {
+  const panel = document.getElementById('cost-panel');
+  const toggle = document.getElementById('cost-panel-toggle');
+  const collapsed = panel.classList.toggle('collapsed');
+  toggle.textContent = collapsed ? '▶' : '▼';
+}
+
 // ================================================================
 // TOGGLES & ON PREM
 // ================================================================
