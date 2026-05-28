@@ -380,8 +380,10 @@ canvas.addEventListener('mousedown',e=>{
     // Collect group children for RG/sub-level drag (VNets drag their children)
     state.dragGroup = null;
     if(hit.isVnet && hit.rgId){
-      // When dragging a VNet, also move its subnets and resources
-      const children = nodes.filter(n => n.parentId === hit.id || (n.parentId && nodes.find(p=>p.id===n.parentId && p.parentId===hit.id)));
+      // Build parent map for efficient lookup
+      const parentMap = {};
+      nodes.forEach(n => { if(n.parentId) parentMap[n.id] = n.parentId; });
+      const children = nodes.filter(n => n.parentId === hit.id || parentMap[n.parentId] === hit.id);
       if(children.length > 0){
         state.dragGroup = children.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
       }
@@ -414,16 +416,18 @@ canvas.addEventListener('mousedown',e=>{
         state.selectedId=null; fullUpdate();
         state.dragNodeId = '__group__';
         state.mouseStart = {x: px, y: py};
-        // Collect all nodes belonging to this group
+        // Build hierarchy maps for efficient group collection
+        const nodeMap = {}; nodes.forEach(n => nodeMap[n.id] = n);
+        const parentMap = {}; nodes.forEach(n => { if(n.parentId) parentMap[n.id] = n.parentId; });
         let groupNodes;
         if(groupHit.type==='rg'){
-          groupNodes = nodes.filter(n => n.rgId===groupHit.id || 
-            (n.parentId && nodes.find(p=>p.id===n.parentId && p.rgId===groupHit.id)) ||
-            (n.parentId && nodes.find(p=>p.id===n.parentId && nodes.find(pp=>pp.id===p.parentId && pp.rgId===groupHit.id))));
+          // Get VNets in this RG, then their children
+          const rgVnets = new Set(nodes.filter(n=>n.rgId===groupHit.id).map(n=>n.id));
+          groupNodes = nodes.filter(n => rgVnets.has(n.id) || rgVnets.has(n.parentId) || rgVnets.has(parentMap[n.parentId]));
         } else {
-          groupNodes = nodes.filter(n => n.subId===groupHit.id || 
-            (n.parentId && nodes.find(p=>p.id===n.parentId && p.subId===groupHit.id)) ||
-            (n.parentId && nodes.find(p=>p.id===n.parentId && nodes.find(pp=>pp.id===p.parentId && pp.subId===groupHit.id))));
+          // Get VNets in this subscription, then their children
+          const subVnets = new Set(nodes.filter(n=>n.subId===groupHit.id).map(n=>n.id));
+          groupNodes = nodes.filter(n => subVnets.has(n.id) || subVnets.has(n.parentId) || subVnets.has(parentMap[n.parentId]));
         }
         state.dragGroup = groupNodes.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
         canvas.style.cursor='move';
