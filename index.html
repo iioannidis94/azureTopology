@@ -79,7 +79,7 @@
   .vnet-cidr-input:focus, .vnet-cidr-input:hover{border-style:solid;border-color:var(--azure-blue);}
   .resource-chips{display:flex;flex-wrap:wrap;gap:5px;}
   
-  .chip{font-size:9px;padding:4px 8px;border-radius:4px;background:rgba(0,120,212,.08);border:1px solid rgba(0,120,212,.3);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:5px;transition:.15s;max-width:115px;}
+  .chip{font-size:9px;padding:4px 8px;border-radius:4px;background:rgba(0,120,212,.08);border:1px solid rgba(0,120,212,.3);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s;max-width:115px;}
   body:not(.theme-drawio) .chip{color:white;background:rgba(0,120,212,.18);}
   .chip:hover{background:var(--azure-blue);color:white!important;border-color:var(--azure-blue);}
   .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -87,6 +87,7 @@
   .chip.hub-chip{background:rgba(255,140,0,.08);border-color:rgba(255,140,0,.4);}
   body:not(.theme-drawio) .chip.hub-chip{background:rgba(255,140,0,.18);}
   .chip.hub-chip:hover{background:#FF8C00;color:white!important;border-color:#FF8C00;}
+  .chip img {width: 14px; height: 14px; object-fit: contain;}
   
   /* BUTTONS */
   .add-btn{display:flex;align-items:center;gap:6px;background:transparent;border:1px dashed var(--muted);color:var(--muted);padding:6px 10px;font-size:9px;font-weight:bold;cursor:pointer;border-radius:4px;font-family:'JetBrains Mono';transition:.15s;width:100%;justify-content:center;}
@@ -104,6 +105,7 @@
   .res-dd-section:first-child{border-top:none;}
   .res-option{padding:6px 10px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text);transition:0.1s;}
   .res-option:hover{background:var(--azure-blue);color:white;}
+  .res-option img {width: 16px; height: 16px;}
   
   /* EDITOR */
   .input-field{background:rgba(0,0,0,.05);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 8px;border-radius:4px;outline:none;width:100%;transition:.2s;}
@@ -114,6 +116,7 @@
   #editor-container{flex-grow:1; overflow-y:auto; margin-bottom: 10px;}
   .editor-panel{background:var(--bg3);border:1px solid var(--azure-blue);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 12px rgba(0,0,0,.05);}
   .editor-header{display:flex;align-items:center;gap:8px;font-family:'Syne';font-size:14px;font-weight:700;color:var(--azure-blue);margin-bottom:4px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .editor-header img {width: 20px; height: 20px;}
   .editor-row{display:flex;flex-direction:column;gap:4px;}
   .editor-label{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:bold;letter-spacing:.5px;}
   
@@ -122,7 +125,7 @@
   #diagram-canvas{width:100%;height:100%;cursor:grab;}
   #diagram-canvas:active{cursor:grabbing;}
   
-  /* EXPORT AREA (Fixed at bottom) */
+  /* EXPORT AREA */
   .export-area{padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
   .export-btn{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;padding:10px;border-radius:6px;border:none;background:linear-gradient(135deg,var(--azure-blue),#00BCF2);color:white;cursor:pointer;width:100%;transition:all .2s;text-transform:uppercase;letter-spacing:0.5px;}
   .export-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,120,212,.3);}
@@ -181,7 +184,6 @@
       <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:20px;line-height:1.9;">← Click a resource or VNet<br>to edit its properties<br><br>Double-click to rename<br>any element on canvas</div>
     </div>
     
-    <!-- FIX: EXPORT AREA IS NOW ALWAYS VISIBLE AT BOTTOM -->
     <div class="export-area">
       <button class="export-btn secondary" onclick="exportPng()">⬇ Export as PNG</button>
       <button class="export-btn secondary" onclick="openPsModal()">⚡ Deploy via PowerShell</button>
@@ -223,49 +225,68 @@
 
 <script>
 // ================================================================
-// RESOURCE TYPES (Fixed icons with clear Emojis)
+// RESOURCE TYPES & REAL AZURE SVG ICONS
 // ================================================================
+const AZURE_ICON_BASE = 'https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@master/azure-icons/';
+
 const RES_CATEGORIES={compute:'Compute',network:'Networking',data:'Data & Storage',security:'Security',integration:'Integration',ai:'AI & Analytics',management:'Management'};
 const RES_TYPES={
-  vm:{icon:'💻',color:'#00BCF2',label:'Virtual Machine',cat:'compute',config:{size:'Standard_D2s_v3',os:'Ubuntu 22.04',zone:'1'}},
-  vmss:{icon:'🖥️',color:'#00A4EF',label:'VM Scale Set',cat:'compute',config:{size:'Standard_D2s_v3',minInstances:'2',maxInstances:'10'}},
-  aks:{icon:'☸️',color:'#0078D4',label:'AKS Cluster',cat:'compute',config:{nodes:'3',version:'1.29',tier:'Standard'}},
-  fa:{icon:'⚡',color:'#8764B8',label:'Function App',cat:'compute',config:{plan:'Consumption',runtime:'.NET 8'}},
-  aca:{icon:'📦',color:'#8764B8',label:'Container Apps',cat:'compute',config:{minReplicas:'0',maxReplicas:'10'}},
-  fw:{icon:'🛡️',color:'#E81123',label:'Azure Firewall',cat:'network',config:{sku:'Premium',mode:'Alert & Deny',zones:'1,2,3'}},
-  nva:{icon:'🧱',color:'#E81123',label:'FortiGate NVA',cat:'network',config:{mode:'Active/Passive',version:'7.6'}},
-  agw:{icon:'🌍',color:'#FF8C00',label:'App Gateway',cat:'network',config:{sku:'WAF_v2',capacity:'Autoscale',waf:'Enabled'}},
-  lb:{icon:'⚖️',color:'#00BCF2',label:'Load Balancer',cat:'network',config:{sku:'Standard',type:'Internal'}},
-  gw:{icon:'🔀',color:'#0078D4',label:'VPN Gateway',cat:'network',config:{sku:'VpnGw2AZ',routing:'BGP Enabled'}},
-  ergw:{icon:'🚄',color:'#003A5C',label:'ExpressRoute GW',cat:'network',config:{sku:'ErGw2AZ',fastPath:'Enabled'}},
-  bas:{icon:'🔒',color:'#0078D4',label:'Azure Bastion',cat:'network',config:{sku:'Standard',shareable:'Enabled'}},
-  afd:{icon:'⚡',color:'#FF8C00',label:'Azure Front Door',cat:'network',config:{sku:'Premium',waf:'Enabled'}},
-  pe:{icon:'🔌',color:'#8764B8',label:'Private Endpoint',cat:'network',config:{targetService:'Storage',subresource:'blob'}},
-  dns:{icon:'🌐',color:'#00B294',label:'Private DNS Zone',cat:'network',config:{zone:'privatelink.blob.core.windows.net'}},
-  nsg:{icon:'📋',color:'#E81123',label:'Network Sec Group',cat:'network',config:{rules:'5 custom rules'}},
-  sql:{icon:'🗄️',color:'#00B294',label:'Azure SQL',cat:'data',config:{tier:'General Purpose',vcores:'4',ha:'Zone Redundant'}},
-  cosmos:{icon:'🌌',color:'#00B294',label:'Cosmos DB',cat:'data',config:{api:'NoSQL',consistency:'Session',zones:'Enabled'}},
-  sa:{icon:'💾',color:'#00B294',label:'Storage Account',cat:'data',config:{tier:'Standard',replication:'ZRS',accessTier:'Hot'}},
-  redis:{icon:'⚡',color:'#E81123',label:'Azure Cache Redis',cat:'data',config:{sku:'Premium P1',zones:'Enabled'}},
-  adls:{icon:'🗃️',color:'#0078D4',label:'Data Lake Storage',cat:'data',config:{tier:'Standard',hns:'Enabled'}},
-  kv:{icon:'🔑',color:'#FF8C00',label:'Key Vault',cat:'security',config:{sku:'Premium',rbac:'Enabled',purgeProtect:'Enabled'}},
-  app:{icon:'📱',color:'#00BCF2',label:'App Service',cat:'integration',config:{sku:'Premium V3 P1v3',instances:'2',zone:'Enabled'}},
-  apim:{icon:'🔌',color:'#FF8C00',label:'API Management',cat:'integration',config:{tier:'Developer',capacity:'1'}},
-  sb:{icon:'📨',color:'#8764B8',label:'Service Bus',cat:'integration',config:{tier:'Premium',zones:'Enabled'}},
-  evh:{icon:'📤',color:'#8764B8',label:'Event Hub',cat:'integration',config:{tier:'Standard',partitions:'4'}},
-  logic:{icon:'🔄',color:'#8764B8',label:'Logic App',cat:'integration',config:{plan:'Standard',sku:'WS1'}},
-  foundry:{icon:'🤖',color:'#0078D4',label:'AI Foundry',cat:'ai',config:{kind:'AIServices',sku:'S0'}},
-  openai:{icon:'🧠',color:'#50E6FF',label:'Azure OpenAI',cat:'ai',config:{model:'gpt-4o',tier:'PayAsYouGo'}},
-  docintel:{icon:'📄',color:'#0078D4',label:'Document Intelligence',cat:'ai',config:{tier:'S0',endpoint:'Custom'}},
-  search:{icon:'🔍',color:'#FF8C00',label:'AI Search',cat:'ai',config:{tier:'Standard',replicas:'1',partitions:'1'}},
-  synapse:{icon:'📊',color:'#8764B8',label:'Synapse Analytics',cat:'ai',config:{sku:'Standard',dedicatedSql:'DW100c'}},
-  monitor:{icon:'📈',color:'#00B294',label:'Azure Monitor',cat:'management',config:{workspace:'Log Analytics',retentionDays:'90'}},
+  vm:{icon:'💻', img:'virtual-machines.svg', color:'#00BCF2',label:'Virtual Machine',cat:'compute',config:{size:'Standard_D2s_v3',os:'Ubuntu 22.04',zone:'1'}},
+  vmss:{icon:'🖥️', img:'virtual-machine-scale-sets.svg', color:'#00A4EF',label:'VM Scale Set',cat:'compute',config:{size:'Standard_D2s_v3',minInstances:'2',maxInstances:'10'}},
+  aks:{icon:'☸️', img:'kubernetes-services.svg', color:'#0078D4',label:'AKS Cluster',cat:'compute',config:{nodes:'3',version:'1.29',tier:'Standard'}},
+  fa:{icon:'⚡', img:'function-apps.svg', color:'#8764B8',label:'Function App',cat:'compute',config:{plan:'Consumption',runtime:'.NET 8'}},
+  aca:{icon:'📦', img:'container-instances.svg', color:'#8764B8',label:'Container Apps',cat:'compute',config:{minReplicas:'0',maxReplicas:'10'}},
+  fw:{icon:'🛡️', img:'firewalls.svg', color:'#E81123',label:'Azure Firewall',cat:'network',config:{sku:'Premium',mode:'Alert & Deny',zones:'1,2,3'}},
+  nva:{icon:'🧱', img:'network-appliances.svg', color:'#E81123',label:'FortiGate NVA',cat:'network',config:{mode:'Active/Passive',version:'7.6'}},
+  agw:{icon:'🌍', img:'application-gateways.svg', color:'#FF8C00',label:'App Gateway',cat:'network',config:{sku:'WAF_v2',capacity:'Autoscale',waf:'Enabled'}},
+  lb:{icon:'⚖️', img:'load-balancers.svg', color:'#00BCF2',label:'Load Balancer',cat:'network',config:{sku:'Standard',type:'Internal'}},
+  gw:{icon:'🔀', img:'virtual-network-gateways.svg', color:'#0078D4',label:'VPN Gateway',cat:'network',config:{sku:'VpnGw2AZ',routing:'BGP Enabled'}},
+  ergw:{icon:'🚄', img:'expressroute-circuits.svg', color:'#003A5C',label:'ExpressRoute GW',cat:'network',config:{sku:'ErGw2AZ',fastPath:'Enabled'}},
+  bas:{icon:'🔒', img:'bastions.svg', color:'#0078D4',label:'Azure Bastion',cat:'network',config:{sku:'Standard',shareable:'Enabled'}},
+  afd:{icon:'⚡', img:'front-doors.svg', color:'#FF8C00',label:'Azure Front Door',cat:'network',config:{sku:'Premium',waf:'Enabled'}},
+  pe:{icon:'🔌', img:'private-endpoint.svg', color:'#8764B8',label:'Private Endpoint',cat:'network',config:{targetService:'Storage',subresource:'blob'}},
+  dns:{icon:'🌐', img:'dns-zones.svg', color:'#00B294',label:'Private DNS Zone',cat:'network',config:{zone:'privatelink.blob.core.windows.net'}},
+  nsg:{icon:'📋', img:'network-security-groups.svg', color:'#E81123',label:'Network Sec Group',cat:'network',config:{rules:'5 custom rules'}},
+  sql:{icon:'🗄️', img:'sql-databases.svg', color:'#00B294',label:'Azure SQL',cat:'data',config:{tier:'General Purpose',vcores:'4',ha:'Zone Redundant'}},
+  cosmos:{icon:'🌌', img:'azure-cosmos-db.svg', color:'#00B294',label:'Cosmos DB',cat:'data',config:{api:'NoSQL',consistency:'Session',zones:'Enabled'}},
+  sa:{icon:'💾', img:'storage-accounts.svg', color:'#00B294',label:'Storage Account',cat:'data',config:{tier:'Standard',replication:'ZRS',accessTier:'Hot'}},
+  redis:{icon:'⚡', img:'azure-cache-for-redis.svg', color:'#E81123',label:'Azure Cache Redis',cat:'data',config:{sku:'Premium P1',zones:'Enabled'}},
+  adls:{icon:'🗃️', img:'storage-accounts.svg', color:'#0078D4',label:'Data Lake Storage',cat:'data',config:{tier:'Standard',hns:'Enabled'}},
+  kv:{icon:'🔑', img:'key-vaults.svg', color:'#FF8C00',label:'Key Vault',cat:'security',config:{sku:'Premium',rbac:'Enabled',purgeProtect:'Enabled'}},
+  app:{icon:'📱', img:'app-services.svg', color:'#00BCF2',label:'App Service',cat:'integration',config:{sku:'Premium V3 P1v3',instances:'2',zone:'Enabled'}},
+  apim:{icon:'🔌', img:'api-management.svg', color:'#FF8C00',label:'API Management',cat:'integration',config:{tier:'Developer',capacity:'1'}},
+  sb:{icon:'📨', img:'service-bus.svg', color:'#8764B8',label:'Service Bus',cat:'integration',config:{tier:'Premium',zones:'Enabled'}},
+  evh:{icon:'📤', img:'event-hubs.svg', color:'#8764B8',label:'Event Hub',cat:'integration',config:{tier:'Standard',partitions:'4'}},
+  logic:{icon:'🔄', img:'logic-apps.svg', color:'#8764B8',label:'Logic App',cat:'integration',config:{plan:'Standard',sku:'WS1'}},
+  foundry:{icon:'🤖', img:'cognitive-services.svg', color:'#0078D4',label:'AI Foundry',cat:'ai',config:{kind:'AIServices',sku:'S0'}},
+  openai:{icon:'🧠', img:'cognitive-services.svg', color:'#50E6FF',label:'Azure OpenAI',cat:'ai',config:{model:'gpt-4o',tier:'PayAsYouGo'}},
+  docintel:{icon:'📄', img:'cognitive-services.svg', color:'#0078D4',label:'Document Intelligence',cat:'ai',config:{tier:'S0',endpoint:'Custom'}},
+  search:{icon:'🔍', img:'search.svg', color:'#FF8C00',label:'AI Search',cat:'ai',config:{tier:'Standard',replicas:'1',partitions:'1'}},
+  synapse:{icon:'📊', img:'azure-synapse-analytics.svg', color:'#8764B8',label:'Synapse Analytics',cat:'ai',config:{sku:'Standard',dedicatedSql:'DW100c'}},
+  monitor:{icon:'📈', img:'monitor.svg', color:'#00B294',label:'Azure Monitor',cat:'management',config:{workspace:'Log Analytics',retentionDays:'90'}},
 };
 
+const loadedImages = {};
+function loadAzureIcons(callback) {
+  let toLoad = Object.keys(RES_TYPES).length;
+  let loaded = 0;
+  Object.keys(RES_TYPES).forEach(key => {
+    const img = new Image();
+    img.crossOrigin = "anonymous"; // Απαραίτητο για το Export σε PNG!
+    img.onload = () => { loadedImages[key] = img; checkDone(); };
+    img.onerror = () => { checkDone(); };
+    img.src = AZURE_ICON_BASE + RES_TYPES[key].img;
+  });
+  function checkDone() {
+    loaded++;
+    if (loaded === toLoad && callback) callback();
+  }
+}
+
 // ================================================================
-// STATE (V7 - Forces Clean Reset for New Layout)
+// STATE (V8 - Forces Clean Reset for New SVGs)
 // ================================================================
-const KEY='azureBuilderV7';
+const KEY='azureBuilderV8';
 const SUB_COLORS=['#FFB900','#00BCF2','#00B294','#FF8C00','#8764B8'];
 const RG_COLORS=['#8764B8','#0078D4','#00B294','#FF8C00','#E81123'];
 const VNET_COLORS=['#0078D4','#00BCF2','#00B294','#FF8C00','#8764B8','#107C10'];
@@ -386,10 +407,11 @@ function renderSidebar(){
           </div>
           <div class="resource-chips">`;
         vnet.resources.forEach(res=>{
-          const rt=RES_TYPES[res.type]||{color:'#888', icon:'❓'};
+          const rt=RES_TYPES[res.type] || RES_TYPES.vm;
           const isSel=state.selectedId===res.id;
           h+=`<div class="chip${isHub?' hub-chip':''}" style="${isSel?'background:var(--azure-blue);color:white;border-color:var(--azure-blue);':''}" onclick="selectNode('${res.id}')">
-            <span style="font-size:10px;">${rt.icon}</span>
+            <img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+            <span style="display:none; font-size:10px;">${rt.icon}</span>
             <span>${esc(res.name)}</span>
           </div>`;
         });
@@ -401,7 +423,12 @@ function renderSidebar(){
         Object.keys(RES_TYPES).forEach(k=>{const t=RES_TYPES[k];if(!cats[t.cat])cats[t.cat]=[];cats[t.cat].push({key:k,...t});});
         Object.keys(cats).forEach(cat=>{
           h+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
-          cats[cat].forEach(t=>{h+=`<div class="res-option" onclick="addResource('${vnet.id}','${t.key}')"><span>${t.icon}</span> ${t.label}</div>`;});
+          cats[cat].forEach(t=>{
+              h+=`<div class="res-option" onclick="addResource('${vnet.id}','${t.key}')">
+                <img src="${AZURE_ICON_BASE}${t.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+                <span style="display:none">${t.icon}</span> ${t.label}
+              </div>`;
+          });
         });
         h+=`</div></div></div>`;
       });
@@ -467,7 +494,11 @@ function renderEditor(){
     }
   }else{
     const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓'};
-    h+=`<div class="editor-header"><span>${rt.icon}</span> ${rt.label}</div>
+    h+=`<div class="editor-header">
+          <img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+          <span style="display:none">${rt.icon}</span> 
+          ${rt.label}
+        </div>
       <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="updateResource('${parent.id}','${obj.id}','name',this.value)"></div>`;
     Object.keys(obj.config).forEach(k=>{
       h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="updateResConfig('${parent.id}','${obj.id}','${k}',this.value)"></div>`;
@@ -560,9 +591,9 @@ function updateResource(vnetId,resId,key,val){
   const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
   const r=vnet?.resources.find(r=>r.id===resId);if(r){r[key]=val;fullUpdate();}
 }
-function updateResConfig(vnetId,resId,k,val){
+function updateResConfig(vnetId,resId,configKey,val){
   const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
-  const r=vnet?.resources.find(r=>r.id===resId);if(r){r.config[k]=val;saveState();renderEditor();}
+  const r=vnet?.resources.find(r=>r.id===resId);if(r){r.config[configKey]=val;saveState();renderEditor();}
 }
 function selectNode(id){state.selectedId=id;fullUpdate();}
 function resetDiagram(){if(confirm('Are you sure you want to completely reset the diagram?')){localStorage.removeItem(KEY);location.reload();}}
@@ -586,7 +617,6 @@ function getRenderNodes(){
     const vw=v=>Math.max(260,v.resources.length*(RW+RP)+20);
     const vh=()=>VPT+RH+VPB;
     
-    // BUILD HIERARCHICAL TREE TO CALCULATE WIDTHS
     const tree = state.subscriptions.map(sub => {
       const rgs = state.resourceGroups.filter(rg => rg.subId === sub.id).map(rg => {
         const vnets = [];
@@ -602,21 +632,19 @@ function getRenderNodes(){
 
     const totalWidth = tree.reduce((sum, sub) => sum + sub.renderWidth, 0) + (tree.length - 1) * SUB_GAP;
     
-    // Assign Coordinates
     const topY = Math.max(cy - 160, 150);
     const bottomY = topY + 280;
     
     let curX = cx - totalWidth / 2;
     
     tree.forEach(sub => {
-      let rgX = curX + 40; // padding inside sub
+      let rgX = curX + 40; 
       sub.rgs.forEach(rg => {
-        let vnetX = rgX + 20; // padding inside rg
+        let vnetX = rgX + 20; 
         rg.vnets.forEach(vnet => {
           const vWidth = vw(vnet);
           const vx = vnetX + vWidth / 2;
           const vy = (vnet.id === 'hub') ? topY : bottomY;
-          const isHub = vnet.id === 'hub';
           
           nodes.push({id:vnet.id, isVnet:true, x:vx, y:vy, width:vWidth, height:vh(), label:vnet.name, sub:vnet.cidr, color:vnet.color, peering:vnet.peering!==false, rgId:rg.id, subId:sub.id});
           
@@ -633,7 +661,6 @@ function getRenderNodes(){
     });
 
   } else {
-    // Radial Layout (keeps everything grouped circularly)
     const r=Math.min(canvas.width,canvas.height)*.34;
     nodes.push({id:state.hub.id,isVnet:true,x:cx,y:cy,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,radius:70,peering:true,rgId:state.hub.rgId});
     state.hub.resources.forEach((res,i)=>{
@@ -694,7 +721,6 @@ function draw(){
   const dw=state.theme==='drawio';
 
   if(state.layout==='grid'){
-    // SUBSCRIPTION BOXES
     state.subscriptions.forEach((sub,si)=>{
       const b=getSubBounds(sub.id,nodes);
       if(!b)return;
@@ -706,7 +732,6 @@ function draw(){
       ctx.textAlign='left';ctx.textBaseline='middle';
       ctx.fillText('☁️ '+sub.name,b.x+15,b.y+18);
     });
-    // RG BOXES
     state.resourceGroups.forEach((rg,ri)=>{
       const b=getRgBounds(rg.id,nodes);
       if(!b)return;
@@ -725,17 +750,15 @@ function draw(){
     if(!n.parentId||!map[n.parentId])return;
     if(n.isVnet&&n.peering===false)return;
     
-    const p=map[n.parentId]; // The HUB
+    const p=map[n.parentId]; 
     ctx.beginPath();
     if(state.layout==='grid'&&n.isVnet){
-      // ORTHOGONAL LINES THAT CAN CROSS SUBSCRIPTIONS
-      // We route them down to a specific "bus" line below the Hub
       const busY = p.y + p.height/2 + 40; 
       ctx.moveTo(p.x, p.y + p.height/2);
       ctx.lineTo(p.x, busY);
       ctx.lineTo(n.x, busY);
       ctx.lineTo(n.x, n.y - n.height/2);
-    }else if(state.layout==='grid'){return;} // Resources inside grid boxes don't need connecting lines
+    }else if(state.layout==='grid'){return;} 
     else{ctx.moveTo(n.x,n.y);ctx.lineTo(p.x,p.y);}
     
     if(dw){
@@ -770,7 +793,6 @@ function drawNode(n){
   if(isSel){ctx.shadowColor=dw?'rgba(0,120,212,.4)':n.color||'#0078D4';ctx.shadowBlur=15;}
   
   if(!n.isVnet){
-    // RESOURCES
     const rt=RES_TYPES[n.type]||{icon:'❓'};
     ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
     if(dw){
@@ -779,7 +801,6 @@ function drawNode(n){
       ctx.fill();
       ctx.strokeStyle=isSel?'#0078D4':'#E5E7EB';ctx.lineWidth=isSel?2:1;ctx.stroke();
       ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-      // Top colored bar
       ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,4,{tl:6,tr:6,bl:0,br:0});
       ctx.fillStyle=rt.color||'#0078D4';ctx.fill();
     }else{
@@ -788,9 +809,14 @@ function drawNode(n){
     }
     ctx.shadowBlur=0;
     
-    // Draw Text & Emoji
-    ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(rt.icon, n.x, n.y - 8);
+    // Draw SVG Image or Fallback Emoji
+    const img = loadedImages[n.type];
+    if(img && img.complete && img.naturalWidth > 0){
+      ctx.drawImage(img, n.x - 12, n.y - 18, 24, 24);
+    } else {
+      ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(rt.icon, n.x, n.y - 8);
+    }
     
     ctx.font='bold 9px JetBrains Mono';ctx.fillStyle=dw?'#374151':'#FFF';
     ctx.textAlign='center';ctx.textBaseline='top';
@@ -798,7 +824,6 @@ function drawNode(n){
     ctx.fillText(lbl,n.x,n.y+n.height/2-18);
     
   }else{
-    // VNETS
     if(state.layout==='grid'){
       ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,12);
       if(dw){
@@ -968,10 +993,13 @@ function copyText(id){navigator.clipboard.writeText(document.getElementById(id).
 function downloadText(id,fn){const b=new Blob([document.getElementById(id).textContent],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;a.click();}
 
 // ================================================================
-// INIT
+// INIT & LOAD REAL ICONS
 // ================================================================
-setTimeout(resize, 100);
-fullUpdate();
+loadAzureIcons(() => {
+  // Όταν φορτώσουν τα πραγματικά SVG εικονίδια, κάνουμε ένα render:
+  setTimeout(resize, 100);
+  fullUpdate();
+});
 </script>
 </body>
 </html>
