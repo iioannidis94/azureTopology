@@ -86,7 +86,7 @@
   .vnet-cidr-input:focus, .vnet-cidr-input:hover{border-style:solid;border-color:var(--azure-blue);}
   
   /* SUBNET CARD */
-  .subnet-card {background:rgba(0,0,0,0.03); border:1px dashed var(--border); border-radius:4px; padding:6px; margin-bottom:6px;}
+  .subnet-card {background:rgba(0,0,0,0.07); border:1px dashed var(--border); border-radius:4px; padding:6px; margin-bottom:6px;}
   body:not(.theme-drawio) .subnet-card {background:rgba(255,255,255,0.02);}
   .subnet-header {display:flex; align-items:center; gap:4px; margin-bottom:6px;}
   .subnet-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;outline:none;min-width:0;padding:2px;}

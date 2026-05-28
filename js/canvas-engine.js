@@ -132,6 +132,29 @@ function getRenderNodes(){
     if (state.customPos[n.id]) { n.x = state.customPos[n.id].x; n.y = state.customPos[n.id].y; }
   });
 
+  // Expand VNet bounds to contain all its subnets (like RGs expand to contain VNets)
+  if(state.layout==='grid'){
+    nodes.filter(n=>n.isVnet).forEach(vnetNode=>{
+      const childSubnets=nodes.filter(n=>n.isSubnet&&n.parentId===vnetNode.id);
+      if(childSubnets.length===0)return;
+      let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
+      childSubnets.forEach(sn=>{
+        mx=Math.min(mx,sn.x-sn.width/2);my=Math.min(my,sn.y-sn.height/2);
+        Mx=Math.max(Mx,sn.x+sn.width/2);My=Math.max(My,sn.y+sn.height/2);
+      });
+      const padL=12,padR=12,padT=45,padB=18;
+      const neededW=(Mx-mx)+padL+padR;
+      const neededH=(My-my)+padT+padB;
+      if(neededW>vnetNode.width) vnetNode.width=neededW;
+      if(neededH>vnetNode.height) vnetNode.height=neededH;
+      // Re-center VNet on its subnets
+      const cxSubs=(mx+Mx)/2;
+      const cySubs=(my+My)/2;
+      vnetNode.x=cxSubs;
+      vnetNode.y=cySubs - (padT-padB)/2;
+    });
+  }
+
   return nodes;
 }
 
@@ -258,8 +281,8 @@ function drawSubnet(n, dw) {
   ctx.save();
   ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
   if(dw){
-    ctx.fillStyle = isSel?'rgba(0,120,212,0.06)':'rgba(0,0,0,0.04)'; ctx.fill();
-    ctx.strokeStyle=isSel?'#0078D4':'#9CA3AF'; ctx.lineWidth=isSel?2:1.5; ctx.stroke();
+    ctx.fillStyle = isSel?'rgba(0,120,212,0.10)':'rgba(0,0,0,0.08)'; ctx.fill();
+    ctx.strokeStyle=isSel?'#0078D4':'#6B7280'; ctx.lineWidth=isSel?2:1.5; ctx.stroke();
   } else {
     ctx.fillStyle = isSel?(n.color+'18'):'rgba(255,255,255,0.06)'; ctx.fill();
     ctx.strokeStyle=isSel?n.color:(n.color+'70'); ctx.lineWidth=isSel?2:1.5; ctx.stroke();
@@ -400,12 +423,11 @@ canvas.addEventListener('mousedown',e=>{
         state.dragGroup = children.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
       }
     } else if(hit.isSubnet && hit.parentId){
-      // Subnet drag: move parent VNet and all siblings (other subnets + all resources)
-      const vnetNode = nodes.find(n => n.id === hit.parentId);
-      const siblings = nodes.filter(n => n.parentId === hit.parentId || parentMap[n.parentId] === hit.parentId);
-      const group = siblings.filter(n => n.id !== hit.id);
-      if(vnetNode) group.push(vnetNode);
-      state.dragGroup = group.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
+      // Subnet drag: move the subnet and its resources together (independently from VNet)
+      const children = nodes.filter(n => n.parentId === hit.id);
+      if(children.length > 0){
+        state.dragGroup = children.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
+      }
     } else if(!hit.isVnet && !hit.isOnPrem && hit.parentId){
       // Resource drag: move parent subnet, parent VNet, and all sibling resources
       const subnetNode = nodes.find(n => n.id === hit.parentId);
