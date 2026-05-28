@@ -158,25 +158,6 @@
 
 ## 🏗️ Technical Improvements
 
-### Issue 10: Modularize Codebase - Split index.html
-
-**Priority:** High
-
-Τα πάντα είναι σε ένα μεγάλο αρχείο. Αυτό δυσκολεύει τη συντήρηση.
-
-- [ ] `styles/` - CSS σε ξεχωριστά αρχεία (themes, components, layout)
-- [ ] `js/canvas-engine.js` - Canvas rendering & interactions
-- [ ] `js/ui-components.js` - Sidebar builders, modals
-- [ ] `js/export-logic.js` - PowerShell, Bicep, (Terraform) generation
-- [ ] `js/state-management.js` - Data model, localStorage, history
-- [ ] `js/main.js` - Entry point, initialization
-- [ ] ES modules (native `import`/`export`) χωρίς build step
-- [ ] `index.html` - Μόνο HTML structure
-
-**Σκοπός:** Maintainability, code review ευκολότερο, parallel development.
-
----
-
 ### Issue 11: Automated Testing
 
 **Priority:** Medium
@@ -229,13 +210,13 @@
 
 | Priority | Issues |
 |----------|--------|
-| 🔴 High | #1 Mobile, #2 JSON Export, #4 Undo/Redo, #10 Modularize |
+| 🔴 High | #1 Mobile, #2 JSON Export, #4 Undo/Redo |
 | 🟡 Medium | #3 Terraform, #5 Templates, #7 Minimap, #8 Shortcuts, #11 Testing, #13 Docs |
 | 🟢 Low | #6 Shareable URLs, #9 Connection Labels, #12 Performance |
 
 ## 🎯 Suggested Implementation Order
 
-1. **Phase 1 - Foundation:** Issue 10 (Modularize) → Issue 4 (Undo/Redo) → Issue 8 (Keyboard Shortcuts)
+1. **Phase 1 - Foundation:** Issue 4 (Undo/Redo) → Issue 8 (Keyboard Shortcuts)
 2. **Phase 2 - Core Features:** Issue 2 (JSON Export) → Issue 3 (Terraform) → Issue 5 (Templates)
 3. **Phase 3 - Polish:** Issue 1 (Mobile) → Issue 7 (Minimap) → Issue 9 (Labels)
 4. **Phase 4 - Scale:** Issue 11 (Testing) → Issue 12 (Performance) → Issue 6 (Sharing)
