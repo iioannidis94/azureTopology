@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Azure Architecture Builder - Enterprise Edition</title>
-<link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/a/a8/Microsoft_Azure_Logo.svg">
+<title>Azure Architecture Builder v2</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -13,126 +12,99 @@
     --bg:#060D18;--bg2:#0A1628;--bg3:#0F1F3A;
     --border:rgba(0,120,212,0.3);--text:#E8F4FD;--muted:#7BA3C0;--card-bg:rgba(10,22,40,0.95);
   }
-  body.theme-drawio {
-    --bg:#F0F2F5;--bg2:#FFFFFF;--bg3:#F8F9FA;
-    --border:#D1D5DB;--text:#111827;--muted:#6B7280;
-    --card-bg:#FFFFFF;--azure-light:#0078D4;
-  }
+  body.theme-drawio{--bg:#F0F2F5;--bg2:#FFFFFF;--bg3:#F8F9FA;--border:#D1D5DB;--text:#111827;--muted:#6B7280;--card-bg:#FFFFFF;--azure-light:#0078D4;}
   *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;transition:background .3s,color .3s;}
-  
-  body::before {
-    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-    background-image:linear-gradient(rgba(0,120,212,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,120,212,.04) 1px,transparent 1px);
-    background-size:40px 40px;
-  }
-  body.theme-drawio::before {
-    background-image:linear-gradient(rgba(0,0,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.04) 1px,transparent 1px);
-  }
-  
-  header{position:relative;z-index:10;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg2);box-shadow:0 2px 10px rgba(0,0,0,.1);}
+  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(0,120,212,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,120,212,.04) 1px,transparent 1px);background-size:40px 40px;}
+  body.theme-drawio::before{background-image:linear-gradient(rgba(0,0,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.04) 1px,transparent 1px);}
+  header{position:relative;z-index:10;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg2);box-shadow:0 2px 10px rgba(0,0,0,.1);}
   .logo{display:flex;align-items:center;gap:10px;}
-  .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--azure-blue),#00BCF2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:white;box-shadow:0 0 10px rgba(0,120,212,0.4);}
-  .logo h1{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;letter-spacing:-0.5px;}
+  .logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--azure-blue),#00BCF2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;color:white;}
+  .logo h1{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;}
   .logo span{color:var(--azure-blue);}
-  .header-actions{display:flex;gap:10px;align-items:center;}
-  .badge{font-size:9px;padding:4px 8px;border-radius:20px;border:1px solid var(--success);color:var(--success);text-transform:uppercase;font-weight:bold;letter-spacing:0.5px;}
+  .header-actions{display:flex;gap:7px;align-items:center;}
+  .badge{font-size:8px;padding:3px 7px;border-radius:20px;border:1px solid var(--success);color:var(--success);text-transform:uppercase;}
+  .app{position:relative;z-index:1;display:grid;grid-template-columns:310px 1fr 290px;height:calc(100vh - 53px);}
+  .sidebar{border-right:1px solid var(--border);overflow-y:auto;background:var(--card-bg);padding:12px;display:flex;flex-direction:column;gap:0;transition:background .3s;}
+  .sidebar.right{border-right:none;border-left:1px solid var(--border);display:flex;flex-direction:column;padding:12px;gap:8px;overflow-y:auto;}
   
-  .app{position:relative;z-index:1;display:grid;grid-template-columns:360px 1fr 310px;height:calc(100vh - 57px);}
+  /* HIERARCHY TREE */
+  .tree-section-title{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--azure-blue);padding:6px 0 6px 0;border-bottom:1px solid var(--border);margin-bottom:8px;font-weight:700;}
   
-  /* SIDEBARS */
-  .sidebar{border-right:1px solid var(--border);overflow-y:auto;background:var(--card-bg);padding:16px;display:flex;flex-direction:column;gap:4px;transition:background .3s; padding-bottom: 80px;} 
-  .sidebar.right{border-right:none;border-left:1px solid var(--border);display:flex;flex-direction:column;padding:16px;gap:12px;}
-  
-  .tree-section-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--azure-blue);padding:0 0 8px 0;border-bottom:1px solid var(--border);margin-bottom:12px;font-weight:700;}
-  
-  /* COST ESTIMATOR */
-  .cost-estimator {background: linear-gradient(135deg, rgba(0,120,212,0.1), transparent); border: 1px solid var(--azure-blue); border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: center;}
-  .cost-value {font-family: 'Syne'; font-size: 24px; font-weight: 800; color: var(--azure-light); margin: 4px 0;}
-  body.theme-drawio .cost-value {color: var(--azure-blue);}
-
-  /* ON PREM BLOCK */
-  .onprem-block {background: rgba(16,124,16,0.05); border: 1px dashed #107C10; border-radius: 6px; padding: 10px; margin-bottom: 16px; display:flex; align-items:center; justify-content:space-between;}
-  body.theme-drawio .onprem-block {background: rgba(16,124,16,0.1);}
-
   /* SUBSCRIPTION BLOCK */
-  .sub-block{margin-bottom:16px;}
-  .sub-header{display:flex;align-items:center;gap:6px;padding:8px 10px;background:rgba(255,185,0,.05);border:1px solid rgba(255,185,0,.2);border-radius:6px;border-left:4px solid #FFB900;margin-bottom:8px;}
+  .sub-block{margin-bottom:12px;}
+  .sub-header{display:flex;align-items:center;gap:5px;padding:7px 8px;background:rgba(255,185,0,.07);border:1px solid rgba(255,185,0,.3);border-radius:6px;border-left:3px solid #FFB900;margin-bottom:6px;}
   body:not(.theme-drawio) .sub-header{background:rgba(255,185,0,.1);}
-  .sub-icon{font-size:13px;flex-shrink:0;}
-  .sub-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;outline:none;min-width:0;transition:0.2s;padding:2px 4px;border-radius:3px;}
-  .sub-name-input:focus, .sub-name-input:hover{border-color:rgba(255,185,0,0.5);background:var(--bg2);}
-  .icon-btn{background:transparent;border:1px solid transparent;cursor:pointer;font-size:11px;padding:4px;border-radius:4px;color:var(--muted);transition:.2s;flex-shrink:0;}
-  .icon-btn:hover{background:rgba(0,120,212,.15);color:var(--azure-blue);border-color:var(--azure-blue);}
-  .icon-btn.danger:hover{background:rgba(255,68,68,.15);color:var(--danger);border-color:var(--danger);}
-  .sub-body{padding-left:12px;border-left:2px solid rgba(255,185,0,.15);display:flex;flex-direction:column;gap:8px;margin-left:4px;}
+  .sub-icon{font-size:12px;flex-shrink:0;}
+  .sub-name-input{flex:1;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;min-width:0;}
+  .sub-name-input:focus{background:rgba(0,120,212,.1);border-radius:3px;padding:0 3px;}
+  .icon-btn{background:transparent;border:none;cursor:pointer;font-size:11px;padding:2px 4px;border-radius:3px;color:var(--muted);transition:.15s;flex-shrink:0;}
+  .icon-btn:hover{background:rgba(0,120,212,.15);color:var(--azure-blue);}
+  .icon-btn.danger:hover{background:rgba(255,68,68,.15);color:var(--danger);}
+  .sub-body{padding-left:10px;border-left:2px solid rgba(255,185,0,.2);display:flex;flex-direction:column;gap:5px;}
   
   /* RG BLOCK */
-  .rg-block{border-radius:6px;overflow:visible;}
-  .rg-header{display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(135,100,184,.05);border:1px solid rgba(135,100,184,.2);border-radius:6px;border-left:3px solid #8764B8;cursor:pointer;transition:0.2s;}
-  body:not(.theme-drawio) .rg-header{background:rgba(135,100,184,.1);}
+  .rg-block{border-radius:5px;overflow:visible;}
+  .rg-header{display:flex;align-items:center;gap:4px;padding:5px 7px;background:rgba(135,100,184,.07);border:1px solid rgba(135,100,184,.25);border-radius:5px;border-left:2px solid #8764B8;cursor:pointer;}
+  body:not(.theme-drawio) .rg-header{background:rgba(135,100,184,.12);}
   .rg-header:hover{border-color:#8764B8;}
-  .rg-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;outline:none;min-width:0;transition:0.2s;padding:2px 4px;border-radius:3px;}
-  .rg-name-input:focus, .rg-name-input:hover{border-color:rgba(135,100,184,0.5);background:var(--bg2);}
-  .rg-loc-select{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;outline:none;cursor:pointer;max-width:75px;padding:2px;border-radius:3px;}
-  .rg-loc-select:focus, .rg-loc-select:hover{border-color:rgba(135,100,184,.5);color:var(--text);}
-  .rg-body{padding-left:10px;border-left:2px solid rgba(135,100,184,.15);display:flex;flex-direction:column;gap:8px;margin-top:6px;margin-left:4px;}
+  .rg-name-input{flex:1;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;outline:none;min-width:0;}
+  .rg-name-input:focus{background:rgba(135,100,184,.1);border-radius:3px;padding:0 3px;}
+  .rg-loc-select{background:transparent;border:1px solid transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:8px;outline:none;cursor:pointer;max-width:70px;}
+  .rg-loc-select:focus,
+  .rg-loc-select:hover{border-color:rgba(135,100,184,.4);background:var(--bg2);border-radius:3px;}
+  .rg-body{padding-left:8px;border-left:2px solid rgba(135,100,184,.15);display:flex;flex-direction:column;gap:5px;margin-top:4px;}
+  .rg-toggle-icon{font-size:9px;color:var(--muted);transition:transform .2s;flex-shrink:0;}
+  .rg-block.collapsed .rg-body{display:none;}
+  .rg-block.collapsed .rg-toggle-icon{transform:rotate(-90deg);}
   
   /* VNET CARD */
-  .vnet-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);}
-  .vnet-card-header{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
-  .vnet-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-  .vnet-name-input{flex:1;background:transparent;border:1px solid transparent;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none;min-width:0;transition:0.2s;padding:2px 4px;border-radius:3px;}
-  .vnet-name-input:focus, .vnet-name-input:hover{border-color:rgba(0,120,212,0.4);background:var(--bg2);}
-  .vnet-cidr-input{width:95px;background:rgba(0,0,0,0.05);border:1px dashed var(--border);color:var(--azure-blue);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;outline:none;text-align:center;border-radius:4px;padding:3px;flex-shrink:0;}
-  body:not(.theme-drawio) .vnet-cidr-input{background:rgba(0,0,0,0.3);}
-  .vnet-cidr-input:focus, .vnet-cidr-input:hover{border-style:solid;border-color:var(--azure-blue);}
-  
-  .resource-chips{display:flex;flex-wrap:wrap;gap:5px;}
-  .chip{font-size:9px;padding:4px 8px;border-radius:4px;background:rgba(0,120,212,.08);border:1px solid rgba(0,120,212,.3);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s;max-width:115px;}
+  .vnet-card{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:8px;}
+  .vnet-card-header{display:flex;align-items:center;gap:5px;margin-bottom:7px;}
+  .vnet-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .vnet-name-input{flex:1;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;outline:none;min-width:0;}
+  .vnet-name-input:focus{background:rgba(0,120,212,.08);border-radius:3px;padding:0 3px;}
+  .vnet-cidr-input{width:90px;background:transparent;border:1px solid transparent;color:var(--azure-blue);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;outline:none;text-align:center;border-radius:3px;flex-shrink:0;}
+  .vnet-cidr-input:focus{border-color:var(--azure-blue);background:rgba(0,120,212,.08);}
+  .resource-chips{display:flex;flex-wrap:wrap;gap:4px;}
+  .chip{font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(0,120,212,.08);border:1px solid rgba(0,120,212,.3);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;transition:.15s;max-width:95px;overflow:hidden;}
   body:not(.theme-drawio) .chip{color:white;background:rgba(0,120,212,.18);}
-  .chip:hover{background:var(--azure-blue);color:white!important;border-color:var(--azure-blue);}
+  .chip:hover{background:var(--azure-blue);color:white!important;}
   .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  
   .chip.hub-chip{background:rgba(255,140,0,.08);border-color:rgba(255,140,0,.4);}
   body:not(.theme-drawio) .chip.hub-chip{background:rgba(255,140,0,.18);}
-  .chip.hub-chip:hover{background:#FF8C00;color:white!important;border-color:#FF8C00;}
-  .chip img {width: 14px; height: 14px; object-fit: contain;}
+  .chip.hub-chip:hover{background:#FF8C00;color:white!important;}
   
   /* BUTTONS */
-  .add-btn{display:flex;align-items:center;gap:6px;background:transparent;border:1px dashed var(--muted);color:var(--muted);padding:6px 10px;font-size:9px;font-weight:bold;cursor:pointer;border-radius:4px;font-family:'JetBrains Mono';transition:.15s;width:100%;justify-content:center;}
-  .add-btn:hover{border-color:var(--azure-blue);color:var(--azure-blue);border-style:solid;background:rgba(0,120,212,0.05);}
-  .add-btn.sub-level{border-color:rgba(255,185,0,.5);color:#FFB900;margin-top:10px;}
-  .add-btn.sub-level:hover{border-color:#FFB900;color:#FFB900;background:rgba(255,185,0,.08);}
-  .add-btn.rg-level{border-color:rgba(135,100,184,.5);color:#8764B8;margin-top:6px;}
-  .add-btn.rg-level:hover{border-color:#8764B8;color:#8764B8;background:rgba(135,100,184,.08);}
-  .add-btn.vnet-level{margin-top:8px;}
+  .add-btn{display:flex;align-items:center;gap:5px;background:transparent;border:1px dashed var(--muted);color:var(--muted);padding:4px 8px;font-size:8px;cursor:pointer;border-radius:4px;font-family:'JetBrains Mono';transition:.15s;width:100%;justify-content:center;}
+  .add-btn:hover{border-color:var(--azure-blue);color:var(--azure-blue);border-style:solid;}
+  .add-btn.sub-level{border-color:rgba(255,185,0,.4);color:#FFB900;margin-top:6px;}
+  .add-btn.sub-level:hover{border-color:#FFB900;color:#FFB900;background:rgba(255,185,0,.05);}
+  .add-btn.rg-level{border-color:rgba(135,100,184,.4);color:#8764B8;}
+  .add-btn.rg-level:hover{border-color:#8764B8;color:#8764B8;background:rgba(135,100,184,.05);}
+  .add-btn.vnet-level{margin-top:4px;}
   
   /* RES DROPDOWN WITH SEARCH */
   .add-res-container{position:relative;}
-  .res-dropdown{display:none;position:absolute;top:100%;left:0;width:240px;background:var(--bg2);border:1px solid var(--azure-blue);border-radius:6px;z-index:300;max-height:280px;overflow-y:auto;box-shadow:0 8px 25px rgba(0,0,0,.4);padding:4px;}
+  .res-dropdown{display:none;position:absolute;top:100%;left:0;width:210px;background:var(--bg2);border:1px solid var(--azure-blue);border-radius:6px;z-index:300;max-height:240px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.3);}
   .res-dropdown.show{display:block;}
-  .search-box-container {position: sticky; top: 0; background: var(--bg2); padding: 4px; border-bottom: 1px solid var(--border); z-index: 310;}
-  .search-input {width: 100%; padding: 6px; font-size: 10px; font-family: 'JetBrains Mono'; border: 1px solid var(--border); border-radius: 4px; background: rgba(0,0,0,0.1); color: var(--text); outline: none;}
-  .search-input:focus {border-color: var(--azure-blue);}
-  .res-dd-section{font-size:8px;letter-spacing:1.5px;color:var(--muted);padding:8px 8px 4px;text-transform:uppercase;border-top:1px solid var(--border);font-weight:bold;}
+  .res-dd-section{font-size:7px;letter-spacing:1px;color:var(--muted);padding:5px 7px 2px;text-transform:uppercase;border-top:1px solid var(--border);}
   .res-dd-section:first-of-type{border-top:none;}
-  .res-option{padding:6px 10px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text);transition:0.1s;border-radius:4px;}
+  .res-option{padding:5px 7px;font-size:9px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text);}
   .res-option:hover{background:var(--azure-blue);color:white;}
-  .res-option img {width: 16px; height: 16px;}
   
-  /* EDITOR */
-  .input-field{background:rgba(0,0,0,.05);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 8px;border-radius:4px;outline:none;width:100%;transition:.2s;}
+  /* INPUT FIELDS (editor) */
+  .input-field{background:rgba(0,0,0,.05);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 7px;border-radius:4px;outline:none;width:100%;transition:.2s;}
   body:not(.theme-drawio) .input-field{background:rgba(0,0,0,.3);color:white;}
-  .input-field:focus{border-color:var(--azure-light);background:rgba(0,120,212,.08);}
+  .input-field:focus{border-color:var(--azure-light);background:rgba(0,120,212,.1);}
   select.input-field{cursor:pointer;}
   
-  #editor-container{flex-grow:1; overflow-y:auto; margin-bottom: 10px;}
-  .editor-panel{background:var(--bg3);border:1px solid var(--azure-blue);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 12px rgba(0,0,0,.05);}
-  .editor-header{display:flex;align-items:center;gap:8px;font-family:'Syne';font-size:14px;font-weight:700;color:var(--azure-blue);margin-bottom:4px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-  .editor-header img {width: 20px; height: 20px;}
-  .editor-row{display:flex;flex-direction:column;gap:4px;}
-  .editor-label{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:bold;letter-spacing:.5px;}
+  /* EDITOR */
+  #editor-container{flex-grow:1;}
+  .editor-panel{background:var(--bg3);border:1px solid var(--azure-blue);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:9px;}
+  .editor-header{display:flex;align-items:center;gap:7px;font-family:'Syne';font-size:13px;font-weight:700;color:var(--azure-blue);margin-bottom:2px;}
+  .editor-row{display:flex;flex-direction:column;gap:2px;}
+  .editor-label{font-size:8px;color:var(--muted);text-transform:uppercase;font-weight:bold;letter-spacing:.5px;}
   
   /* CANVAS */
   .canvas-area{position:relative;overflow:hidden;background:transparent;}
@@ -140,39 +112,36 @@
   #diagram-canvas:active{cursor:grabbing;}
   
   /* EXPORT AREA */
-  .export-area{padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
-  .export-btn{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;padding:10px;border-radius:6px;border:none;background:linear-gradient(135deg,var(--azure-blue),#00BCF2);color:white;cursor:pointer;width:100%;transition:all .2s;text-transform:uppercase;letter-spacing:0.5px;}
-  .export-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,120,212,.3);}
+  .export-area{padding-top:10px;margin-top:auto;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;}
+  .export-btn{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;padding:9px;border-radius:6px;border:none;background:linear-gradient(135deg,var(--azure-blue),#00BCF2);color:white;cursor:pointer;width:100%;transition:all .2s;text-transform:uppercase;}
+  .export-btn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,120,212,.4);}
   .export-btn.secondary{background:transparent;border:1px solid var(--azure-blue);color:var(--azure-blue);}
   body:not(.theme-drawio) .export-btn.secondary{color:#50E6FF;border-color:#50E6FF;}
   .export-btn.secondary:hover{background:rgba(0,120,212,.1);}
-  .export-btn.pricing {background: transparent; border: 1px solid var(--accent); color: var(--accent); font-size: 10px; padding: 6px; text-decoration: none; text-align: center; border-radius: 4px; font-weight: bold; margin-top: 4px; display: inline-block;}
-  .export-btn.pricing:hover {background: var(--accent); color: #000;}
-  .export-btn.reset{background:transparent;border:1px dashed var(--danger);color:var(--danger);}
-  .export-btn.reset:hover{background:var(--danger);color:white;border-style:solid;}
+  .export-btn.reset{background:transparent;border:1px solid var(--danger);color:var(--danger);}
+  .export-btn.reset:hover{background:var(--danger);color:white;box-shadow:0 5px 16px rgba(255,68,68,.4);}
+  .hdr-btn{background:transparent;border:1px solid var(--muted);color:var(--muted);padding:4px 9px;font-size:8px;cursor:pointer;border-radius:4px;font-family:'JetBrains Mono';transition:.2s;white-space:nowrap;}
+  .hdr-btn:hover{border-color:var(--azure-blue);color:var(--azure-blue);background:rgba(0,120,212,.05);}
   
-  .hdr-btn{background:transparent;border:1px solid var(--muted);color:var(--muted);padding:6px 12px;font-size:10px;cursor:pointer;border-radius:4px;font-family:'JetBrains Mono';transition:.2s;white-space:nowrap;font-weight:bold;}
-  .hdr-btn:hover{border-color:var(--azure-blue);color:var(--azure-blue);background:rgba(0,120,212,.08);}
-  
-  /* MODALS */
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;}
   .modal-overlay.show{display:flex;}
-  .modal{background:var(--bg2);border:1px solid var(--azure-blue);border-radius:12px;padding:24px;width:720px;max-width:90vw;max-height:85vh;display:flex;flex-direction:column;gap:16px;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
-  .modal h2{font-family:'Syne';color:var(--azure-blue);font-size:18px;}
-  .modal pre{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:11px;overflow:auto;flex-grow:1;max-height:450px;line-height:1.6;white-space:pre-wrap;color:var(--text);}
-  .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
-  .modal-btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-family:'JetBrains Mono';font-size:11px;font-weight:700;transition:0.2s;}
+  .modal{background:var(--bg2);border:1px solid var(--azure-blue);border-radius:12px;padding:22px;width:680px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;gap:14px;}
+  .modal h2{font-family:'Syne';color:var(--azure-blue);font-size:15px;}
+  .modal pre{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:14px;font-size:9.5px;overflow:auto;flex-grow:1;max-height:380px;line-height:1.6;white-space:pre-wrap;color:var(--text);}
+  .modal-actions{display:flex;gap:8px;}
+  .modal-btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-family:'JetBrains Mono';font-size:9px;font-weight:700;}
   .modal-btn.primary{background:var(--azure-blue);color:white;}
   .modal-btn.secondary{background:transparent;border:1px solid var(--muted);color:var(--muted);}
-  .modal-btn:hover{opacity:.85;transform:translateY(-1px);}
+  .modal-btn:hover{opacity:.85;}
   
   /* RENAME OVERLAY */
   #rename-overlay{display:none;position:fixed;z-index:500;}
-  #rename-input{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;border:2px solid #0078D4;border-radius:6px;background:#fff;color:#111;outline:none;min-width:140px;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
+  #rename-input{font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 8px;border:2px solid #0078D4;border-radius:4px;background:#fff;color:#111;outline:none;min-width:120px;}
   
-  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar{width:3px;height:3px;}
   ::-webkit-scrollbar-track{background:var(--bg);}
-  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
   ::-webkit-scrollbar-thumb:hover{background:var(--azure-blue);}
 </style>
 </head>
@@ -184,9 +153,9 @@
     <h1>Azure <span>Architecture</span> Builder</h1>
   </div>
   <div class="header-actions">
-    <button class="hdr-btn" onclick="toggleLayout()">📐 Toggle Layout</button>
-    <button class="hdr-btn" onclick="toggleTheme()">🌗 Toggle Theme</button>
-    <button class="hdr-btn" onclick="fitToScreen()">⊡ Fit to Screen</button>
+    <button class="hdr-btn" onclick="toggleLayout()">📐 Layout</button>
+    <button class="hdr-btn" onclick="toggleTheme()">🌗 Theme</button>
+    <button class="hdr-btn" onclick="fitToScreen()">⊡ Fit</button>
     <div class="badge">● Live Mode</div>
   </div>
 </header>
@@ -195,50 +164,41 @@
   <div class="sidebar" id="sidebar-left"></div>
   <div class="canvas-area"><canvas id="diagram-canvas"></canvas></div>
   <div class="sidebar right" id="sidebar-right">
-    
-    <div class="tree-section-title">// Cost Estimator</div>
-    <div class="cost-estimator">
-      <div style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Est. Monthly Cost</div>
-      <div class="cost-value" id="cost-display">$0</div>
-    </div>
-
-    <div class="tree-section-title">// Properties Editor</div>
+    <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--azure-blue);padding-bottom:6px;border-bottom:1px solid var(--border);font-weight:700;">// Properties Editor</div>
     <div id="editor-container">
-      <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:20px;line-height:1.9;">← Click a resource or VNet<br>to edit its properties</div>
+      <div style="text-align:center;color:var(--muted);font-size:10px;margin-top:20px;line-height:1.9;">← Click a resource or VNet<br>to edit its properties<br><br>Double-click to rename<br>any element on canvas</div>
     </div>
-    
     <div class="export-area">
-      <button class="export-btn secondary" onclick="exportPng()">⬇ Export as PNG</button>
-      <button class="export-btn secondary" onclick="openPsModal()">⚡ Deploy via PowerShell</button>
-      <button class="export-btn secondary" onclick="openBicepModal()">📄 Generate Bicep</button>
-      <div style="display:flex; gap:8px;">
-         <button class="export-btn reset" onclick="resetPositions()" style="flex:1" title="Clear Drag&Drop Changes">🧹 Positions</button>
-         <button class="export-btn reset" onclick="resetDiagram()" style="flex:1" title="Delete everything">🔄 Reset</button>
-      </div>
+      <button class="export-btn secondary" onclick="exportPng()">⬇ Export PNG</button>
+      <button class="export-btn secondary" onclick="openPsModal()">⚡ Export PowerShell</button>
+      <button class="export-btn secondary" onclick="openBicepModal()">📄 Export Bicep</button>
+      <button class="export-btn reset" onclick="resetDiagram()">🔄 Reset Diagram</button>
     </div>
   </div>
 </div>
 
+<!-- PowerShell Modal -->
 <div class="modal-overlay" id="ps-modal">
   <div class="modal">
     <h2>⚡ Azure PowerShell Deployment Script</h2>
     <pre id="ps-output"></pre>
     <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="closeModal('ps-modal')">✕ Close</button>
-      <button class="modal-btn primary" onclick="copyText('ps-output')">📋 Copy Script</button>
+      <button class="modal-btn primary" onclick="copyText('ps-output')">📋 Copy</button>
       <button class="modal-btn primary" onclick="downloadText('ps-output','azure-deploy.ps1')">⬇ Download .ps1</button>
+      <button class="modal-btn secondary" onclick="closeModal('ps-modal')">✕ Close</button>
     </div>
   </div>
 </div>
 
+<!-- Bicep Modal -->
 <div class="modal-overlay" id="bicep-modal">
   <div class="modal">
     <h2>📄 Bicep Template</h2>
     <pre id="bicep-output"></pre>
     <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="closeModal('bicep-modal')">✕ Close</button>
-      <button class="modal-btn primary" onclick="copyText('bicep-output')">📋 Copy Bicep</button>
+      <button class="modal-btn primary" onclick="copyText('bicep-output')">📋 Copy</button>
       <button class="modal-btn primary" onclick="downloadText('bicep-output','main.bicep')">⬇ Download .bicep</button>
+      <button class="modal-btn secondary" onclick="closeModal('bicep-modal')">✕ Close</button>
     </div>
   </div>
 </div>
@@ -248,173 +208,169 @@
 </div>
 
 <script>
-// ================================================================
-// RESOURCE TYPES (With Real Pricing URLs)
-// ================================================================
-const AZURE_ICON_BASE = 'https://cdn.jsdelivr.net/gh/benc-uk/icon-collection@master/azure-icons/';
+/* DUMMY ICONS OBJECT TO PREVENT CRASH */
+const MS_ICONS = {}; 
+const iconImgs={}; let iconsLoaded=0;
 
+// ================================================================
+// RESOURCE TYPES
+// ================================================================
 const RES_CATEGORIES={compute:'Compute',network:'Networking',data:'Data & Storage',security:'Security',integration:'Integration',ai:'AI & Analytics',management:'Management'};
 const RES_TYPES={
-  vm:{icon:'💻', img:'virtual-machines.svg', color:'#00BCF2',label:'Virtual Machine',cat:'compute', cost: 85, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/', config:{size:'Standard_D2s_v3',os:'Ubuntu 22.04'}},
-  vmss:{icon:'🖥️', img:'virtual-machine-scale-sets.svg', color:'#00A4EF',label:'VM Scale Set',cat:'compute', cost: 250, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/virtual-machine-scale-sets/', config:{size:'Standard_D2s_v3',instances:'2'}},
-  aks:{icon:'☸️', img:'kubernetes-services.svg', color:'#0078D4',label:'AKS Cluster',cat:'compute', cost: 150, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/kubernetes-service/', config:{nodes:'3',version:'1.29'}},
-  fa:{icon:'⚡', img:'function-apps.svg', color:'#8764B8',label:'Function App',cat:'compute', cost: 20, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/functions/', config:{plan:'Consumption'}},
-  aca:{icon:'📦', img:'container-instances.svg', color:'#8764B8',label:'Container Apps',cat:'compute', cost: 40, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/container-apps/', config:{replicas:'10'}},
-  fw:{icon:'🛡️', img:'firewalls.svg', color:'#E81123',label:'Azure Firewall',cat:'network', cost: 900, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/azure-firewall/', config:{sku:'Premium'}},
-  nva:{icon:'🧱', img:'network-appliances.svg', color:'#E81123',label:'FortiGate NVA',cat:'network', cost: 600, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/network-appliances/', config:{mode:'Active/Passive'}},
-  agw:{icon:'🌍', img:'application-gateways.svg', color:'#FF8C00',label:'App Gateway',cat:'network', cost: 350, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/application-gateway/', config:{sku:'WAF_v2'}},
-  lb:{icon:'⚖️', img:'load-balancers.svg', color:'#00BCF2',label:'Load Balancer',cat:'network', cost: 25, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/load-balancer/', config:{sku:'Standard'}},
-  gw:{icon:'🔀', img:'virtual-network-gateways.svg', color:'#0078D4',label:'VPN Gateway',cat:'network', cost: 140, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/vpn-gateway/', config:{sku:'VpnGw2AZ'}},
-  ergw:{icon:'🚄', img:'expressroute-circuits.svg', color:'#003A5C',label:'ExpressRoute GW',cat:'network', cost: 450, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/expressroute/', config:{sku:'ErGw2AZ'}},
-  bas:{icon:'🔒', img:'bastions.svg', color:'#0078D4',label:'Azure Bastion',cat:'network', cost: 190, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/azure-bastion/', config:{sku:'Standard'}},
-  afd:{icon:'⚡', img:'front-doors.svg', color:'#FF8C00',label:'Azure Front Door',cat:'network', cost: 330, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/frontdoor/', config:{sku:'Premium'}},
-  pe:{icon:'🔌', img:'private-endpoint.svg', color:'#8764B8',label:'Private Endpoint',cat:'network', cost: 10, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/private-link/', config:{target:'Storage'}},
-  dns:{icon:'🌐', img:'dns-zones.svg', color:'#00B294',label:'Private DNS Zone',cat:'network', cost: 5, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/dns/', config:{zone:'privatelink'}},
-  nsg:{icon:'📋', img:'network-security-groups.svg', color:'#E81123',label:'Network Sec Group',cat:'network', cost: 0, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/virtual-network/', config:{rules:'5'}},
-  sql:{icon:'🗄️', img:'sql-databases.svg', color:'#00B294',label:'Azure SQL',cat:'data', cost: 380, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/azure-sql-database/single/', config:{vcores:'4'}},
-  cosmos:{icon:'🌌', img:'azure-cosmos-db.svg', color:'#00B294',label:'Cosmos DB',cat:'data', cost: 400, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/cosmos-db/', config:{api:'NoSQL'}},
-  sa:{icon:'💾', img:'storage-accounts.svg', color:'#00B294',label:'Storage Account',cat:'data', cost: 25, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/storage/blobs/', config:{replication:'ZRS'}},
-  redis:{icon:'⚡', img:'azure-cache-for-redis.svg', color:'#E81123',label:'Azure Cache Redis',cat:'data', cost: 120, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/cache/', config:{sku:'Premium P1'}},
-  adls:{icon:'🗃️', img:'storage-accounts.svg', color:'#0078D4',label:'Data Lake',cat:'data', cost: 50, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/storage/data-lake/', config:{tier:'Standard'}},
-  kv:{icon:'🔑', img:'key-vaults.svg', color:'#FF8C00',label:'Key Vault',cat:'security', cost: 5, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/key-vault/', config:{sku:'Premium'}},
-  app:{icon:'📱', img:'app-services.svg', color:'#00BCF2',label:'App Service',cat:'integration', cost: 220, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/app-service/windows/', config:{sku:'P1v3'}},
-  apim:{icon:'🔌', img:'api-management.svg', color:'#FF8C00',label:'API Management',cat:'integration', cost: 700, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/api-management/', config:{tier:'Developer'}},
-  sb:{icon:'📨', img:'service-bus.svg', color:'#8764B8',label:'Service Bus',cat:'integration', cost: 50, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/service-bus/', config:{tier:'Premium'}},
-  evh:{icon:'📤', img:'event-hubs.svg', color:'#8764B8',label:'Event Hub',cat:'integration', cost: 30, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/event-hubs/', config:{tier:'Standard'}},
-  logic:{icon:'🔄', img:'logic-apps.svg', color:'#8764B8',label:'Logic App',cat:'integration', cost: 15, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/logic-apps/', config:{plan:'Standard'}},
-  foundry:{icon:'🤖', img:'cognitive-services.svg', color:'#0078D4',label:'AI Foundry',cat:'ai', cost: 100, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/cognitive-services/', config:{sku:'S0'}},
-  openai:{icon:'🧠', img:'cognitive-services.svg', color:'#50E6FF',label:'Azure OpenAI',cat:'ai', cost: 150, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/', config:{model:'gpt-4o'}},
-  monitor:{icon:'📈', img:'monitor.svg', color:'#00B294',label:'Azure Monitor',cat:'management', cost: 15, pricingUrl:'https://azure.microsoft.com/en-us/pricing/details/monitor/', config:{retentionDays:'90'}},
+  vm:{icon:'cloud_desktop',color:'#00BCF2',label:'Virtual Machine',cat:'compute',config:{size:'Standard_D2s_v3',os:'Ubuntu 22.04',zone:'1'}},
+  vmss:{icon:'cloud_desktop',color:'#00A4EF',label:'VM Scale Set',cat:'compute',config:{size:'Standard_D2s_v3',minInstances:'2',maxInstances:'10'}},
+  aks:{icon:'cloud_cube',color:'#0078D4',label:'AKS Cluster',cat:'compute',config:{nodes:'3',version:'1.29',tier:'Standard'}},
+  fa:{icon:'deploy',color:'#8764B8',label:'Function App',cat:'compute',config:{plan:'Consumption',runtime:'.NET 8'}},
+  aca:{icon:'cloud_cube',color:'#8764B8',label:'Container Apps',cat:'compute',config:{minReplicas:'0',maxReplicas:'10'}},
+  fw:{icon:'shield_error',color:'#E81123',label:'Azure Firewall',cat:'network',config:{sku:'Premium',mode:'Alert & Deny',zones:'1,2,3'}},
+  nva:{icon:'lock_shield',color:'#E81123',label:'FortiGate NVA',cat:'network',config:{mode:'Active/Passive',version:'7.6'}},
+  agw:{icon:'globe',color:'#FF8C00',label:'App Gateway',cat:'network',config:{sku:'WAF_v2',capacity:'Autoscale',waf:'Enabled'}},
+  lb:{icon:'arrow_sync',color:'#00BCF2',label:'Load Balancer',cat:'network',config:{sku:'Standard',type:'Internal'}},
+  gw:{icon:'building_cloud',color:'#0078D4',label:'VPN Gateway',cat:'network',config:{sku:'VpnGw2AZ',routing:'BGP Enabled'}},
+  ergw:{icon:'building_cloud',color:'#003A5C',label:'ExpressRoute GW',cat:'network',config:{sku:'ErGw2AZ',fastPath:'Enabled'}},
+  bas:{icon:'lock_closed',color:'#0078D4',label:'Azure Bastion',cat:'network',config:{sku:'Standard',shareable:'Enabled'}},
+  afd:{icon:'globe',color:'#FF8C00',label:'Azure Front Door',cat:'network',config:{sku:'Premium',waf:'Enabled'}},
+  pe:{icon:'lock_closed',color:'#8764B8',label:'Private Endpoint',cat:'network',config:{targetService:'Storage',subresource:'blob'}},
+  dns:{icon:'globe',color:'#00B294',label:'Private DNS Zone',cat:'network',config:{zone:'privatelink.blob.core.windows.net'}},
+  nsg:{icon:'shield_error',color:'#E81123',label:'Network Sec Group',cat:'network',config:{rules:'5 custom rules'}},
+  sql:{icon:'cloud_database',color:'#00B294',label:'Azure SQL',cat:'data',config:{tier:'General Purpose',vcores:'4',ha:'Zone Redundant'}},
+  cosmos:{icon:'database',color:'#00B294',label:'Cosmos DB',cat:'data',config:{api:'NoSQL',consistency:'Session',zones:'Enabled'}},
+  sa:{icon:'cloud_arrow_down',color:'#00B294',label:'Storage Account',cat:'data',config:{tier:'Standard',replication:'ZRS',accessTier:'Hot'}},
+  redis:{icon:'database',color:'#E81123',label:'Azure Cache Redis',cat:'data',config:{sku:'Premium P1',zones:'Enabled'}},
+  adls:{icon:'cloud_arrow_down',color:'#0078D4',label:'Data Lake Storage',cat:'data',config:{tier:'Standard',hns:'Enabled'}},
+  kv:{icon:'key',color:'#FF8C00',label:'Key Vault',cat:'security',config:{sku:'Premium',rbac:'Enabled',purgeProtect:'Enabled'}},
+  app:{icon:'globe',color:'#00BCF2',label:'App Service',cat:'integration',config:{sku:'Premium V3 P1v3',instances:'2',zone:'Enabled'}},
+  apim:{icon:'globe',color:'#FF8C00',label:'API Management',cat:'integration',config:{tier:'Developer',capacity:'1'}},
+  sb:{icon:'cloud',color:'#8764B8',label:'Service Bus',cat:'integration',config:{tier:'Premium',zones:'Enabled'}},
+  evh:{icon:'cloud_arrow_up',color:'#8764B8',label:'Event Hub',cat:'integration',config:{tier:'Standard',partitions:'4'}},
+  logic:{icon:'arrow_sync',color:'#8764B8',label:'Logic App',cat:'integration',config:{plan:'Standard',sku:'WS1'}},
+  foundry:{icon:'bot',color:'#0078D4',label:'AI Foundry',cat:'ai',config:{kind:'AIServices',sku:'S0'}},
+  openai:{icon:'bot',color:'#50E6FF',label:'Azure OpenAI',cat:'ai',config:{model:'gpt-4o',tier:'PayAsYouGo'}},
+  docintel:{icon:'document_text',color:'#0078D4',label:'Document Intelligence',cat:'ai',config:{tier:'S0',endpoint:'Custom'}},
+  search:{icon:'search',color:'#FF8C00',label:'AI Search',cat:'ai',config:{tier:'Standard',replicas:'1',partitions:'1'}},
+  synapse:{icon:'data_bar_vertical',color:'#8764B8',label:'Synapse Analytics',cat:'ai',config:{sku:'Standard',dedicatedSql:'DW100c'}},
+  monitor:{icon:'cloud_beaker',color:'#00B294',label:'Azure Monitor',cat:'management',config:{workspace:'Log Analytics',retentionDays:'90'}},
 };
-
-const loadedImages = {};
-function loadAzureIcons(callback) {
-  let toLoad = Object.keys(RES_TYPES).length;
-  let loaded = 0;
-  Object.keys(RES_TYPES).forEach(key => {
-    const img = new Image();
-    img.crossOrigin = "anonymous"; 
-    img.onload = () => { loadedImages[key] = img; checkDone(); };
-    img.onerror = () => { checkDone(); };
-    img.src = AZURE_ICON_BASE + RES_TYPES[key].img;
-  });
-  function checkDone() { loaded++; if (loaded === toLoad && callback) callback(); }
-}
 
 // ================================================================
 // STATE
 // ================================================================
-const KEY='azureBuilderV13_Fix'; 
+const KEY='azureBuilderV_StableSearch'; // Changed key to force clean load
+const SUB_COLORS=['#FFB900','#00BCF2','#00B294','#FF8C00','#8764B8'];
+const RG_COLORS=['#8764B8','#0078D4','#00B294','#FF8C00','#E81123'];
+const VNET_COLORS=['#0078D4','#00BCF2','#00B294','#FF8C00','#8764B8','#107C10'];
 
 const defaultState={
-  theme:'drawio', layout:'grid',
-  onPrem: { enabled: false, id: 'onprem', name: 'Corp Datacenter', cidr: '192.168.0.0/16' },
-  customPos: {}, 
-  subscriptions:[{id:'sub-1',name:'Production Subscription'}],
+  theme:'drawio',layout:'grid',
+  subscriptions:[
+    {id:'sub-1',name:'Azure Subscription'},
+    {id:'sub-2',name:'Dev Subscription'}
+  ],
   resourceGroups:[
-    {id:'rg-conn', name:'rg-connectivity', location:'eastus', subId:'sub-1'},
-    {id:'rg-prod', name:'rg-production', location:'eastus', subId:'sub-1'}
+    {id:'rg-conn', name:'rg-connectivity', location:'eastus',   subId:'sub-1'},
+    {id:'rg-prod', name:'rg-production',   location:'eastus',   subId:'sub-1'},
+    {id:'rg-dev',  name:'rg-development',  location:'westeurope',subId:'sub-2'}
   ],
   hub:{
-    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-conn', peerings: [],
+    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-conn',
     resources:[
       {id:'rh1',type:'fw', name:'hub-firewall',config:{...RES_TYPES.fw.config}},
-      {id:'rh2',type:'gw', name:'hub-vpngw',config:{...RES_TYPES.gw.config}}
+      {id:'rh2',type:'gw', name:'hub-vpngw',   config:{...RES_TYPES.gw.config}},
+      {id:'rh3',type:'bas',name:'hub-bastion', config:{...RES_TYPES.bas.config}}
     ]
   },
   spokes:[
-    {
-      id:'sp1',name:'prod-vnet',cidr:'10.1.0.0/16',color:'#00BCF2',peerings:['hub'],rgId:'rg-prod',
-      resources:[
-        {id:'rs1',type:'vm', name:'prod-vm-01', config:{...RES_TYPES.vm.config}},
-        {id:'rs2',type:'sql', name:'prod-sqldb', config:{...RES_TYPES.sql.config}}
-      ]
-    }
+    {id:'sp1',name:'prod-vnet',cidr:'10.1.0.0/16',color:'#00BCF2',peering:true,rgId:'rg-prod',
+     resources:[
+       {id:'rs1',type:'vm',  name:'prod-vm-01',  config:{...RES_TYPES.vm.config}},
+       {id:'rs2',type:'sql', name:'prod-sqldb',  config:{...RES_TYPES.sql.config}},
+       {id:'rs3',type:'kv',  name:'prod-kv',     config:{...RES_TYPES.kv.config}},
+       {id:'rs4',type:'pe',  name:'prod-pe-sql', config:{...RES_TYPES.pe.config}}
+     ]},
+    {id:'sp2',name:'dev-vnet',cidr:'10.2.0.0/16',color:'#00B294',peering:true,rgId:'rg-dev',
+     resources:[
+       {id:'rd1',type:'app',    name:'dev-webapp',  config:{...RES_TYPES.app.config}},
+       {id:'rd2',type:'foundry',name:'dev-ai-hub',  config:{...RES_TYPES.foundry.config}}
+     ]}
   ],
-  selectedId:null, offset:{x:0,y:0}, scale:1, dragging:false, dragStart:{x:0,y:0}, offsetStart:{x:0,y:0}, dragNodeId:null
+  selectedId:null,offset:{x:0,y:0},scale:1,dragging:false,dragStart:{x:0,y:0},offsetStart:{x:0,y:0}
 };
 
 let state;
 try{
   const s=localStorage.getItem(KEY);
   state=s?JSON.parse(s):JSON.parse(JSON.stringify(defaultState));
-  state.dragging=false; state.dragNodeId=null;
+  state.dragging=false;
+  if(!state.subscriptions){
+    state.subscriptions=[{id:'sub-1',name:state.subscription?.name||'Azure Subscription'}];
+    state.resourceGroups=(state.resourceGroups||[]).map(rg=>({...rg,subId:'sub-1'}));
+  }
+  if(state.theme==='dark') document.body.classList.remove('theme-drawio');
+  else document.body.classList.add('theme-drawio');
 }catch(e){state=JSON.parse(JSON.stringify(defaultState));}
 
 const uid=()=>'id-'+Math.random().toString(36).substr(2,9);
 const esc=s=>String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
-function fullUpdate(){ saveState(); updateCost(); renderSidebar(); renderEditor(); draw(); }
-
-function updateCost() {
-  let total = 0;
-  [state.hub, ...state.spokes].forEach(vnet => {
-    if (vnet.resources) {
-        vnet.resources.forEach(r => { if(RES_TYPES[r.type] && RES_TYPES[r.type].cost) total += RES_TYPES[r.type].cost; });
-    }
-  });
-  document.getElementById('cost-display').innerText = `$${total.toLocaleString()}`;
-}
+function fullUpdate(){saveState();renderSidebar();renderEditor();draw();}
 
 // ================================================================
-// LIVE SEARCH DROPDOWN ENGINE
+// LIVE SEARCH FILTER
 // ================================================================
-window.filterDropdownOptions = function(vnetId, query) {
-  const menuContainer = document.getElementById(`options-box-${vnetId}`);
-  if (!menuContainer) return;
-  
-  let h = "";
+window.filterRes = function(vnetId, query) {
+  const q = query.toLowerCase();
+  const list = document.getElementById('res-list-' + vnetId);
+  if(!list) return;
+  let html = '';
   const cats={};
   Object.keys(RES_TYPES).forEach(k=>{
     const t=RES_TYPES[k];
-    if (t.label.toLowerCase().includes(query.toLowerCase()) || t.cat.toLowerCase().includes(query.toLowerCase())) {
-      if(!cats[t.cat]) cats[t.cat]=[];
+    if(t.label.toLowerCase().includes(q) || (RES_CATEGORIES[t.cat]||t.cat).toLowerCase().includes(q)){
+      if(!cats[t.cat])cats[t.cat]=[];
       cats[t.cat].push({key:k,...t});
     }
   });
-
-  if (Object.keys(cats).length === 0) {
-    h = `<div style="padding:10px; font-size:11px; color:var(--muted); text-align:center;">No resources found...</div>`;
+  if(Object.keys(cats).length === 0) {
+    html = '<div style="padding:8px;text-align:center;color:var(--muted);font-size:9px;">No resources found</div>';
   } else {
     Object.keys(cats).forEach(cat=>{
-      h+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
-      cats[cat].forEach(t=>{
-          h+=`<div class="res-option" onclick="addResource('${vnetId}','${t.key}')">
-            <img src="${AZURE_ICON_BASE}${t.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-            <span style="display:none">${t.icon}</span> ${t.label} <span style="margin-left:auto; font-size:8px; color:var(--muted)">($${t.cost||0}/mo)</span>
-          </div>`;
-      });
+      html+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
+      cats[cat].forEach(t=>{html+=`<div class="res-option" onclick="addResource('${vnetId}','${t.key}')"><span style="width:7px;height:7px;border-radius:50%;background:${t.color};flex-shrink:0;"></span>${t.label}</div>`;});
     });
   }
-  menuContainer.innerHTML = h;
+  list.innerHTML = html;
 };
 
 // ================================================================
-// SIDEBAR ENGINE
+// TOGGLES
+// ================================================================
+function toggleTheme(){
+  state.theme=state.theme==='drawio'?'dark':'drawio';
+  document.body.classList.toggle('theme-drawio',state.theme==='drawio');
+  fullUpdate();
+}
+function toggleLayout(){
+  state.layout=state.layout==='grid'?'radial':'grid';
+  state.offset={x:0,y:0};state.scale=1;fullUpdate();
+}
+
+// ================================================================
+// LEFT SIDEBAR
 // ================================================================
 function renderSidebar(){
   const el=document.getElementById('sidebar-left');
-  
-  let h = `<div class="tree-section-title">// Hybrid Connectivity</div>`;
-  h += `<div class="onprem-block">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:16px;">🏢</span>
-            <div><div style="font-size:11px; font-weight:bold; color:var(--azure-blue)">On-Premises Datacenter</div><div style="font-size:9px; color:var(--muted)">S2S VPN / ExpressRoute</div></div>
-          </div>
-          <button style="border:none; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:10px; cursor:pointer; background:${state.onPrem.enabled?'var(--success)':'rgba(123,163,192,0.2)'}; color:${state.onPrem.enabled?'#000':'var(--text)'}" onclick="toggleOnPrem()">
-            ${state.onPrem.enabled?'ON':'OFF'}
-          </button>
-        </div>`;
-
-  h += `<div class="tree-section-title">// Azure Hierarchy</div>`;
+  let h='<div class="tree-section-title">// Azure Hierarchy</div>';
 
   state.subscriptions.forEach((sub,si)=>{
     const rgs=state.resourceGroups.filter(rg=>rg.subId===sub.id);
     const subColor=SUB_COLORS[si%SUB_COLORS.length];
     h+=`<div class="sub-block">
       <div class="sub-header" style="border-left-color:${subColor}">
-        <span class="sub-icon">☁️</span>
-        <input class="sub-name-input" value="${esc(sub.name)}" onchange="renameSub('${sub.id}',this.value)" onclick="event.stopPropagation()">
+        <span class="sub-icon">☁</span>
+        <input class="sub-name-input" value="${esc(sub.name)}" 
+          title="Click to rename subscription"
+          onchange="renameSub('${sub.id}',this.value)"
+          onclick="event.stopPropagation()">
         <button class="icon-btn" title="Add Resource Group" onclick="addRg('${sub.id}')">📁+</button>
         <button class="icon-btn danger" title="Delete Subscription" onclick="deleteSub('${sub.id}')">🗑</button>
       </div>
@@ -422,76 +378,71 @@ function renderSidebar(){
 
     rgs.forEach((rg,ri)=>{
       const rgVnets=getVnetsInRg(rg.id);
-      h+=`<div class="rg-block" id="rgblock-${rg.id}">
-        <div class="rg-header">
-          <span style="font-size:12px;">📁</span>
-          <input class="rg-name-input" value="${esc(rg.name)}" onchange="renameRg('${rg.id}',this.value)" onclick="event.stopPropagation()">
+      const isCollapsed=rg.collapsed||false;
+      h+=`<div class="rg-block${isCollapsed?' collapsed':''}" id="rgblock-${rg.id}">
+        <div class="rg-header" onclick="toggleRgCollapse('${rg.id}')">
+          <span style="font-size:10px;">📁</span>
+          <input class="rg-name-input" value="${esc(rg.name)}"
+            title="Click to rename RG"
+            onchange="renameRg('${rg.id}',this.value)"
+            onclick="event.stopPropagation()">
           <select class="rg-loc-select" onchange="setRgLocation('${rg.id}',this.value)" onclick="event.stopPropagation()">
-            ${['eastus','westeurope','westus2','northeurope','southeastasia','australiaeast','uksouth'].map(l=>`<option value="${l}"${rg.location===l?' selected':''}>${l}</option>`).join('')}
+            ${['eastus','westeurope','westus2','northeurope','southeastasia','australiaeast','uksouth','germanywestcentral'].map(l=>`<option value="${l}"${rg.location===l?' selected':''}>${l}</option>`).join('')}
           </select>
           <button class="icon-btn danger" title="Delete RG" onclick="event.stopPropagation();deleteRg('${rg.id}')">🗑</button>
+          <span class="rg-toggle-icon">▾</span>
         </div>
         <div class="rg-body">`;
 
       rgVnets.forEach(vnet=>{
         const isHub=vnet.id==='hub';
         const isSelVnet=state.selectedId===vnet.id;
-        h+=`<div class="vnet-card" style="border-left:3px solid ${vnet.color};${isSelVnet?'border-color:var(--azure-blue);box-shadow:0 0 5px rgba(0,120,212,0.3)':''}">
+        h+=`<div class="vnet-card" style="border-left:2px solid ${vnet.color};${isSelVnet?'border-color:var(--azure-blue);':''}">
           <div class="vnet-card-header">
             <div class="vnet-dot" style="background:${vnet.color}"></div>
-            <input class="vnet-name-input" value="${esc(vnet.name)}" onchange="updateVnet('${vnet.id}','name',this.value)" onclick="selectNode('${vnet.id}')">
-            <input class="vnet-cidr-input" value="${esc(vnet.cidr)}" onchange="updateVnet('${vnet.id}','cidr',this.value)" onclick="selectNode('${vnet.id}')">
+            <input class="vnet-name-input" value="${esc(vnet.name)}"
+              onchange="updateVnet('${vnet.id}','name',this.value)"
+              onclick="selectNode('${vnet.id}')">
+            <input class="vnet-cidr-input" value="${esc(vnet.cidr)}"
+              onchange="updateVnet('${vnet.id}','cidr',this.value)"
+              onclick="selectNode('${vnet.id}')">
             ${!isHub?`<button class="icon-btn danger" title="Delete Spoke" onclick="deleteSpoke('${vnet.id}')">🗑</button>`:''}
           </div>
           <div class="resource-chips">`;
-        
-        if (vnet.resources) {
-            vnet.resources.forEach(res=>{
-              const rt=RES_TYPES[res.type] || {color:'#888', icon:'❓', img:''};
-              const isSelRes=state.selectedId===res.id;
-              h+=`<div class="chip${isHub?' hub-chip':''}" style="${isSelRes?'background:var(--azure-blue);color:white;border-color:var(--azure-blue);':''}" onclick="selectNode('${res.id}')">
-                <img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-                <span style="display:none; font-size:10px;">${rt.icon}</span>
-                <span>${esc(res.name)}</span>
-              </div>`;
-            });
-        }
-        
-        // Generate Dropdown with Search Box
-        let optionsHtml = '';
+        vnet.resources.forEach(res=>{
+          const rt=RES_TYPES[res.type]||{color:'#888'};
+          const isSel=state.selectedId===res.id;
+          h+=`<div class="chip${isHub?' hub-chip':''}" style="${isSel?'background:var(--azure-blue);color:white;border-color:var(--azure-blue);':''}" onclick="selectNode('${res.id}')">
+            <span style="width:5px;height:5px;border-radius:50%;background:${rt.color};flex-shrink:0;"></span>
+            <span>${esc(res.name)}</span>
+          </div>`;
+        });
+        h+=`</div>
+          <div class="add-res-container" style="margin-top:6px;">
+            <button class="add-btn vnet-level" onclick="toggleDropdown('${vnet.id}')">➕ Add Resource</button>
+            <div class="res-dropdown" id="dropdown-${vnet.id}">
+              <div style="position: sticky; top: 0; background: var(--bg2); padding: 4px; border-bottom: 1px solid var(--border); z-index: 10;">
+                <input type="text" placeholder="🔍 Search..." oninput="filterRes('${vnet.id}', this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 4px; font-size: 9px; border-radius: 3px; border: 1px solid var(--border); background: rgba(0,0,0,0.2); color: white; outline: none; font-family: 'JetBrains Mono', monospace;">
+              </div>
+              <div id="res-list-${vnet.id}">`;
         const cats={};
         Object.keys(RES_TYPES).forEach(k=>{const t=RES_TYPES[k];if(!cats[t.cat])cats[t.cat]=[];cats[t.cat].push({key:k,...t});});
         Object.keys(cats).forEach(cat=>{
-          optionsHtml+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
-          cats[cat].forEach(t=>{
-              optionsHtml+=`<div class="res-option" onclick="addResource('${vnet.id}','${t.key}')">
-                <img src="${AZURE_ICON_BASE}${t.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-                <span style="display:none">${t.icon}</span> ${t.label} <span style="margin-left:auto; font-size:8px; color:var(--muted)">($${t.cost||0}/mo)</span>
-              </div>`;
-          });
+          h+=`<div class="res-dd-section">${RES_CATEGORIES[cat]||cat}</div>`;
+          cats[cat].forEach(t=>{h+=`<div class="res-option" onclick="addResource('${vnet.id}','${t.key}')"><span style="width:7px;height:7px;border-radius:50%;background:${t.color};flex-shrink:0;"></span>${t.label}</div>`;});
         });
-
-        h+=`</div>
-          <div class="add-res-container" style="margin-top:10px;">
-            <button class="add-btn vnet-level" onclick="toggleDropdown('${vnet.id}')">➕ Add Resource</button>
-            <div class="res-dropdown" id="dropdown-${vnet.id}">
-              <div class="search-box-container">
-                <input type="text" class="search-input" placeholder="🔍 Search Resource..." oninput="filterDropdownOptions('${vnet.id}', this.value)" onclick="event.stopPropagation()">
-              </div>
-              <div id="options-box-${vnet.id}" data-vnetid="${vnet.id}">${optionsHtml}</div>
-            </div>
-          </div></div>`; 
+        h+=`</div></div></div></div>`;
       });
 
-      h+=`<button class="add-btn vnet-level" onclick="addSpoke('${rg.id}')">➕ Add Spoke VNet</button>`;
+      h+=`<button class="add-btn vnet-level" onclick="addSpoke('${rg.id}')">+ Add Spoke VNet</button>`;
       h+=`</div></div>`;
     });
 
-    h+=`<button class="add-btn rg-level" onclick="addRg('${sub.id}')">📁 Add Resource Group</button>`;
+    h+=`<button class="add-btn rg-level" onclick="addRg('${sub.id}')">+ Add Resource Group</button>`;
     h+=`</div></div>`;
   });
 
-  h+=`<button class="add-btn sub-level" onclick="addSub()">☁️ Add Subscription</button>`;
+  h+=`<button class="add-btn sub-level" onclick="addSub()">☁ Add Subscription</button>`;
   el.innerHTML=h;
 }
 
@@ -503,89 +454,53 @@ function getVnetsInRg(rgId){
 }
 
 // ================================================================
-// PROPERTY EDITOR WITH AZURE PRICING LINKS
+// RIGHT EDITOR
 // ================================================================
 function renderEditor(){
   const el=document.getElementById('editor-container');
   if(!state.selectedId){
-    el.innerHTML=`<div style="text-align:center;color:var(--muted);font-size:11px;margin-top:20px;line-height:1.9;">← Click a resource or VNet<br>to edit its properties</div>`;
+    el.innerHTML=`<div style="text-align:center;color:var(--muted);font-size:10px;margin-top:20px;line-height:1.9;">← Click a resource or VNet<br>to edit its properties<br><br>Double-click to rename<br>on the canvas</div>`;
     return;
   }
-  
-  if (state.selectedId === 'onprem') {
-    el.innerHTML = `
-      <div class="editor-panel" style="border-color:#107C10">
-        <div class="editor-header" style="color:#107C10">🏢 ${esc(state.onPrem.name)}</div>
-        <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(state.onPrem.name)}" onchange="state.onPrem.name=this.value;fullUpdate()"></div>
-        <div class="editor-row"><span class="editor-label">Local CIDR</span><input class="input-field" value="${esc(state.onPrem.cidr)}" onchange="state.onPrem.cidr=this.value;fullUpdate()"></div>
-      </div>`;
-    return;
+  let obj=null,parent=null,isVnet=false;
+  if(state.hub.id===state.selectedId){obj=state.hub;isVnet=true;}
+  else{
+    state.spokes.forEach(s=>{
+      if(s.id===state.selectedId){obj=s;isVnet=true;}
+      const r=s.resources.find(r=>r.id===state.selectedId);
+      if(r){obj=r;parent=s;}
+    });
+    const hr=state.hub.resources.find(r=>r.id===state.selectedId);
+    if(hr){obj=hr;parent=state.hub;}
   }
-
-  let obj=null, parent=null, isVnet=false; 
-  const allVnets = [state.hub, ...state.spokes];
-  for (let v of allVnets) {
-    if (v.id === state.selectedId) { obj=v; isVnet=true; break; }
-    if (v.resources) {
-        for (let r of v.resources) {
-          if (r.id === state.selectedId) { obj=r; parent=v; break; }
-        }
-    }
-    if (obj) break;
-  }
-
   if(!obj){state.selectedId=null;return renderEditor();}
 
+  const allRgOpts=state.resourceGroups.map(rg=>{
+    const sub=state.subscriptions.find(s=>s.id===rg.subId);
+    return `<option value="${rg.id}" ${(isVnet?obj.rgId:parent?.rgId)===rg.id?'selected':''}>${sub?sub.name+' / ':''} ${rg.name}</option>`;
+  }).join('');
+
   let h=`<div class="editor-panel">`;
-
   if(isVnet){
-    const allRgOpts=state.resourceGroups.map(rg=>{
-      const sub=state.subscriptions.find(s=>s.id===rg.subId);
-      return `<option value="${rg.id}" ${obj.rgId===rg.id?'selected':''}>${sub?sub.name+' / ':''} ${rg.name}</option>`;
-    }).join('');
-
     h+=`<div class="editor-header">🌐 ${esc(obj.name)}</div>
       <div class="editor-row"><span class="editor-label">VNet Name</span><input class="input-field" value="${esc(obj.name)}" onchange="updateVnet('${obj.id}','name',this.value)"></div>
-      <div class="editor-row"><span class="editor-label">CIDR Block</span><input class="input-field" value="${esc(obj.cidr)}" onchange="updateVnet('${obj.id}','cidr',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">CIDR</span><input class="input-field" value="${esc(obj.cidr)}" onchange="updateVnet('${obj.id}','cidr',this.value)"></div>
       <div class="editor-row"><span class="editor-label">Resource Group</span><select class="input-field" onchange="updateVnet('${obj.id}','rgId',this.value)">${allRgOpts}</select></div>`;
-    
-    let peerHtml = `<div class="editor-row" style="margin-top:10px;"><span class="editor-label">VNet Peerings</span><div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">`;
-    allVnets.forEach(v => {
-      if (v.id === obj.id) return;
-      const actuallyPeered = (obj.peerings || []).includes(v.id) || (v.peerings || []).includes(obj.id);
-      peerHtml += `<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:10px;font-weight:bold;border:1px solid ${actuallyPeered ? 'var(--azure-blue)' : 'var(--border)'};background:${actuallyPeered ? 'rgba(0,120,212,.1)' : 'transparent'};color:${actuallyPeered ? 'var(--azure-blue)' : 'var(--text)'};transition:0.2s;" onclick="togglePeering('${obj.id}', '${v.id}')">${actuallyPeered ? '🔗 ' : '🔌 '}${esc(v.name)}</button>`;
-    });
-    peerHtml += `</div></div>`;
-    h += peerHtml;
-
     if(obj.id!=='hub'){
-      h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteSpoke('${obj.id}')">🗑 Delete Spoke</button>`;
+      const p=obj.peering!==false;
+      h+=`<div class="editor-row"><span class="editor-label">Hub Peering</span>
+        <button style="width:100%;padding:5px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:9px;border:1px solid ${p?'var(--azure-blue)':'var(--muted)'};background:${p?'rgba(0,120,212,.1)':'transparent'};color:${p?'var(--azure-blue)':'var(--muted)'};"
+          onclick="togglePeering('${obj.id}')">${p?'🔗 Connected':'🔌 Disconnected'}</button></div>
+        <button style="width:100%;padding:5px;border-radius:4px;cursor:pointer;font-size:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:4px;" onclick="deleteSpoke('${obj.id}')">🗑 Delete Spoke</button>`;
     }
-
-  } else {
-    // RESOURCE CONFIG + PRICING LINK
-    const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓', cost:0};
-    h+=`<div class="editor-header">
-          <img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-          <span style="display:none">${rt.icon}</span> 
-          ${rt.label}
-        </div>
+  }else{
+    const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource'};
+    h+=`<div class="editor-header"><span style="width:14px;height:14px;border-radius:3px;background:${rt.color}25;border:1px solid ${rt.color};display:inline-block;"></span>${rt.label}</div>
       <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="updateResource('${parent.id}','${obj.id}','name',this.value)"></div>`;
-    
     Object.keys(obj.config).forEach(k=>{
       h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="updateResConfig('${parent.id}','${obj.id}','${k}',this.value)"></div>`;
     });
-    
-    h+=`<div class="editor-row" style="margin-top:6px;">
-          <span class="editor-label">Estimated Cost</span>
-          <div style="font-size:12px; font-weight:bold; color:var(--success)">$${rt.cost||0} / month</div>
-        </div>`;
-        
-    if(rt.pricingUrl) {
-      h+=`<a href="${rt.pricingUrl}" target="_blank" class="export-btn pricing">🌐 View Azure Calculator Pricing</a>`;
-    }
-
-    h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:12px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="deleteResource('${parent.id}','${obj.id}')">🗑 Delete Resource</button>`;
+    h+=`<button style="width:100%;padding:5px;border-radius:4px;cursor:pointer;font-size:9px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:4px;" onclick="deleteResource('${parent.id}','${obj.id}')">🗑 Delete Resource</button>`;
   }
   h+=`</div>`;
   el.innerHTML=h;
@@ -594,88 +509,111 @@ function renderEditor(){
 // ================================================================
 // STATE MUTATIONS
 // ================================================================
-function toggleOnPrem() { state.onPrem.enabled = !state.onPrem.enabled; fullUpdate(); }
-function toggleTheme(){ state.theme=state.theme==='drawio'?'dark':'drawio'; document.body.classList.toggle('theme-drawio',state.theme==='drawio'); fullUpdate(); }
-function toggleLayout(){ state.layout=state.layout==='grid'?'radial':'grid'; state.offset={x:0,y:0}; state.scale=1; fullUpdate(); }
-function fitToScreen(){state.offset={x:0,y:0};state.scale=1;saveState();draw();}
-
-function addSub(){ const n=state.subscriptions.length; const id='sub-'+uid(); state.subscriptions.push({id,name:`Subscription ${n+1}`}); state.resourceGroups.push({id:'rg-'+uid(),name:'rg-new',location:'eastus',subId:id}); fullUpdate(); }
-function deleteSub(id){ if(state.subscriptions.length<=1){alert('Need at least one subscription.');return;} if(!confirm('Delete subscription? VNets will be moved.')) return; const fallbackRg=state.resourceGroups.find(r=>r.subId!==id); if(!fallbackRg){alert('Cannot delete.');return;} const subRgIds=state.resourceGroups.filter(r=>r.subId===id).map(r=>r.id); if(state.hub.rgId&&subRgIds.includes(state.hub.rgId)) state.hub.rgId=fallbackRg.id; state.spokes.forEach(s=>{if(subRgIds.includes(s.rgId))s.rgId=fallbackRg.id;}); state.resourceGroups=state.resourceGroups.filter(r=>r.subId!==id); state.subscriptions=state.subscriptions.filter(s=>s.id!==id); fullUpdate(); }
+function addSub(){
+  const n=state.subscriptions.length;
+  const id='sub-'+uid();
+  state.subscriptions.push({id,name:`Subscription ${n+1}`});
+  state.resourceGroups.push({id:'rg-'+uid(),name:'rg-default',location:'eastus',subId:id});
+  fullUpdate();
+}
+function deleteSub(id){
+  if(state.subscriptions.length<=1){alert('Need at least one subscription.');return;}
+  if(!confirm('Delete subscription and all its resource groups? VNets in those RGs will move to the first available RG.')) return;
+  const fallbackRg=state.resourceGroups.find(r=>r.subId!==id);
+  if(!fallbackRg){alert('Cannot delete: no other resource group available.');return;}
+  const subRgIds=state.resourceGroups.filter(r=>r.subId===id).map(r=>r.id);
+  if(state.hub.rgId&&subRgIds.includes(state.hub.rgId)) state.hub.rgId=fallbackRg.id;
+  state.spokes.forEach(s=>{if(subRgIds.includes(s.rgId))s.rgId=fallbackRg.id;});
+  state.resourceGroups=state.resourceGroups.filter(r=>r.subId!==id);
+  state.subscriptions=state.subscriptions.filter(s=>s.id!==id);
+  fullUpdate();
+}
 function renameSub(id,val){const s=state.subscriptions.find(s=>s.id===id);if(s){s.name=val;saveState();draw();}}
 
-function addRg(subId){ const n=state.resourceGroups.filter(r=>r.subId===subId).length; state.resourceGroups.push({id:'rg-'+uid(),name:`rg-new-${n+1}`,location:'eastus',subId}); fullUpdate(); }
-function deleteRg(id){ if(state.resourceGroups.length<=1){alert('Need at least one resource group.');return;} const fallback=state.resourceGroups.find(r=>r.id!==id); if(!fallback){alert('No fallback.');return;} if(!confirm('Delete resource group?')) return; if(state.hub.rgId===id) state.hub.rgId=fallback.id; state.spokes.forEach(s=>{if(s.rgId===id)s.rgId=fallback.id;}); state.resourceGroups=state.resourceGroups.filter(r=>r.id!==id); fullUpdate(); }
+function addRg(subId){
+  const n=state.resourceGroups.filter(r=>r.subId===subId).length;
+  state.resourceGroups.push({id:'rg-'+uid(),name:`rg-new-${n+1}`,location:'eastus',subId});
+  fullUpdate();
+}
+function deleteRg(id){
+  if(state.resourceGroups.length<=1){alert('Need at least one resource group.');return;}
+  const fallback=state.resourceGroups.find(r=>r.id!==id);
+  if(!fallback){alert('No fallback RG available.');return;}
+  if(!confirm('Delete resource group? VNets will move to: '+fallback.name)) return;
+  if(state.hub.rgId===id) state.hub.rgId=fallback.id;
+  state.spokes.forEach(s=>{if(s.rgId===id)s.rgId=fallback.id;});
+  state.resourceGroups=state.resourceGroups.filter(r=>r.id!==id);
+  fullUpdate();
+}
 function renameRg(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.name=val;saveState();draw();}}
 function setRgLocation(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.location=val;saveState();}}
+function toggleRgCollapse(id){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.collapsed=!rg.collapsed;saveState();renderSidebar();}}
 
 function addSpoke(rgId){
   const n=state.spokes.length;
-  state.spokes.push({ id:uid(),name:`spoke-${n+1}-vnet`,cidr:`10.${n+1}.0.0/16`, color:VNET_COLORS[n%VNET_COLORS.length],peerings:['hub'], rgId:rgId||state.resourceGroups[0]?.id, resources:[] });
+  state.spokes.push({
+    id:uid(),name:`spoke-${n+1}-vnet`,cidr:`10.${n+1}.0.0/16`,
+    color:VNET_COLORS[n%VNET_COLORS.length],peering:true,
+    rgId:rgId||state.resourceGroups[0]?.id,resources:[]
+  });
   fullUpdate();
 }
-function deleteSpoke(id){
-  state.spokes=state.spokes.filter(s=>s.id!==id);
-  [state.hub, ...state.spokes].forEach(v => { if (v.peerings) v.peerings = v.peerings.filter(pId => pId !== id); });
-  state.selectedId=null; fullUpdate();
-}
-function updateVnet(id,key,val){ const v=[state.hub,...state.spokes].find(v=>v.id===id); if(v)v[key]=val; fullUpdate(); }
-function togglePeering(id1, id2) {
-  const v1 = [state.hub,...state.spokes].find(s => s.id === id1);
-  const v2 = [state.hub,...state.spokes].find(s => s.id === id2);
-  if (!v1 || !v2) return;
-  v1.peerings = v1.peerings || []; v2.peerings = v2.peerings || [];
-  const hasPeering = v1.peerings.includes(id2) || v2.peerings.includes(id1);
-  if (hasPeering) { v1.peerings = v1.peerings.filter(p => p !== id2); v2.peerings = v2.peerings.filter(p => p !== id1); } 
-  else { v1.peerings.push(id2); }
+function deleteSpoke(id){state.spokes=state.spokes.filter(s=>s.id!==id);state.selectedId=null;fullUpdate();}
+function updateVnet(id,key,val){
+  if(state.hub.id===id)state.hub[key]=val;
+  else{const s=state.spokes.find(s=>s.id===id);if(s)s[key]=val;}
   fullUpdate();
 }
+function togglePeering(id){const s=state.spokes.find(s=>s.id===id);if(s){s.peering=!s.peering;fullUpdate();}}
 
 function toggleDropdown(id){
-  document.querySelectorAll('.res-dropdown').forEach(d => {
+  document.querySelectorAll('.res-dropdown').forEach(d=>{
     if(d.id !== `dropdown-${id}`) d.classList.remove('show');
   });
   const dd=document.getElementById(`dropdown-${id}`);
   if(dd) {
     dd.classList.toggle('show');
-    const searchInp = dd.querySelector('.search-input');
-    if(searchInp && dd.classList.contains('show')) { 
-      searchInp.value = ""; 
-      filterDropdownOptions(id, ""); 
-      searchInp.focus(); 
+    const inp = dd.querySelector('input');
+    if(inp && dd.classList.contains('show')){
+      inp.value = '';
+      filterRes(id, '');
+      inp.focus();
     }
   }
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.add-res-container'))document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show'));});
 
-function addResource(vnetId, resType){
-  const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
+function addResource(vnetId,resType){
+  const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
   const rT=RES_TYPES[resType];
   if(!rT||!vnet) return;
   const nr={id:uid(),type:resType,name:`${vnet.name.split('-')[0]}-${resType}`,config:{...rT.config}};
-  if(!vnet.resources) vnet.resources = [];
   vnet.resources.push(nr);
   document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show'));
-  selectNode(nr.id);
+  preloadIcons(()=>selectNode(nr.id));
 }
-function deleteResource(vnetId, resId){
-  const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  if(vnet && vnet.resources) vnet.resources = vnet.resources.filter(r => r.id !== resId);
-  state.selectedId=null; fullUpdate();
+function deleteResource(vnetId,resId){
+  const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
+  if(vnet)vnet.resources=vnet.resources.filter(r=>r.id!==resId);
+  state.selectedId=null;fullUpdate();
 }
-function updateResource(vnetId, resId, key, val){
-  const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  if(vnet && vnet.resources) { const r = vnet.resources.find(r=>r.id===resId); if(r)r[key]=val; fullUpdate(); }
+function updateResource(vnetId,resId,key,val){
+  const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
+  const r=vnet?.resources.find(r=>r.id===resId);if(r){r[key]=val;fullUpdate();}
 }
-function updateResConfig(vnetId, resId, configKey, val){
-  const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
-  if(vnet && vnet.resources) { const r = vnet.resources.find(r=>r.id===resId); if(r)r.config[configKey]=val; saveState(); renderEditor(); }
+function updateResConfig(vnetId,resId,k,val){
+  const vnet=state.hub.id===vnetId?state.hub:state.spokes.find(s=>s.id===vnetId);
+  const r=vnet?.resources.find(r=>r.id===resId);if(r){r.config[k]=val;saveState();renderEditor();}
 }
 function selectNode(id){state.selectedId=id;fullUpdate();}
-function resetDiagram(){if(confirm('Are you sure you want to completely reset the diagram?')){localStorage.removeItem(KEY);location.reload();}}
-function resetPositions(){if(confirm('Clear Drag&Drop positions and return to auto-layout?')){state.customPos={};fullUpdate();}}
+function resetDiagram(){if(confirm('Reset to default?')){localStorage.removeItem(KEY);location.reload();}}
+
+function preloadIcons(cb){
+  if(cb) cb();
+}
 
 // ================================================================
-// CANVAS SETUP & LAYOUT ENGINE
+// CANVAS
 // ================================================================
 const canvas=document.getElementById('diagram-canvas');
 const ctx=canvas.getContext('2d');
@@ -685,113 +623,61 @@ window.addEventListener('resize',resize);
 
 function getRenderNodes(){
   const cx=canvas.width/2,cy=canvas.height/2,nodes=[];
-  
   if(state.layout==='grid'){
-    const RW=84,RH=64,RP=12,VPT=48,VPB=18;
-    const VNET_GAP=60, RG_GAP=80, SUB_GAP=120;
-    
-    const vw=v=>Math.max(260,(v.resources||[]).length*(RW+RP)+20);
+    const RW=80,RH=56,RP=8,VPT=44,VPB=14,VPH=16,VGAP=50,LGAP=70;
+    const vw=v=>Math.max(240,v.resources.length*(RW+RP)+VPH*2);
     const vh=()=>VPT+RH+VPB;
-    
-    const tree = state.subscriptions.map(sub => {
-      const rgs = state.resourceGroups.filter(rg => rg.subId === sub.id).map(rg => {
-        const vnets = [];
-        if (state.hub.rgId === rg.id) vnets.push(state.hub);
-        vnets.push(...state.spokes.filter(sp => sp.rgId === rg.id));
-        
-        const rgWidth = vnets.length > 0 ? vnets.reduce((sum, v) => sum + vw(v), 0) + (vnets.length - 1) * VNET_GAP + 40 : 200;
-        return { ...rg, vnets, renderWidth: rgWidth };
-      });
-      const subWidth = rgs.length > 0 ? rgs.reduce((sum, rg) => sum + rg.renderWidth, 0) + (rgs.length - 1) * RG_GAP + 80 : 300;
-      return { ...sub, rgs, renderWidth: subWidth };
+    const hW=vw(state.hub),hH=vh();
+    const hubY=Math.max(cy-hH-LGAP/2-30,110);
+    nodes.push({id:state.hub.id,isVnet:true,x:cx,y:hubY,width:hW,height:hH,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,peering:true,rgId:state.hub.rgId});
+    state.hub.resources.forEach((res,i)=>{
+      const tot=state.hub.resources.length,tw=tot*RW+(tot-1)*RP;
+      nodes.push({id:res.id,isVnet:false,parentId:state.hub.id,x:cx-tw/2+RW/2+i*(RW+RP),y:hubY+VPT+RH/2-4,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:RW,height:RH});
     });
-
-    const totalWidth = tree.reduce((sum, sub) => sum + sub.renderWidth, 0) + (tree.length - 1) * SUB_GAP;
-    
-    const topY = Math.max(cy - 160, 150);
-    const bottomY = topY + 280;
-    
-    let curX = cx - totalWidth / 2;
-    
-    tree.forEach(sub => {
-      let rgX = curX + 40; 
-      sub.rgs.forEach(rg => {
-        let vnetX = rgX + 20; 
-        rg.vnets.forEach(vnet => {
-          const vWidth = vw(vnet);
-          const vx = vnetX + vWidth / 2;
-          const vy = (vnet.id === 'hub') ? topY : bottomY;
-          
-          nodes.push({id:vnet.id, isVnet:true, x:vx, y:vy, width:vWidth, height:vh(), label:vnet.name, sub:vnet.cidr, color:vnet.color, peerings:vnet.peerings||[], rgId:rg.id, subId:sub.id});
-          
-          if(vnet.resources) {
-            vnet.resources.forEach((res,j)=>{
-              const tot=vnet.resources.length,tw=tot*RW+(tot-1)*RP;
-              nodes.push({id:res.id, isVnet:false, parentId:vnet.id, x:vx-tw/2+RW/2+j*(RW+RP), y:vy+VPT+RH/2-10, label:res.name, type:res.type, color:RES_TYPES[res.type]?.color||'#FFF', width:RW, height:RH});
-            });
-          }
-          vnetX += vWidth + VNET_GAP;
-        });
-        rgX += rg.renderWidth + RG_GAP;
+    const spW=state.spokes.map(s=>vw(s));
+    const totW=spW.reduce((a,b)=>a+b,0)+VGAP*(state.spokes.length-1);
+    const spY=hubY+hH+LGAP;
+    let sx=cx-totW/2;
+    state.spokes.forEach((sp,i)=>{
+      const sW=spW[i],sH=vh(),svx=sx+sW/2;
+      nodes.push({id:sp.id,isVnet:true,parentId:state.hub.id,x:svx,y:spY,width:sW,height:sH,label:sp.name,sub:sp.cidr,color:sp.color,peering:sp.peering!==false,rgId:sp.rgId});
+      sp.resources.forEach((res,j)=>{
+        const tot=sp.resources.length,tw=tot*RW+(tot-1)*RP;
+        nodes.push({id:res.id,isVnet:false,parentId:sp.id,x:svx-tw/2+RW/2+j*(RW+RP),y:spY+VPT+RH/2-4,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:RW,height:RH});
       });
-      curX += sub.renderWidth + SUB_GAP;
+      sx+=sW+VGAP;
     });
-
-  } else {
-    const r=Math.min(canvas.width,canvas.height)*.34;
-    nodes.push({id:state.hub.id,isVnet:true,x:cx,y:cy,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,radius:70,peerings:state.hub.peerings||[],rgId:state.hub.rgId});
-    if(state.hub.resources) {
-      state.hub.resources.forEach((res,i)=>{
-        const angle=(i/Math.max(state.hub.resources.length,1))*Math.PI*2-Math.PI/2;
-        nodes.push({id:res.id,isVnet:false,parentId:state.hub.id,x:cx+Math.cos(angle)*135,y:cy+Math.sin(angle)*135,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:84,height:64});
-      });
-    }
+  }else{
+    const r=Math.min(canvas.width,canvas.height)*.33;
+    nodes.push({id:state.hub.id,isVnet:true,x:cx,y:cy,label:state.hub.name,sub:state.hub.cidr,color:state.hub.color,radius:65,peering:true,rgId:state.hub.rgId});
+    state.hub.resources.forEach((res,i)=>{
+      const angle=(i/Math.max(state.hub.resources.length,1))*Math.PI*2-Math.PI/2;
+      nodes.push({id:res.id,isVnet:false,parentId:state.hub.id,x:cx+Math.cos(angle)*130,y:cy+Math.sin(angle)*130,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:80,height:56});
+    });
     state.spokes.forEach((sp,i)=>{
       const angle=state.spokes.length===1?Math.PI/2:(i/state.spokes.length)*Math.PI*2;
       const sx=cx+Math.cos(angle)*r,sy=cy+Math.sin(angle)*r;
       const perp={x:-Math.sin(angle),y:Math.cos(angle)};
-      nodes.push({id:sp.id,isVnet:true,parentId:state.hub.id,x:sx,y:sy,label:sp.name,sub:sp.cidr,color:sp.color,radius:55,peerings:sp.peerings||[],rgId:sp.rgId});
-      if (sp.resources) {
-        sp.resources.forEach((res,j)=>{
-          const t=sp.resources.length>1?(j*90-(sp.resources.length-1)*45):0;
-          nodes.push({id:res.id,isVnet:false,parentId:sp.id,x:sx+Math.cos(angle)*125+perp.x*t,y:sy+Math.sin(angle)*125+perp.y*t,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:84,height:64});
-        });
-      }
+      nodes.push({id:sp.id,isVnet:true,parentId:state.hub.id,x:sx,y:sy,label:sp.name,sub:sp.cidr,color:sp.color,radius:52,peering:sp.peering!==false,rgId:sp.rgId});
+      sp.resources.forEach((res,j)=>{
+        const t=sp.resources.length>1?(j*85-(sp.resources.length-1)*42.5):0;
+        nodes.push({id:res.id,isVnet:false,parentId:sp.id,x:sx+Math.cos(angle)*115+perp.x*t,y:sy+Math.sin(angle)*115+perp.y*t,label:res.name,type:res.type,color:RES_TYPES[res.type]?.color||'#FFF',width:80,height:56});
+      });
     });
   }
-
-  // ADD ON-PREM NODE
-  if (state.onPrem.enabled) {
-    const hubNode = nodes.find(n => n.id === 'hub');
-    const hx = hubNode ? hubNode.x : cx;
-    const hy = hubNode ? hubNode.y : cy;
-    nodes.push({
-      id: state.onPrem.id, isVnet: false, isOnPrem: true, parentId: 'hub', 
-      x: hx - 300, y: hy, width: 140, height: 80, 
-      label: state.onPrem.name, sub: state.onPrem.cidr, color: '#107C10'
-    });
-  }
-
-  // APPLY CUSTOM POSITIONS (DRAG AND DROP)
-  if (!state.customPos) state.customPos = {};
-  nodes.forEach(n => {
-    if (state.customPos[n.id]) {
-      n.x = state.customPos[n.id].x;
-      n.y = state.customPos[n.id].y;
-    }
-  });
-
   return nodes;
 }
 
-function getSubBounds(subId,nodes){
-  const related=nodes.filter(n=>n.isVnet&&n.subId===subId);
+function getSubBounds(subId,nodes,rgs){
+  const subRgIds=rgs.filter(r=>r.subId===subId).map(r=>r.id);
+  const related=nodes.filter(n=>n.isVnet&&subRgIds.includes(n.rgId));
   if(!related.length)return null;
   let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
-  related.forEach(n=>{
+  nodes.forEach(n=>{
+    if(n.isVnet&&!subRgIds.includes(n.rgId)) return;
     const hw=n.width?n.width/2:n.radius||60,hh=n.height?n.height/2:n.radius||60;
     mx=Math.min(mx,n.x-hw);my=Math.min(my,n.y-hh);Mx=Math.max(Mx,n.x+hw);My=Math.max(My,n.y+hh);
-    nodes.filter(c=>c.parentId===n.id&&!c.isVnet&&!c.isOnPrem).forEach(c=>{
+    if(n.isVnet) nodes.filter(c=>c.parentId===n.id&&!c.isVnet).forEach(c=>{
       mx=Math.min(mx,c.x-c.width/2);my=Math.min(my,c.y-c.height/2);
       Mx=Math.max(Mx,c.x+c.width/2);My=Math.max(My,c.y+c.height/2);
     });
@@ -805,7 +691,7 @@ function getRgBounds(rgId,nodes){
   related.forEach(n=>{
     const hw=n.width?n.width/2:n.radius||60,hh=n.height?n.height/2:n.radius||60;
     mx=Math.min(mx,n.x-hw);my=Math.min(my,n.y-hh);Mx=Math.max(Mx,n.x+hw);My=Math.max(My,n.y+hh);
-    nodes.filter(c=>c.parentId===n.id&&!c.isVnet&&!c.isOnPrem).forEach(c=>{
+    nodes.filter(c=>c.parentId===n.id&&!c.isVnet).forEach(c=>{
       mx=Math.min(mx,c.x-c.width/2);my=Math.min(my,c.y-c.height/2);
       Mx=Math.max(Mx,c.x+c.width/2);My=Math.max(My,c.y+c.height/2);
     });
@@ -822,7 +708,7 @@ function draw(){
 
   if(state.layout==='grid'){
     state.subscriptions.forEach((sub,si)=>{
-      const b=getSubBounds(sub.id,nodes);
+      const b=getSubBounds(sub.id,nodes,state.resourceGroups);
       if(!b)return;
       const col=SUB_COLORS[si%SUB_COLORS.length];
       ctx.beginPath();safeRR(ctx,b.x,b.y,b.w,b.h,14);
@@ -845,95 +731,29 @@ function draw(){
     });
   }
 
-  // 1. Draw Resource Links (Resource -> VNet)
-  nodes.forEach(n => {
-    if (!n.isVnet && n.parentId && map[n.parentId] && !n.isOnPrem) {
-      if (state.layout === 'grid') return; 
-      const p = map[n.parentId];
-      ctx.beginPath();
-      ctx.moveTo(n.x, n.y); ctx.lineTo(p.x, p.y);
-      if (dw) {
-        ctx.strokeStyle = '#D1D5DB'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
-      } else {
-        ctx.strokeStyle = n.color+'60'; ctx.lineWidth = 1; ctx.setLineDash([3,6]);
-      }
-      ctx.stroke(); ctx.setLineDash([]);
+  nodes.forEach(n=>{
+    if(!n.parentId||!map[n.parentId])return;
+    if(n.isVnet&&n.peering===false)return;
+    const p=map[n.parentId];
+    ctx.beginPath();
+    if(state.layout==='grid'&&n.isVnet){
+      const midY=p.y+p.height/2+28;
+      ctx.moveTo(p.x,p.y+p.height/2);ctx.lineTo(p.x,midY);ctx.lineTo(n.x,midY);ctx.lineTo(n.x,n.y-n.height/2);
+    }else if(state.layout==='grid'){return;}
+    else{ctx.moveTo(n.x,n.y);ctx.lineTo(p.x,p.y);}
+    if(dw){ctx.strokeStyle=n.isVnet?'#9CA3AF':'#D1D5DB';ctx.lineWidth=n.isVnet?2:1;if(!n.isVnet)ctx.setLineDash([4,4]);}
+    else{
+      if(n.isVnet){const g=ctx.createLinearGradient(p.x,p.y,n.x,n.y);g.addColorStop(0,'rgba(0,120,212,.6)');g.addColorStop(1,n.color+'80');ctx.strokeStyle=g;ctx.lineWidth=2;}
+      else{ctx.strokeStyle=n.color+'60';ctx.lineWidth=1;ctx.setLineDash([3,6]);}
+    }
+    ctx.stroke();ctx.setLineDash([]);
+    if(state.layout==='grid'&&n.isVnet&&n.peering!==false&&dw){
+      const midY=p.y+p.height/2+28;
+      ctx.font='7px JetBrains Mono';ctx.fillStyle='#9CA3AF';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('VNet Peering',(p.x+n.x)/2,midY-2);
     }
   });
 
-  // 2. Draw Peerings & On-Prem Links
-  const drawnLines = new Set();
-  nodes.forEach(n => {
-    if (n.isOnPrem && n.parentId && map[n.parentId]) {
-      const target = map[n.parentId];
-      ctx.beginPath();
-      ctx.moveTo(n.x + n.width/2, n.y); ctx.lineTo(target.x - (target.width?target.width/2:target.radius), target.y);
-      ctx.strokeStyle = dw ? '#107C10' : '#107C10'; ctx.lineWidth = 3; ctx.setLineDash([6,6]);
-      ctx.stroke(); ctx.setLineDash([]);
-      ctx.font='10px Syne'; ctx.fillStyle = dw?'#107C10':'#107C10'; ctx.textAlign='center';
-      ctx.fillText('S2S VPN / ER', (n.x + target.x)/2, n.y - 10);
-    }
-    else if (n.isVnet && n.peerings) {
-      n.peerings.forEach(pId => {
-        const target = map[pId];
-        if (!target) return;
-        
-        const lineKey = [n.id, target.id].sort().join('|');
-        if (drawnLines.has(lineKey)) return;
-        drawnLines.add(lineKey);
-
-        ctx.beginPath();
-        let midX, midY;
-
-        if (state.layout === 'grid') {
-          if (n.id === 'hub' || target.id === 'hub') {
-            const hubN = n.id === 'hub' ? n : target;
-            const spokeN = n.id === 'hub' ? target : n;
-            if (spokeN.y > hubN.y) {
-              const busY = hubN.y + hubN.height/2 + 28;
-              ctx.moveTo(hubN.x, hubN.y + hubN.height/2);
-              ctx.lineTo(hubN.x, busY);
-              ctx.lineTo(spokeN.x, busY);
-              ctx.lineTo(spokeN.x, spokeN.y - spokeN.height/2);
-              midX = (hubN.x + spokeN.x) / 2;
-              midY = busY - 4;
-            } else {
-              ctx.moveTo(n.x, n.y); ctx.lineTo(target.x, target.y);
-              midX = (n.x + target.x) / 2; midY = (n.y + target.y) / 2 - 4;
-            }
-          } else {
-            ctx.moveTo(n.x, n.y + n.height/2);
-            const dist = Math.abs(n.x - target.x);
-            const curveY = Math.max(n.y, target.y) + n.height/2 + 40 + (dist * 0.1);
-            ctx.quadraticCurveTo((n.x + target.x)/2, curveY, target.x, target.y + target.height/2);
-            midX = (n.x + target.x) / 2;
-            midY = 0.25*(n.y + n.height/2) + 0.5*curveY + 0.25*(target.y + target.height/2) - 4;
-          }
-        } else {
-          ctx.moveTo(n.x, n.y); ctx.lineTo(target.x, target.y);
-          midX = (n.x + target.x) / 2;
-          midY = (n.y + target.y) / 2 - 4;
-        }
-
-        if (dw) {
-          ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 2;
-        } else {
-          const g = ctx.createLinearGradient(n.x, n.y, target.x, target.y);
-          g.addColorStop(0, 'rgba(0,120,212,0.6)'); g.addColorStop(1, target.color + 'A0');
-          ctx.strokeStyle = g; ctx.lineWidth = 2;
-        }
-        ctx.stroke();
-
-        if (dw) {
-          ctx.font = '7px JetBrains Mono'; ctx.fillStyle = '#9CA3AF';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-          ctx.fillText('VNet Peering', midX, midY);
-        }
-      });
-    }
-  });
-
-  // DRAW NODES
   nodes.forEach(n=>drawNode(n));
   ctx.restore();
 }
@@ -941,35 +761,14 @@ function draw(){
 function drawNode(n){
   const isSel=state.selectedId===n.id,dw=state.theme==='drawio';
   ctx.save();
-  if(isSel){ctx.shadowColor=dw?'rgba(0,120,212,.4)':n.color||'#0078D4';ctx.shadowBlur=12;}
-  
-  if (n.isOnPrem) {
-    ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,8);
-    if(dw){
-      ctx.fillStyle='#FFFFFF'; ctx.fill();
-      ctx.strokeStyle=isSel?n.color:'#D1D5DB';ctx.lineWidth=2;ctx.stroke();
-      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,6,{tl:8,tr:8,bl:0,br:0});
-      ctx.fillStyle=n.color;ctx.fill();
-    }else{
-      ctx.fillStyle=n.color+'20';ctx.fill();
-      ctx.strokeStyle=isSel?n.color:n.color+'80';ctx.lineWidth=2;ctx.stroke();
-    }
-    ctx.shadowBlur=0;
-    ctx.font='28px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('🏢', n.x, n.y - 10);
-    ctx.font='bold 10px Syne';ctx.fillStyle=dw?'#111827':'#FFF';
-    ctx.fillText(n.label,n.x,n.y+16);
-    ctx.font='9px JetBrains Mono';ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,0.7)';
-    ctx.fillText(n.sub,n.x,n.y+28);
-  }
-  else if(!n.isVnet){
-    const rt=RES_TYPES[n.type]||{icon:'❓'};
+  if(isSel){ctx.shadowColor=dw?'rgba(0,120,212,.5)':n.color||'#0078D4';ctx.shadowBlur=12;}
+  if(!n.isVnet){
+    const rt=RES_TYPES[n.type]||{};
     ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
     if(dw){
       ctx.fillStyle='#FFFFFF';
       if(!isSel){ctx.shadowColor='rgba(0,0,0,.08)';ctx.shadowBlur=3;ctx.shadowOffsetY=2;}
-      ctx.fill();
-      ctx.strokeStyle=isSel?'#0078D4':'#E5E7EB';ctx.lineWidth=isSel?2:1;ctx.stroke();
+      ctx.fill();ctx.strokeStyle=isSel?'#0078D4':'#E5E7EB';ctx.lineWidth=isSel?2:1;ctx.stroke();
       ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
       ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,3,{tl:6,tr:6,bl:0,br:0});
       ctx.fillStyle=rt.color||'#0078D4';ctx.fill();
@@ -979,20 +778,14 @@ function drawNode(n){
     }
     ctx.shadowBlur=0;
     
-    const img = loadedImages[n.type];
-    if(img && img.complete && img.naturalWidth > 0){
-      ctx.drawImage(img, n.x - 10, n.y - n.height/2 + 8, 20, 20);
-    } else {
-      ctx.beginPath();ctx.arc(n.x,n.y-6,7,0,Math.PI*2);
-      ctx.fillStyle=(rt.color||'#0078D4')+'40';ctx.fill();
-      ctx.strokeStyle=rt.color||'#0078D4';ctx.lineWidth=1.5;ctx.stroke();
-    }
+    ctx.beginPath();ctx.arc(n.x,n.y-6,7,0,Math.PI*2);
+    ctx.fillStyle=(rt.color||'#0078D4')+'40';ctx.fill();
+    ctx.strokeStyle=rt.color||'#0078D4';ctx.lineWidth=1.5;ctx.stroke();
     
     ctx.font='bold 7.5px JetBrains Mono';ctx.fillStyle=dw?'#374151':'#FFF';
     ctx.textAlign='center';ctx.textBaseline='top';
     const lbl=n.label.length>13?n.label.slice(0,12)+'…':n.label;
     ctx.fillText(lbl,n.x,n.y+n.height/2-15);
-    
   }else{
     if(state.layout==='grid'){
       ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,10);
@@ -1031,9 +824,6 @@ function drawNode(n){
   ctx.restore();
 }
 
-// ================================================================
-// CANVAS INTERACTIONS (DRAG & DROP)
-// ================================================================
 canvas.addEventListener('mousedown',e=>{
   const r=canvas.getBoundingClientRect();
   const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
@@ -1041,37 +831,25 @@ canvas.addEventListener('mousedown',e=>{
   let hit=null;
   for(let i=nodes.length-1;i>=0;i--){
     const n=nodes[i];
-    if(!n.isVnet && !n.isOnPrem){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
-    else if(state.layout==='grid' || n.isOnPrem){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
+    if(!n.isVnet){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
+    else if(state.layout==='grid'){if(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2){hit=n;break;}}
     else{if(Math.sqrt((px-n.x)**2+(py-n.y)**2)<n.radius){hit=n;break;}}
   }
-  if(hit){
-    selectNode(hit.id);
-    state.dragNodeId = hit.id;
-    state.dragNodeStart = state.customPos[hit.id] || {x: hit.x, y: hit.y};
-    state.mouseStart = {x: px, y: py};
-  } else {
-    state.selectedId=null; fullUpdate();
-    state.dragging=true; state.dragStart={x:e.clientX,y:e.clientY}; state.offsetStart={...state.offset};
-    canvas.style.cursor='grabbing';
-  }
+  if(hit)selectNode(hit.id);
+  else{state.selectedId=null;fullUpdate();state.dragging=true;state.dragStart={x:e.clientX,y:e.clientY};state.offsetStart={...state.offset};canvas.style.cursor='grabbing';}
 });
-
 canvas.addEventListener('dblclick',e=>{
-  if (state.selectedId === 'onprem') return;
   const r=canvas.getBoundingClientRect();
   const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
   const nodes=getRenderNodes();
   for(let i=nodes.length-1;i>=0;i--){
     const n=nodes[i];
-    if (n.isOnPrem) continue;
     let hit=!n.isVnet?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2):
       state.layout==='grid'?(Math.abs(px-n.x)<n.width/2&&Math.abs(py-n.y)<n.height/2):
       (Math.sqrt((px-n.x)**2+(py-n.y)**2)<n.radius);
     if(hit){startInlineRename(n,e.clientX,e.clientY);break;}
   }
 });
-
 function startInlineRename(node,cx,cy){
   const ov=document.getElementById('rename-overlay'),inp=document.getElementById('rename-input');
   ov.style.display='block';ov.style.left=(cx-60)+'px';ov.style.top=(cy-16)+'px';
@@ -1087,130 +865,41 @@ function startInlineRename(node,cx,cy){
   const kd=e=>{if(e.key==='Enter')finish();if(e.key==='Escape'){ov.style.display='none';inp.removeEventListener('blur',finish);inp.removeEventListener('keydown',kd);}};
   inp.addEventListener('blur',finish);inp.addEventListener('keydown',kd);
 }
-
-canvas.addEventListener('mousemove',e=>{
-  if (state.dragNodeId) {
-    const r=canvas.getBoundingClientRect();
-    const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
-    state.customPos[state.dragNodeId] = {
-      x: state.dragNodeStart.x + (px - state.mouseStart.x),
-      y: state.dragNodeStart.y + (py - state.mouseStart.y)
-    };
-    draw();
-  } else if (state.dragging) {
-    state.offset.x=state.offsetStart.x+(e.clientX-state.dragStart.x);
-    state.offset.y=state.offsetStart.y+(e.clientY-state.dragStart.y);
-    draw();
-  }
-});
-
-canvas.addEventListener('mouseup',()=>{
-  if(state.dragNodeId) { state.dragNodeId = null; saveState(); }
-  if(state.dragging){state.dragging=false;saveState();}
-  canvas.style.cursor='grab';
-});
-canvas.addEventListener('mouseleave',()=>{
-  if(state.dragNodeId) { state.dragNodeId = null; saveState(); }
-  if(state.dragging){state.dragging=false;saveState();}
-  canvas.style.cursor='grab';
-});
+canvas.addEventListener('mousemove',e=>{if(!state.dragging)return;state.offset.x=state.offsetStart.x+(e.clientX-state.dragStart.x);state.offset.y=state.offsetStart.y+(e.clientY-state.dragStart.y);draw();});
+canvas.addEventListener('mouseup',()=>{if(state.dragging){state.dragging=false;saveState();}canvas.style.cursor='grab';});
+canvas.addEventListener('mouseleave',()=>{if(state.dragging){state.dragging=false;saveState();}canvas.style.cursor='grab';});
 canvas.addEventListener('wheel',e=>{e.preventDefault();state.scale=Math.max(.2,Math.min(3,state.scale*(e.deltaY<0?1.1:.9)));saveState();draw();},{passive:false});
+function fitToScreen(){state.offset={x:0,y:0};state.scale=1;saveState();draw();}
 
-// ================================================================
-// EXPORTS (PNG, PowerShell, Bicep)
-// ================================================================
 function exportPng(){
   const ec=document.createElement('canvas');ec.width=canvas.width*2;ec.height=canvas.height*2;
   const c=ec.getContext('2d');c.scale(2,2);
   c.fillStyle=state.theme==='drawio'?'#F0F2F5':'#060D18';c.fillRect(0,0,canvas.width,canvas.height);
-  
-  c.strokeStyle=state.theme==='drawio'?'rgba(0,0,0,0.04)':'rgba(0,120,212,0.04)';c.lineWidth=1;
-  for(let x=0;x<canvas.width;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,canvas.height);c.stroke();}
-  for(let y=0;y<canvas.height;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(canvas.width,y);c.stroke();}
-
   c.drawImage(canvas,0,0,canvas.width,canvas.height);
-  const a=document.createElement('a');a.download=`azure-architecture-${Date.now()}.png`;a.href=ec.toDataURL();a.click();
+  const a=document.createElement('a');a.download=`azure-arch-${Date.now()}.png`;a.href=ec.toDataURL();a.click();
 }
 
 function generatePowerShell(){
   const lines=[];
-  lines.push(`# Azure PowerShell Deployment Script`);
-  lines.push(`# Generated: ${new Date().toISOString()}`);
-  lines.push(``);
-  
-  const allVnets = [state.hub, ...state.spokes];
-
+  lines.push(`# Azure PowerShell Deployment Script\n# Generated: ${new Date().toISOString()}\n`);
   state.subscriptions.forEach(sub=>{
     lines.push(`# ============ SUBSCRIPTION: ${sub.name} ============`);
-    lines.push(`# Set-AzContext -SubscriptionName "${sub.name}"\n`);
     const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
     subRgs.forEach(rg=>{
-      lines.push(`# -- Resource Group: ${rg.name} --`);
-      lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location}" -ErrorAction SilentlyContinue\n`);
+      lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location}"`);
       getVnetsInRg(rg.id).forEach(vnet=>{
-        const varN=`$vnet_${vnet.name.replace(/[^a-zA-Z0-9]/g,'_')}`;
-        lines.push(`${varN} = New-AzVirtualNetwork -Name "${vnet.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AddressPrefix "${vnet.cidr}"`);
-        
-        // Peerings
-        if (vnet.peerings && vnet.peerings.length > 0) {
-            vnet.peerings.forEach(pId => {
-                const target = allVnets.find(v => v.id === pId);
-                if (target) {
-                    lines.push(`Add-AzVirtualNetworkPeering -Name "${vnet.name}-to-${target.name}" -VirtualNetwork ${varN} -RemoteVirtualNetworkId $vnet_${target.name.replace(/[^a-zA-Z0-9]/g,'_')}.Id -ErrorAction SilentlyContinue`);
-                }
-            });
-        }
-
-        if(vnet.resources) {
-            vnet.resources.forEach(res=>{
-              const t=RES_TYPES[res.type]||{label:'Resource'};
-              lines.push(`# Deploying ${t.label}: ${res.name}`);
-            });
-        }
-        lines.push('');
+        lines.push(`$vnet = New-AzVirtualNetwork -Name "${vnet.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AddressPrefix "${vnet.cidr}"`);
       });
     });
   });
-
-  if (state.onPrem.enabled) {
-    lines.push(`# ============ HYBRID CONNECTIVITY ============`);
-    lines.push(`# On-Premises Local Network Gateway`);
-    lines.push(`New-AzLocalNetworkGateway -Name "lng-${state.onPrem.name.replace(/[^a-zA-Z0-9]/g,'')}" -ResourceGroupName "${state.resourceGroups[0].name}" -Location "eastus" -GatewayIpAddress "8.8.8.8" -AddressPrefix @("${state.onPrem.cidr}")`);
-  }
-
   return lines.join('\n');
 }
 
 function generateBicep(){
-  const lines=[
-    `// Bicep Template — Azure Architecture Builder`,
-    `targetScope = 'subscription'\n`
-  ];
-  state.subscriptions.forEach(sub=>{
-    lines.push(`// --- Subscription: ${sub.name} ---`);
-    const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
-    subRgs.forEach(rg=>{
-      lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {`);
-      lines.push(`  name: '${rg.name}'\n  location: '${rg.location}'\n}\n`);
-      
-      getVnetsInRg(rg.id).forEach(vnet=>{
-        lines.push(`// VNet: ${vnet.name}`);
-        if(vnet.resources) {
-            vnet.resources.forEach(res => {
-              const t=RES_TYPES[res.type];
-              lines.push(`// module ${res.name.replace(/[^a-zA-Z0-9]/g,'_')} 'br/public:avm/res/...'`);
-            });
-        }
-        lines.push('');
-      });
-    });
+  const lines=[`// Bicep Template — Azure Architecture Builder\ntargetScope = 'subscription'\n`];
+  state.resourceGroups.forEach(rg=>{
+    lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {\n  name: '${rg.name}'\n  location: '${rg.location||'eastus'}'\n}\n`);
   });
-
-  if (state.onPrem.enabled) {
-    lines.push(`// --- Hybrid Connectivity: ${state.onPrem.name} ---`);
-    lines.push(`// Local Network Gateway for CIDR: ${state.onPrem.cidr}`);
-  }
-
   return lines.join('\n');
 }
 
@@ -1218,16 +907,10 @@ function openPsModal(){document.getElementById('ps-output').textContent=generate
 function openBicepModal(){document.getElementById('bicep-output').textContent=generateBicep();document.getElementById('bicep-modal').classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 ['ps-modal','bicep-modal'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeModal(id);}));
-function copyText(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>alert('Copied successfully!'));}
+function copyText(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>alert('Copied!'));}
 function downloadText(id,fn){const b=new Blob([document.getElementById(id).textContent],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;a.click();}
 
-// ================================================================
-// INIT & LOAD REAL ICONS
-// ================================================================
-loadAzureIcons(() => {
-  setTimeout(resize, 100);
-  fullUpdate();
-});
+setTimeout(resize,50);fullUpdate();
 </script>
 </body>
 </html>
