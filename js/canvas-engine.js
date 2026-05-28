@@ -16,7 +16,7 @@ function getRenderNodes(){
   const cx=canvas.width/2,cy=canvas.height/2,nodes=[];
   
   if(state.layout==='grid'){
-    const RW=84,RH=64,RP=10;
+    const RW=84,RH=64,RP=24;
     const SPT=30, SPB=12, SPL=12;
     const VPT=45, VPB=18, VGAP=60, SGAP=15;
     const RG_GAP=80, SUB_GAP=120;
@@ -146,7 +146,7 @@ function getSubBounds(subId,nodes){
   return{x:mx-30,y:my-50,w:Mx-mx+60,h:My-my+70};
 }
 function getRgBounds(rgId,nodes){
-  const related=nodes.filter(n=>n.isVnet&&n.rgId===rgId);
+  const related=nodes.filter(n=>(n.isVnet&&n.rgId===rgId)||(n.isRgLevel&&n.rgId===rgId));
   if(!related.length)return null;
   let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
   related.forEach(n=>{
@@ -325,7 +325,7 @@ function drawNode(n, dw){
     
     ctx.font='bold 9px JetBrains Mono';ctx.fillStyle=dw?'#374151':'#FFF';
     ctx.textAlign='center';ctx.textBaseline='top';
-    const lbl=n.label.length>12?n.label.slice(0,11)+'…':n.label;
+    const lbl=n.label.length>14?n.label.slice(0,13)+'…':n.label;
     ctx.fillText(lbl,n.x,n.y+n.height/2-18);
     
   }else{
@@ -388,16 +388,34 @@ canvas.addEventListener('mousedown',e=>{
     state.dragNodeId = hit.id;
     state.dragNodeStart = state.customPos[hit.id] || {x: hit.x, y: hit.y};
     state.mouseStart = {x: px, y: py};
-    // Collect group children for RG/sub-level drag (VNets drag their children)
+    // Collect group children for drag
     state.dragGroup = null;
+    const parentMap = {};
+    nodes.forEach(n => { if(n.parentId) parentMap[n.id] = n.parentId; });
+
     if(hit.isVnet && hit.rgId){
-      // Build parent map for efficient lookup
-      const parentMap = {};
-      nodes.forEach(n => { if(n.parentId) parentMap[n.id] = n.parentId; });
+      // VNet drag: move all children (subnets + resources inside subnets)
       const children = nodes.filter(n => n.parentId === hit.id || parentMap[n.parentId] === hit.id);
       if(children.length > 0){
         state.dragGroup = children.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
       }
+    } else if(hit.isSubnet && hit.parentId){
+      // Subnet drag: move parent VNet and all siblings (other subnets + all resources)
+      const vnetNode = nodes.find(n => n.id === hit.parentId);
+      const siblings = nodes.filter(n => n.parentId === hit.parentId || parentMap[n.parentId] === hit.parentId);
+      const group = siblings.filter(n => n.id !== hit.id);
+      if(vnetNode) group.push(vnetNode);
+      state.dragGroup = group.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
+    } else if(!hit.isVnet && !hit.isOnPrem && hit.parentId){
+      // Resource drag: move parent subnet, parent VNet, and all sibling resources
+      const subnetNode = nodes.find(n => n.id === hit.parentId);
+      const vnetId = subnetNode ? subnetNode.parentId : null;
+      const vnetNode = vnetId ? nodes.find(n => n.id === vnetId) : null;
+      // Collect everything in the same VNet
+      const allInVnet = nodes.filter(n => n.id !== hit.id && (
+        n.id === vnetId || n.parentId === vnetId || parentMap[n.parentId] === vnetId
+      ));
+      state.dragGroup = allInVnet.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
     }
   } else {
     // Check if clicking on RG or Subscription box (group drag)
