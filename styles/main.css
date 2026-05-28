@@ -284,3 +284,9 @@
     .mobile-tab-bar{padding:6px 8px;}
     .mobile-tab-bar button{font-size:9px;padding:6px 2px;}
   }
+
+  /* RG-Level Resources */
+  .rg-resources-section{margin:8px 0;padding:6px;border:1px dashed var(--border);border-radius:6px;background:rgba(0,178,148,0.05);}
+  .rg-res-title{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+  .rg-chip{margin:2px 4px;}
+  .dns-record-row{display:flex;align-items:center;}
