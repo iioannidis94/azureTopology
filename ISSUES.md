@@ -6,75 +6,6 @@
 
 ---
 
-## Issue 1: Ελλιπείς ρυθμίσεις — Compute Resources (VM, VMSS, AKS, Functions, Container Apps)
-
-**Labels:** `enhancement`, `configuration`  
-**Priority:** High
-
-### Περιγραφή
-
-Τα Compute resources (VM, VMSS, AKS, Function App, Container Apps) έχουν ελάχιστες configuration properties στο `config` object (`js/state-management.js`). Αυτό σημαίνει ότι:
-1. Ο Properties Editor δεν δείχνει αρκετές ρυθμίσεις
-2. Τα generated IaC scripts (PowerShell/Bicep) δεν μπορούν να παράξουν πλήρη deployable κώδικα
-3. Ο Cost Estimator δεν μπορεί να υπολογίσει κόστος με βάση τις πραγματικές ρυθμίσεις
-
-### Τρέχουσα κατάσταση vs Τι λείπει
-
-#### Virtual Machine (`vm`)
-**Τώρα:** `{size: 'Standard_D2s_v3', os: 'Ubuntu 22.04'}`  
-**Λείπουν:**
-- [ ] `diskType` (Premium_LRS, StandardSSD_LRS, Standard_LRS)
-- [ ] `diskSizeGB` (128, 256, 512, 1024)
-- [ ] `authType` (SSH Key, Password)
-- [ ] `availabilityZone` (1, 2, 3, None)
-- [ ] `acceleratedNetworking` (true/false)
-- [ ] `publicIp` (true/false)
-
-#### VM Scale Set (`vmss`)
-**Τώρα:** `{size: 'Standard_D2s_v3', instances: '2'}`  
-**Λείπουν:**
-- [ ] `minInstances` / `maxInstances` (autoscale range)
-- [ ] `upgradePolicy` (Manual, Rolling, Automatic)
-- [ ] `zones` (1,2,3)
-- [ ] `healthProbe` (HTTP/TCP port)
-- [ ] `os` (Ubuntu, Windows Server)
-
-#### AKS Cluster (`aks`)
-**Τώρα:** `{nodes: '3', version: '1.29'}`  
-**Λείπουν:**
-- [ ] `nodeSize` (VM SKU for nodes)
-- [ ] `networkPlugin` (azure, kubenet, none)
-- [ ] `podCidr` (e.g. 10.244.0.0/16)
-- [ ] `serviceCidr` (e.g. 10.0.0.0/16)
-- [ ] `dnsServiceIp`
-- [ ] `privateCluster` (true/false)
-- [ ] `tier` (Free, Standard, Premium)
-
-#### Function App (`fa`)
-**Τώρα:** `{plan: 'Consumption'}`  
-**Λείπουν:**
-- [ ] `runtime` (dotnet, node, python, java)
-- [ ] `runtimeVersion` (e.g. 8.0, 20, 3.11)
-- [ ] `osType` (Linux, Windows)
-- [ ] `alwaysOn` (true/false — for non-Consumption plans)
-
-#### Container Apps (`aca`)
-**Τώρα:** `{replicas: '10'}`  
-**Λείπουν:**
-- [ ] `minReplicas`
-- [ ] `cpu` (0.25, 0.5, 1.0, 2.0)
-- [ ] `memory` (0.5Gi, 1.0Gi, 2.0Gi, 4.0Gi)
-- [ ] `image` (container image reference)
-- [ ] `ingress` (external/internal/disabled)
-- [ ] `targetPort`
-
-### Acceptance Criteria
-- Τα config objects να περιέχουν τις παραπάνω default τιμές
-- Ο Properties Editor να τα εμφανίζει (ήδη δουλεύει dynamically)
-- Τα νέα fields να αξιοποιούνται στο PowerShell/Bicep generation
-
----
-
 ## Issue 2: Ελλιπείς ρυθμίσεις — Networking Resources (Firewall, Gateway, LB, AGW, Bastion, NSG)
 
 **Labels:** `enhancement`, `configuration`  
@@ -320,7 +251,6 @@ aks: { cost: 150 }, // Πάντα $150, ανεξάρτητα από nodes
 
 | # | Issue | Priority | Category |
 |---|-------|----------|----------|
-| 1 | Compute Resources Config | 🔴 High | Configuration |
 | 2 | Networking Resources Config | 🔴 High | Configuration |
 | 3 | Data & Storage Config | 🟡 Medium | Configuration |
 | 4 | Security/Integration/AI Config | 🟡 Medium | Configuration |
@@ -334,7 +264,7 @@ aks: { cost: 150 }, // Πάντα $150, ανεξάρτητα από nodes
 
 ## 🎯 Προτεινόμενη σειρά υλοποίησης
 
-1. **Phase 1 — Config Enrichment:** Issues 1, 2, 3, 4 (προσθήκη properties στα config objects)
+1. **Phase 1 — Config Enrichment:** Issues 2, 3, 4 (προσθήκη properties στα config objects)
 2. **Phase 2 — IaC Generation:** Issues 5, 6 (PowerShell & Bicep με τα νέα config values)
 3. **Phase 3 — Smart Features:** Issues 7, 9 (dynamic pricing, advanced networking)
 4. **Phase 4 — Governance:** Issue 8 (tags, locks, policies)

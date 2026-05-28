@@ -104,41 +104,17 @@ const defaultState={
   onPrem: { enabled: false, id: 'onprem', name: 'Corp Datacenter', cidr: '192.168.0.0/16' },
   customPos: {}, 
   subscriptions:[
-    {id:'sub-1',name:'Production Subscription'}
+    {id:'sub-1',name:'My Subscription'}
   ],
   resourceGroups:[
-    {id:'rg-conn', name:'rg-connectivity', location:'eastus', subId:'sub-1'},
-    {id:'rg-prod', name:'rg-production', location:'eastus', subId:'sub-1'}
+    {id:'rg-1', name:'rg-main', location:'eastus', subId:'sub-1'}
   ],
   rgResources:[],
   hub:{
-    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-conn', peerings: [],
-    subnets:[
-      {
-        id:'sn-hub-fw', name:'AzureFirewallSubnet', cidr:'10.0.1.0/26',
-        resources:[{id:'rh1',type:'fw', name:'hub-firewall',config:{...RES_TYPES.fw.config}}]
-      },
-      {
-        id:'sn-hub-gw', name:'GatewaySubnet', cidr:'10.0.2.0/27',
-        resources:[{id:'rh2',type:'gw', name:'hub-vpngw',config:{...RES_TYPES.gw.config}}]
-      }
-    ]
+    id:'hub',name:'hub-vnet',cidr:'10.0.0.0/16',color:'#0078D4',rgId:'rg-1', peerings: [],
+    subnets:[]
   },
-  spokes:[
-    {
-      id:'sp1',name:'prod-vnet',cidr:'10.1.0.0/16',color:'#00BCF2',peerings:['hub'],rgId:'rg-prod',
-      subnets:[
-        {
-          id:'sn-sp1-web', name:'WebSubnet', cidr:'10.1.1.0/24',
-          resources:[{id:'rs1',type:'vm', name:'prod-vm-01', config:{...RES_TYPES.vm.config}}]
-        },
-        {
-          id:'sn-sp1-db', name:'DataSubnet', cidr:'10.1.2.0/24',
-          resources:[{id:'rs2',type:'sql', name:'prod-sqldb', config:{...RES_TYPES.sql.config}}]
-        }
-      ]
-    }
-  ],
+  spokes:[],
   selectedId:null, offset:{x:0,y:0}, scale:1, dragging:false, dragStart:{x:0,y:0}, offsetStart:{x:0,y:0}, dragNodeId:null, dragGroup:null
 };
 
