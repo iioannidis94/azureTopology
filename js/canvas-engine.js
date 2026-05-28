@@ -158,9 +158,9 @@ export function draw(){
       if(!b)return;
       const col=SUB_COLORS[si%SUB_COLORS.length];
       ctx.beginPath();safeRR(ctx,b.x,b.y,b.w,b.h,16);
-      ctx.fillStyle=dw?`rgba(255,185,0,0.02)`:`rgba(255,185,0,0.03)`;ctx.fill();
-      ctx.setLineDash([8,6]);ctx.strokeStyle=dw?`rgba(255,185,0,0.4)`:col+'60';ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
-      ctx.font='bold 11px Syne';ctx.fillStyle=dw?'#B45309':col;
+      ctx.fillStyle=dw?`rgba(255,185,0,0.04)`:`rgba(255,185,0,0.05)`;ctx.fill();
+      ctx.setLineDash([8,6]);ctx.strokeStyle=dw?`rgba(255,185,0,0.6)`:col+'80';ctx.lineWidth=2.5;ctx.stroke();ctx.setLineDash([]);
+      ctx.font='bold 12px Syne';ctx.fillStyle=dw?'#B45309':col;
       ctx.textAlign='left';ctx.textBaseline='middle';
       ctx.fillText('☁️ '+sub.name,b.x+15,b.y+18);
     });
@@ -169,9 +169,9 @@ export function draw(){
       if(!b)return;
       const col=RG_COLORS[ri%RG_COLORS.length];
       ctx.beginPath();safeRR(ctx,b.x,b.y,b.w,b.h,10);
-      ctx.fillStyle=dw?'rgba(135,100,184,0.03)':'rgba(135,100,184,0.05)';ctx.fill();
-      ctx.setLineDash([5,5]);ctx.strokeStyle=dw?'rgba(135,100,184,0.4)':'rgba(135,100,184,0.5)';ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
-      ctx.font='9px JetBrains Mono';ctx.fillStyle=dw?'#8764B8':'#B08BE8';
+      ctx.fillStyle=dw?'rgba(135,100,184,0.05)':'rgba(135,100,184,0.08)';ctx.fill();
+      ctx.strokeStyle=dw?'rgba(135,100,184,0.6)':'rgba(135,100,184,0.7)';ctx.lineWidth=2;ctx.stroke();
+      ctx.font='bold 10px JetBrains Mono';ctx.fillStyle=dw?'#8764B8':'#B08BE8';
       ctx.textAlign='left';ctx.textBaseline='middle';
       ctx.fillText('📁 '+rg.name,b.x+8,b.y+12);
     });
@@ -245,17 +245,21 @@ export function draw(){
 function drawSubnet(n, dw) {
   const isSel=state.selectedId===n.id;
   ctx.save();
-  ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,4);
+  ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
   if(dw){
-    ctx.fillStyle = 'rgba(0,0,0,0.02)'; ctx.fill();
-    ctx.setLineDash([4,4]); ctx.strokeStyle=isSel?'#0078D4':'#D1D5DB'; ctx.lineWidth=1; ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = isSel?'rgba(0,120,212,0.06)':'rgba(0,0,0,0.04)'; ctx.fill();
+    ctx.strokeStyle=isSel?'#0078D4':'#9CA3AF'; ctx.lineWidth=isSel?2:1.5; ctx.stroke();
   } else {
-    ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fill();
-    ctx.setLineDash([4,4]); ctx.strokeStyle=isSel?n.color:(n.color+'40'); ctx.lineWidth=1; ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = isSel?(n.color+'18'):'rgba(255,255,255,0.06)'; ctx.fill();
+    ctx.strokeStyle=isSel?n.color:(n.color+'70'); ctx.lineWidth=isSel?2:1.5; ctx.stroke();
   }
-  ctx.font='bold 9px JetBrains Mono'; ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,0.6)';
+  ctx.font='bold 10px JetBrains Mono'; ctx.fillStyle=dw?'#374151':'rgba(255,255,255,0.85)';
   ctx.textAlign='left'; ctx.textBaseline='top';
-  ctx.fillText('⬚ '+n.label, n.x-n.width/2+6, n.y-n.height/2+6);
+  ctx.fillText('⬚ '+n.label, n.x-n.width/2+8, n.y-n.height/2+6);
+  if(n.sub){
+    ctx.font='9px JetBrains Mono'; ctx.fillStyle=dw?'#6B7280':'rgba(255,255,255,0.55)';
+    ctx.fillText(n.sub, n.x-n.width/2+8, n.y-n.height/2+19);
+  }
   ctx.restore();
 }
 
@@ -285,26 +289,26 @@ function drawNode(n, dw){
   }
   else if(!n.isVnet){
     const rt=RES_TYPES[n.type]||{icon:'❓'};
-    ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,6);
+    ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,n.height,8);
     if(dw){
       ctx.fillStyle='#FFFFFF';
-      if(!isSel){ctx.shadowColor='rgba(0,0,0,.08)';ctx.shadowBlur=5;ctx.shadowOffsetY=3;}
+      if(!isSel){ctx.shadowColor='rgba(0,0,0,.12)';ctx.shadowBlur=8;ctx.shadowOffsetY=3;}
       ctx.fill();
-      ctx.strokeStyle=isSel?'#0078D4':'#E5E7EB';ctx.lineWidth=isSel?2:1;ctx.stroke();
+      ctx.strokeStyle=isSel?'#0078D4':'#D1D5DB';ctx.lineWidth=isSel?2.5:1.5;ctx.stroke();
       ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,4,{tl:6,tr:6,bl:0,br:0});
+      ctx.beginPath();safeRR(ctx,n.x-n.width/2,n.y-n.height/2,n.width,5,{tl:8,tr:8,bl:0,br:0});
       ctx.fillStyle=rt.color||'#0078D4';ctx.fill();
     }else{
-      ctx.fillStyle=(rt.color||'#0078D4')+'25';ctx.fill();
-      ctx.strokeStyle=isSel?(rt.color||'#0078D4'):(rt.color||'#0078D4')+'80';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle=(rt.color||'#0078D4')+'30';ctx.fill();
+      ctx.strokeStyle=isSel?(rt.color||'#0078D4'):(rt.color||'#0078D4')+'90';ctx.lineWidth=isSel?2.5:1.5;ctx.stroke();
     }
     ctx.shadowBlur=0;
     
     const img = loadedImages[n.type];
     if(img && img.complete && img.naturalWidth > 0){
-      ctx.drawImage(img, n.x - 12, n.y - 18, 24, 24);
+      ctx.drawImage(img, n.x - 14, n.y - 20, 28, 28);
     } else {
-      ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font='24px serif';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillText(rt.icon, n.x, n.y - 8);
     }
     
@@ -373,7 +377,63 @@ canvas.addEventListener('mousedown',e=>{
     state.dragNodeId = hit.id;
     state.dragNodeStart = state.customPos[hit.id] || {x: hit.x, y: hit.y};
     state.mouseStart = {x: px, y: py};
+    // Collect group children for RG/sub-level drag (VNets drag their children)
+    state.dragGroup = null;
+    if(hit.isVnet && hit.rgId){
+      // Build parent map for efficient lookup
+      const parentMap = {};
+      nodes.forEach(n => { if(n.parentId) parentMap[n.id] = n.parentId; });
+      const children = nodes.filter(n => n.parentId === hit.id || parentMap[n.parentId] === hit.id);
+      if(children.length > 0){
+        state.dragGroup = children.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
+      }
+    }
   } else {
+    // Check if clicking on RG or Subscription box (group drag)
+    if(state.layout==='grid'){
+      let groupHit = null;
+      // Check RG bounds first (smaller, more specific)
+      for(let ri=0;ri<state.resourceGroups.length;ri++){
+        const rg=state.resourceGroups[ri];
+        const b=getRgBounds(rg.id,nodes);
+        if(b && px>=b.x && px<=b.x+b.w && py>=b.y && py<=b.y+b.h){
+          groupHit={type:'rg', id:rg.id, bounds:b};
+          break;
+        }
+      }
+      // Check subscription bounds if no RG hit
+      if(!groupHit){
+        for(let si=0;si<state.subscriptions.length;si++){
+          const sub=state.subscriptions[si];
+          const b=getSubBounds(sub.id,nodes);
+          if(b && px>=b.x && px<=b.x+b.w && py>=b.y && py<=b.y+b.h){
+            groupHit={type:'sub', id:sub.id, bounds:b};
+            break;
+          }
+        }
+      }
+      if(groupHit){
+        state.selectedId=null; fullUpdate();
+        state.dragNodeId = '__group__';
+        state.mouseStart = {x: px, y: py};
+        // Build hierarchy maps for efficient group collection
+        const nodeMap = {}; nodes.forEach(n => nodeMap[n.id] = n);
+        const parentMap = {}; nodes.forEach(n => { if(n.parentId) parentMap[n.id] = n.parentId; });
+        let groupNodes;
+        if(groupHit.type==='rg'){
+          // Get VNets in this RG, then their children
+          const rgVnets = new Set(nodes.filter(n=>n.rgId===groupHit.id).map(n=>n.id));
+          groupNodes = nodes.filter(n => rgVnets.has(n.id) || rgVnets.has(n.parentId) || rgVnets.has(parentMap[n.parentId]));
+        } else {
+          // Get VNets in this subscription, then their children
+          const subVnets = new Set(nodes.filter(n=>n.subId===groupHit.id).map(n=>n.id));
+          groupNodes = nodes.filter(n => subVnets.has(n.id) || subVnets.has(n.parentId) || subVnets.has(parentMap[n.parentId]));
+        }
+        state.dragGroup = groupNodes.map(c=>({id:c.id, start: state.customPos[c.id] || {x:c.x, y:c.y}}));
+        canvas.style.cursor='move';
+        return;
+      }
+    }
     state.selectedId=null; fullUpdate();
     state.dragging=true; state.dragStart={x:e.clientX,y:e.clientY}; state.offsetStart={...state.offset};
     canvas.style.cursor='grabbing';
@@ -429,10 +489,20 @@ canvas.addEventListener('mousemove',e=>{
   if (state.dragNodeId) {
     const r=canvas.getBoundingClientRect();
     const px=(e.clientX-r.left-state.offset.x)/state.scale,py=(e.clientY-r.top-state.offset.y)/state.scale;
-    state.customPos[state.dragNodeId] = {
-      x: state.dragNodeStart.x + (px - state.mouseStart.x),
-      y: state.dragNodeStart.y + (py - state.mouseStart.y)
-    };
+    const dx = px - state.mouseStart.x;
+    const dy = py - state.mouseStart.y;
+    if(state.dragNodeId !== '__group__'){
+      state.customPos[state.dragNodeId] = {
+        x: state.dragNodeStart.x + dx,
+        y: state.dragNodeStart.y + dy
+      };
+    }
+    // Move group children together
+    if(state.dragGroup){
+      state.dragGroup.forEach(c=>{
+        state.customPos[c.id] = { x: c.start.x + dx, y: c.start.y + dy };
+      });
+    }
     draw();
   } else if (state.dragging) {
     state.offset.x=state.offsetStart.x+(e.clientX-state.dragStart.x);
@@ -442,12 +512,12 @@ canvas.addEventListener('mousemove',e=>{
 });
 
 canvas.addEventListener('mouseup',()=>{
-  if(state.dragNodeId) { state.dragNodeId = null; saveState(); }
+  if(state.dragNodeId) { state.dragNodeId = null; state.dragGroup = null; saveState(); }
   if(state.dragging){state.dragging=false;saveState();}
   canvas.style.cursor='grab';
 });
 canvas.addEventListener('mouseleave',()=>{
-  if(state.dragNodeId) { state.dragNodeId = null; saveState(); }
+  if(state.dragNodeId) { state.dragNodeId = null; state.dragGroup = null; saveState(); }
   if(state.dragging){state.dragging=false;saveState();}
   canvas.style.cursor='grab';
 });
