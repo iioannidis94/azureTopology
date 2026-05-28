@@ -297,13 +297,13 @@ export function renderEditor(){
   }
 
   let obj=null, parent=null, typeObj='none';
+  const allVnets = [state.hub, ...state.spokes];
   
   // Check RG-level resources first
   const rgRes = (state.rgResources||[]).find(r => r.id === state.selectedId);
   if (rgRes) {
     obj = rgRes; typeObj = 'rgResource';
   } else {
-    const allVnets = [state.hub, ...state.spokes];
     for (let v of allVnets) {
       if (v.id === state.selectedId) { obj=v; typeObj='vnet'; break; }
       for (let sn of v.subnets) {
@@ -350,7 +350,7 @@ export function renderEditor(){
       <div class="editor-row"><span class="editor-label">Subnet Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._updateSubnet('${parent.id}','${obj.id}','name',this.value)"></div>
       <div class="editor-row"><span class="editor-label">CIDR Block</span><input class="input-field" value="${esc(obj.cidr)}" onchange="window._updateSubnet('${parent.id}','${obj.id}','cidr',this.value)"></div>
       <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteSubnet('${parent.id}','${obj.id}')">🗑 Delete Subnet</button>`;
-  } else {
+  } else if (typeObj === 'resource') {
     const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓'};
     h+=`<div class="editor-header">
           <img src="${AZURE_ICON_BASE}${rt.img}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
