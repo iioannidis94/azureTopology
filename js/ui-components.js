@@ -365,9 +365,42 @@ export function renderEditor(){
           ${rt.label}
         </div>
       <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._updateResource('${obj.id}','name',this.value)"></div>`;
-    Object.keys(obj.config).forEach(k=>{
-      h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
-    });
+    
+    if(obj.type === 'vm'){
+      // VM: Structured sections for full configuration
+      const cfg = obj.config;
+      const vmSections = [
+        { title:'💻 Compute', keys:['size','os','availabilityZone'] },
+        { title:'💾 OS Disk', keys:['osDiskType','osDiskSizeGB'] },
+        { title:'📀 Data Disks', keys:['dataDisks','dataDiskSizeGB','dataDiskType'] },
+        { title:'🌐 Networking', keys:['acceleratedNetworking','publicIp'] },
+        { title:'🔐 Security', keys:['authType','securityType','vTpmEnabled','secureBootEnabled','managedIdentity'] },
+        { title:'⚙️ Management', keys:['bootDiagnostics','backupEnabled','patchMode'] },
+      ];
+      vmSections.forEach(section => {
+        const sectionKeys = section.keys.filter(k => k in cfg);
+        if(sectionKeys.length === 0) return;
+        h+=`<div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">${section.title}</span></div>`;
+        sectionKeys.forEach(k => {
+          const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())
+            .replace(/\bV Tpm\b/,'vTPM').replace(/\bIp\b/,'IP').replace(/\bOs\b/,'OS').replace(/\bVm\b/,'VM').replace(/\bG B\b/,'GB');
+          if(cfg[k]==='true'||cfg[k]==='false'){
+            h+=`<div class="editor-row"><span class="editor-label">${label}</span><select class="input-field" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"><option value="true"${cfg[k]==='true'?' selected':''}>Yes</option><option value="false"${cfg[k]==='false'?' selected':''}>No</option></select></div>`;
+          } else {
+            h+=`<div class="editor-row"><span class="editor-label">${label}</span><input class="input-field" value="${esc(cfg[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
+          }
+        });
+      });
+      // Show any remaining keys not in sections
+      const allSectionKeys = vmSections.flatMap(s=>s.keys);
+      Object.keys(cfg).filter(k=>!allSectionKeys.includes(k)).forEach(k=>{
+        h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(cfg[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
+      });
+    } else {
+      Object.keys(obj.config).forEach(k=>{
+        h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
+      });
+    }
     h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteResource('${obj.id}')">🗑 Delete Resource</button>`;
   } else if (typeObj === 'rgResource') {
     const rt = RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓', img:''};
