@@ -1135,7 +1135,7 @@ export function toggleVnetLink(resId, vnetId) {
   } else {
     const vnet = [state.hub, ...state.spokes].find(v => v.id === vnetId);
     if(vnet) {
-      const linkName = r.config.fullZoneName ? `${vnet.name}-link` : `${vnet.name}-link`;
+      const linkName = `${vnet.name}-link`;
       r.config.vnetLinks.push({vnetId: vnet.id, vnetName: vnet.name, linkName: linkName, registrationEnabled: false});
     }
   }
