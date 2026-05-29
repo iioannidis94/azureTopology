@@ -33,7 +33,8 @@
   
   /* SIDEBARS */
   .sidebar{border-right:1px solid var(--border);overflow-y:auto;background:var(--card-bg);padding:16px;display:flex;flex-direction:column;gap:4px;transition:background .3s; padding-bottom: 80px;} 
-  .sidebar.right{border-right:none;border-left:1px solid var(--border);display:flex;flex-direction:column;padding:16px;gap:12px;}
+  .sidebar.right{border-right:none;border-left:1px solid var(--border);display:flex;flex-direction:column;padding:16px;gap:12px;padding-bottom:0;position:relative;}
+  .sidebar-bottom-section{margin-top:auto;position:sticky;bottom:0;background:var(--card-bg);border-top:1px solid var(--border);padding-top:8px;z-index:2;}
   
   .tree-section-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--azure-blue);padding:0 0 8px 0;border-bottom:1px solid var(--border);margin-bottom:12px;font-weight:700;}
   
@@ -320,3 +321,10 @@
   .rg-res-title{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;font-weight:600;}
   .rg-chip{margin:2px 4px;}
   .dns-record-row{display:flex;align-items:center;}
+
+  /* Shortcuts Help Table */
+  .shortcuts-table{width:100%;border-collapse:collapse;margin:12px 0;}
+  .shortcuts-table td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;}
+  .shortcuts-table tr:last-child td{border-bottom:none;}
+  .shortcut-key{font-weight:700;color:var(--azure-light);white-space:nowrap;min-width:140px;font-family:'JetBrains Mono',monospace;background:rgba(0,120,212,0.1);border-radius:4px;padding:4px 8px !important;}
+  body.theme-drawio .shortcut-key{color:var(--azure-blue);background:rgba(0,120,212,0.08);}

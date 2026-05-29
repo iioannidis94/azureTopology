@@ -66,12 +66,12 @@
 - [x] Preview thumbnails
 
 ### 5. Keyboard Shortcuts
-- [ ] Delete/Backspace → διαγραφή στοιχείου
-- [ ] Escape → deselect / close modal
-- [ ] Arrow keys → nudge element
-- [ ] +/- → zoom in/out
-- [ ] Ctrl+0 → fit to screen
-- [ ] ? → help panel με shortcuts
+- [x] Delete/Backspace → διαγραφή στοιχείου
+- [x] Escape → deselect / close modal
+- [x] Arrow keys → nudge element
+- [x] +/- → zoom in/out
+- [x] Ctrl+0 → fit to screen
+- [x] ? → help panel με shortcuts
 
 ### 6. Minimap / Overview Panel
 - [ ] Minimap component στη γωνία του canvas
