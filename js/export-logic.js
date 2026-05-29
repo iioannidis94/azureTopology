@@ -195,25 +195,41 @@ function generatePowerShellResource(res, rg, varN, sn) {
       break;
     }
     case 'sql': {
+      const sqlTier = c.tier || 'GeneralPurpose';
+      const sqlSkuPrefix = sqlTier === 'BusinessCritical' ? 'BC_Gen5' : 'GP_Gen5';
       lines.push(`New-AzSqlServer -ServerName "${res.name}-server" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SqlAdministratorCredentials $cred`);
-      lines.push(`New-AzSqlDatabase -DatabaseName "${res.name}" -ServerName "${res.name}-server" -ResourceGroupName "${rg.name}" -Edition "GeneralPurpose" -VCore ${c.vcores||4} -ComputeGeneration "Gen5"`);
+      lines.push(`New-AzSqlDatabase -DatabaseName "${res.name}" -ServerName "${res.name}-server" -ResourceGroupName "${rg.name}" -Edition "${sqlTier}" -VCore ${c.vcores||4} -ComputeGeneration "Gen5" -MaxSizeBytes ${(parseInt(c.maxSizeGB)||32)*1073741824} -Collation "${c.collation||'SQL_Latin1_General_CP1_CI_AS'}" -BackupStorageRedundancy "${c.zoneRedundant==='true'?'Zone':'Local'}" -ZoneRedundant:$${c.zoneRedundant==='true'?'true':'false'}`);
+      if(c.backupRetentionDays && c.backupRetentionDays !== '7') lines.push(`Set-AzSqlDatabaseBackupShortTermRetentionPolicy -ServerName "${res.name}-server" -DatabaseName "${res.name}" -ResourceGroupName "${rg.name}" -RetentionDays ${c.backupRetentionDays}`);
       break;
     }
     case 'cosmos': {
-      lines.push(`New-AzCosmosDBAccount -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -ApiKind "${c.api||'Sql'}" -DefaultConsistencyLevel "Session"`);
-      lines.push(`New-AzCosmosDBSqlDatabase -ResourceGroupName "${rg.name}" -AccountName "${res.name}" -Name "${res.name}-db"`);
+      const cosmosConsistency = c.consistencyLevel || 'Session';
+      const cosmosServerless = c.serverless === 'true' ? ' -Capabilities @("EnableServerless")' : '';
+      const cosmosFreeTier = c.enableFreeTier === 'true' ? ' -EnableFreeTier $true' : '';
+      lines.push(`New-AzCosmosDBAccount -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -ApiKind "${c.api||'Sql'}" -DefaultConsistencyLevel "${cosmosConsistency}"${cosmosFreeTier}${cosmosServerless}`);
+      if(c.geoReplication === 'true') lines.push(`# Enable geo-replication by adding additional locations`);
+      if(c.serverless !== 'true') lines.push(`New-AzCosmosDBSqlDatabase -ResourceGroupName "${rg.name}" -AccountName "${res.name}" -Name "${res.name}-db" -Throughput ${c.maxRU||400}`);
+      else lines.push(`New-AzCosmosDBSqlDatabase -ResourceGroupName "${rg.name}" -AccountName "${res.name}" -Name "${res.name}-db"`);
       break;
     }
     case 'sa': {
-      lines.push(`New-AzStorageAccount -Name "${res.name.replace(/[^a-z0-9]/g,'').substring(0,24)}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "Standard_${c.replication||'ZRS'}" -Kind "StorageV2" -MinimumTlsVersion "TLS1_2" -AllowBlobPublicAccess $false`);
+      const saKind = c.kind || 'StorageV2';
+      const saTier = c.tier || 'Standard';
+      const saAccessTier = c.accessTier || 'Hot';
+      lines.push(`New-AzStorageAccount -Name "${res.name.replace(/[^a-z0-9]/g,'').substring(0,24)}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "${saTier}_${c.replication||'ZRS'}" -Kind "${saKind}" -AccessTier "${saAccessTier}" -MinimumTlsVersion "${c.minTlsVersion||'TLS1_2'}" -AllowBlobPublicAccess $false -EnableHttpsTrafficOnly $${c.httpsOnly!=='false'?'true':'false'}`);
       break;
     }
     case 'redis': {
-      lines.push(`New-AzRedisCache -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Sku "Premium" -Size "P1"`);
+      const redisSku = (c.sku||'Premium P1').split(' ');
+      const redisSkuName = redisSku[0] || 'Premium';
+      const redisSize = redisSku[1] || 'P1';
+      const redisZones = c.zones ? ` -Zone @(${c.zones.split(',').map(z=>`"${z.trim()}"`).join(',')})` : '';
+      lines.push(`New-AzRedisCache -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Sku "${redisSkuName}" -Size "${redisSize}" -MinimumTlsVersion "${c.minTlsVersion||'1.2'}" -EnableNonSslPort $${c.enableNonSslPort==='true'?'true':'false'} -ReplicasPerPrimary ${c.replicasPerPrimary||1} -Capacity ${c.capacity||1}${redisZones}`);
       break;
     }
     case 'adls': {
-      lines.push(`New-AzStorageAccount -Name "${res.name.replace(/[^a-z0-9]/g,'').substring(0,24)}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "Standard_LRS" -Kind "StorageV2" -EnableHierarchicalNamespace $true`);
+      const adlsReplication = c.replication || 'LRS';
+      lines.push(`New-AzStorageAccount -Name "${res.name.replace(/[^a-z0-9]/g,'').substring(0,24)}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "${c.tier||'Standard'}_${adlsReplication}" -Kind "StorageV2" -EnableHierarchicalNamespace $${c.hierarchicalNamespace!=='false'?'true':'false'}${c.enableSoftDelete==='true'?' -EnableBlobDeleteRetentionPolicy $true -BlobDeleteRetentionDays 7':''}`);
       break;
     }
     case 'kv': {
@@ -624,6 +640,8 @@ function generateBicepResource(res, rg, vnet, sn) {
       break;
     }
     case 'sql': {
+      const sqlTier = c.tier || 'GeneralPurpose';
+      const sqlSkuName = sqlTier === 'BusinessCritical' ? 'BC_Gen5' : 'GP_Gen5';
       lines.push(`module ${safeName}_server 'br/public:avm/res/sql/server:0.4.0' = {`);
       lines.push(`  name: '${res.name}-server'`);
       lines.push(`  scope: ${rgRef}`);
@@ -631,60 +649,78 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    name: '${res.name}-server'`);
       lines.push(`    administratorLogin: 'sqladmin'`);
       lines.push(`    administratorLoginPassword: '<password>'`);
-      lines.push(`    databases: [{ name: '${res.name}', sku: { name: 'GP_Gen5', tier: 'GeneralPurpose', capacity: ${c.vcores||4} } }]`);
+      lines.push(`    databases: [{ name: '${res.name}', sku: { name: '${sqlSkuName}', tier: '${sqlTier}', capacity: ${c.vcores||4} }, maxSizeBytes: ${(parseInt(c.maxSizeGB)||32)*1073741824}, collation: '${c.collation||'SQL_Latin1_General_CP1_CI_AS'}', zoneRedundant: ${c.zoneRedundant==='true'} }]`);
+      lines.push(`    backupRetentionDays: ${c.backupRetentionDays||7}`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
     }
     case 'cosmos': {
+      const cosmosKind = c.api === 'MongoDB' ? 'MongoDB' : 'GlobalDocumentDB';
+      const cosmosCapabilities = c.serverless === 'true' ? `\n    capabilities: [{ name: 'EnableServerless' }]` : '';
       lines.push(`module ${safeName} 'br/public:avm/res/document-db/database-account:0.6.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    databaseAccountOfferType: 'Standard'`);
-      lines.push(`    kind: '${c.api === 'MongoDB' ? 'MongoDB' : 'GlobalDocumentDB'}'`);
-      lines.push(`    consistencyPolicy: { defaultConsistencyLevel: 'Session' }`);
+      lines.push(`    kind: '${cosmosKind}'`);
+      lines.push(`    consistencyPolicy: { defaultConsistencyLevel: '${c.consistencyLevel||'Session'}' }`);
       lines.push(`    locations: [{ locationName: '${rg.location}', failoverPriority: 0 }]`);
+      lines.push(`    enableFreeTier: ${c.enableFreeTier==='true'}${cosmosCapabilities}`);
+      if(c.serverless !== 'true' && c.maxRU) lines.push(`    totalThroughputLimit: ${c.maxRU}`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
     }
     case 'sa': {
+      const saKind = c.kind || 'StorageV2';
+      const saTier = c.tier || 'Standard';
+      const saAccessTier = c.accessTier || 'Hot';
       lines.push(`module ${safeName} 'br/public:avm/res/storage/storage-account:0.9.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name.replace(/[^a-z0-9]/g,'').substring(0,24)}'`);
-      lines.push(`    kind: 'StorageV2'`);
-      lines.push(`    skuName: 'Standard_${c.replication||'ZRS'}'`);
-      lines.push(`    minimumTlsVersion: 'TLS1_2'`);
+      lines.push(`    kind: '${saKind}'`);
+      lines.push(`    skuName: '${saTier}_${c.replication||'ZRS'}'`);
+      lines.push(`    accessTier: '${saAccessTier}'`);
+      lines.push(`    minimumTlsVersion: '${c.minTlsVersion||'TLS1_2'}'`);
       lines.push(`    allowBlobPublicAccess: false`);
+      lines.push(`    supportsHttpsTrafficOnly: ${c.httpsOnly!=='false'}`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
     }
     case 'redis': {
+      const redisSku = (c.sku||'Premium P1').split(' ');
+      const redisSkuName = redisSku[0] || 'Premium';
+      const redisFamily = redisSkuName === 'Premium' ? 'P' : 'C';
       lines.push(`module ${safeName} 'br/public:avm/res/cache/redis:0.3.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    sku: { name: 'Premium', family: 'P', capacity: 1 }`);
-      lines.push(`    minimumTlsVersion: '1.2'`);
+      lines.push(`    sku: { name: '${redisSkuName}', family: '${redisFamily}', capacity: ${c.capacity||1} }`);
+      lines.push(`    minimumTlsVersion: '${c.minTlsVersion||'1.2'}'`);
+      lines.push(`    enableNonSslPort: ${c.enableNonSslPort==='true'}`);
+      lines.push(`    replicasPerPrimary: ${c.replicasPerPrimary||1}`);
+      if(c.zones) lines.push(`    zones: [${c.zones.split(',').map(z=>`'${z.trim()}'`).join(', ')}]`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
     }
     case 'adls': {
+      const adlsReplication = c.replication || 'LRS';
       lines.push(`module ${safeName} 'br/public:avm/res/storage/storage-account:0.9.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name.replace(/[^a-z0-9]/g,'').substring(0,24)}'`);
       lines.push(`    kind: 'StorageV2'`);
-      lines.push(`    skuName: 'Standard_LRS'`);
-      lines.push(`    isHnsEnabled: true`);
+      lines.push(`    skuName: '${c.tier||'Standard'}_${adlsReplication}'`);
+      lines.push(`    isHnsEnabled: ${c.hierarchicalNamespace!=='false'}`);
+      if(c.enableSoftDelete==='true') lines.push(`    deleteRetentionPolicy: { enabled: true, days: 7 }`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;

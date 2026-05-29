@@ -6,65 +6,6 @@
 
 ---
 
-## Issue 2: Ελλιπείς ρυθμίσεις — Networking Resources (Firewall, Gateway, LB, AGW, Bastion, NSG)
-
-**Labels:** `enhancement`, `configuration`  
-**Priority:** High
-
-### Περιγραφή
-
-Τα Networking resources έχουν μόνο 1 config property το καθένα. Για ρεαλιστικό IaC generation και σωστή αρχιτεκτονική αναπαράσταση, χρειάζονται πολλά περισσότερα.
-
-### Τρέχουσα κατάσταση vs Τι λείπει
-
-| Resource | Τώρα | Λείπουν |
-|----------|------|---------|
-| Azure Firewall (`fw`) | `{sku: 'Premium'}` | `threatIntelMode`, `dnsProxy`, `policyName`, `availabilityZones` |
-| FortiGate NVA (`nva`) | `{mode: 'Active/Passive'}` | `vendor`, `version`, `licenseType` |
-| App Gateway (`agw`) | `{sku: 'WAF_v2'}` | `capacity`, `tier` (Standard/WAF), `sslPolicy`, `httpListeners` |
-| Load Balancer (`lb`) | `{sku: 'Standard'}` | `type` (Public/Internal), `frontendIp`, `healthProbe`, `lbRules` |
-| VPN Gateway (`gw`) | `{sku: 'VpnGw2AZ'}` | `generation`, `vpnType` (RouteBased/PolicyBased), `activeActive`, `bgpAsn` |
-| ExpressRoute GW (`ergw`) | `{sku: 'ErGw2AZ'}` | `gatewayType`, `expressRouteCircuitId` |
-| Bastion (`bas`) | `{sku: 'Standard'}` | `scaleUnits`, `shareableLink`, `ipConnect`, `tunneling` |
-| Front Door (`afd`) | `{sku: 'Premium'}` | `endpoints`, `originGroups`, `wafPolicy`, `routingRules` |
-| Private Endpoint (`pe`) | `{target: 'Storage'}` | `groupId`, `privateDnsZoneId`, `connectionName`, `subResource` |
-| Private DNS Zone (`dns`) | `{zone: 'privatelink'}` | `fullZoneName`, `vnetLinks`, `autoRegistration` |
-| NSG (`nsg`) | `{rules: '5'}` | Actual rules array: `[{name, priority, direction, access, protocol, srcPort, dstPort, srcAddr, dstAddr}]` |
-
-### Tasks
-- [ ] Προσθήκη default config values σε κάθε resource type
-- [ ] Ο Properties Editor ήδη τα εμφανίζει dynamically — απλά χρειάζονται τα νέα keys
-- [ ] Update PowerShell generation με τα νέα config fields
-- [ ] Update Bicep generation με τα νέα config fields
-
----
-
-## Issue 3: Ελλιπείς ρυθμίσεις — Data & Storage Resources (SQL, Cosmos, Storage, Redis, Data Lake)
-
-**Labels:** `enhancement`, `configuration`  
-**Priority:** Medium
-
-### Περιγραφή
-
-Τα Data resources χρειάζονται περισσότερες ρυθμίσεις για ρεαλιστική αναπαράσταση performance tiers, redundancy, και security settings.
-
-### Τρέχουσα κατάσταση vs Τι λείπει
-
-| Resource | Τώρα | Λείπουν |
-|----------|------|---------|
-| Azure SQL (`sql`) | `{vcores: '4'}` | `tier` (GeneralPurpose/BusinessCritical), `maxSizeGB`, `collation`, `backupRetentionDays`, `zoneRedundant` |
-| Cosmos DB (`cosmos`) | `{api: 'NoSQL'}` | `consistencyLevel`, `geoReplication`, `maxRU`, `enableFreeTier`, `serverless` |
-| Storage Account (`sa`) | `{replication: 'ZRS'}` | `kind` (StorageV2/BlobStorage), `tier` (Standard/Premium), `accessTier` (Hot/Cool), `httpsOnly`, `minTlsVersion` |
-| Azure Cache Redis (`redis`) | `{sku: 'Premium P1'}` | `capacity`, `enableNonSslPort`, `minTlsVersion`, `zones`, `replicasPerPrimary` |
-| Data Lake (`adls`) | `{tier: 'Standard'}` | `hierarchicalNamespace`, `replication`, `enableSoftDelete` |
-
-### Acceptance Criteria
-- [ ] Τα config objects να ενημερωθούν με sensible defaults
-- [ ] Τα νέα fields να εμφανίζονται στον Properties Editor
-- [ ] PowerShell/Bicep generation να τα χρησιμοποιεί
-
----
-
 ## Issue 4: Ελλιπείς ρυθμίσεις — Security, Integration, AI & Management Resources
 
 **Labels:** `enhancement`, `configuration`  
@@ -251,8 +192,6 @@ aks: { cost: 150 }, // Πάντα $150, ανεξάρτητα από nodes
 
 | # | Issue | Priority | Category |
 |---|-------|----------|----------|
-| 2 | Networking Resources Config | 🔴 High | Configuration |
-| 3 | Data & Storage Config | 🟡 Medium | Configuration |
 | 4 | Security/Integration/AI Config | 🟡 Medium | Configuration |
 | 5 | PowerShell Export — Real Commands | 🔴 High | IaC |
 | 6 | Bicep Export — Real Definitions | 🔴 High | IaC |
@@ -264,7 +203,7 @@ aks: { cost: 150 }, // Πάντα $150, ανεξάρτητα από nodes
 
 ## 🎯 Προτεινόμενη σειρά υλοποίησης
 
-1. **Phase 1 — Config Enrichment:** Issues 2, 3, 4 (προσθήκη properties στα config objects)
+1. **Phase 1 — Config Enrichment:** Issue 4 (προσθήκη properties στα config objects)
 2. **Phase 2 — IaC Generation:** Issues 5, 6 (PowerShell & Bicep με τα νέα config values)
 3. **Phase 3 — Smart Features:** Issues 7, 9 (dynamic pricing, advanced networking)
 4. **Phase 4 — Governance:** Issue 8 (tags, locks, policies)
