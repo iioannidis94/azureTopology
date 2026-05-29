@@ -1,4 +1,4 @@
-# ☁️ Azure Architecture Builder 
+# ☁️ Azure Architecture Builder
 
 Ένα δυναμικό, διαδραστικό web εργαλείο (Single-Page Application) για τον σχεδιασμό, την οπτικοποίηση και την εξαγωγή αρχιτεκτονικών **Microsoft Azure** (Hub & Spoke / Enterprise Scale). Φτιαγμένο εξ ολοκλήρου με **Vanilla JavaScript, HTML5 Canvas και CSS3**, χωρίς εξωτερικές βιβλιοθήκες.
 
@@ -6,7 +6,21 @@
 
 ---
 
-## 📋 Τρέχουσες Λειτουργίες (Current Features)
+## 🎯 Γιατί να Χρησιμοποιήσεις το Azure Architecture Builder
+
+| Πρόβλημα | Λύση |
+|----------|------|
+| Ο σχεδιασμός Azure αρχιτεκτονικών σε Visio/Draw.io είναι αργός και δεν παράγει κώδικα | Drag & drop builder που παράγει αυτόματα IaC (PowerShell/Bicep) |
+| Δύσκολο να απεικονίσεις σύνθετα hub-spoke topologies | Αυτόματη διάταξη (Grid/Radial) με ιεραρχική δομή |
+| Δεν ξέρεις πόσο κοστίζει η αρχιτεκτονική σου μέχρι να κάνεις deploy | Live cost estimator σε real-time |
+| Η συγγραφή IaC από το μηδέν είναι χρονοβόρα | Αυτόματη δημιουργία PowerShell & Bicep templates |
+| Θέλεις να φέρεις τα υπάρχοντα Azure resources σε diagram | Import από Azure CLI / Resource Graph JSON |
+| Εύκολα ξεχνάς security best practices | Security posture panel με ανίχνευση issues |
+| Zero setup — ανοίγεις ένα HTML αρχείο και ξεκινάς | 100% client-side, χωρίς server, χωρίς εγκατάσταση |
+
+---
+
+## 📋 Πλήρεις Δυνατότητες (All Features)
 
 ### 🏗️ Σχεδιασμός Αρχιτεκτονικής
 | Λειτουργία | Περιγραφή |
@@ -30,6 +44,15 @@
 | Inline Rename | Διπλό κλικ για μετονομασία στον καμβά |
 | Επίσημα Azure SVG Icons | Microsoft official icons μέσω CDN |
 
+### 🔄 Undo/Redo
+| Λειτουργία | Περιγραφή |
+|------------|-----------|
+| Command Pattern | Πλήρες undo/redo σύστημα |
+| History Stack | Ιστορικό τουλάχιστον 50 ενεργειών |
+| Keyboard Shortcuts | Ctrl+Z (undo) / Ctrl+Y (redo) |
+| Υποστηριζόμενες ενέργειες | Add/remove, move, rename, peering |
+| Visual Buttons | Κουμπιά undo/redo στο header |
+
 ### 💰 Εκτίμηση Κόστους
 | Λειτουργία | Περιγραφή |
 |------------|-----------|
@@ -44,10 +67,22 @@
 | NSG Rules Editor | Παραμετροποίηση Network Security Groups |
 | Private Endpoints | Υποστήριξη Private Link connectivity |
 
+### 📥 Import Δυνατότητες
+| Λειτουργία | Περιγραφή |
+|------------|-----------|
+| JSON Import | Import αρχιτεκτονικής από JSON αρχείο με schema validation |
+| Azure Resource Inventory Import | Import από `az resource list` ή `az graph query` JSON output |
+| Auto-detect Hierarchy | Αυτόματη ανακατασκευή Subscription → RG → VNet → Subnet → Resources |
+| Preview Panel | Προεπισκόπηση πριν το import (πόσα RGs, VNets, resources) |
+| Resource Type Mapping | Αντιστοίχιση Azure resource types σε εσωτερικά types |
+| Multi-RG Support | Υποστήριξη πολλαπλών resource groups σε ένα import |
+| Unknown Type Handling | Graceful handling για μη υποστηριζόμενους resource types |
+
 ### 💾 Αποθήκευση & Εξαγωγή
 | Λειτουργία | Περιγραφή |
 |------------|-----------|
 | Auto-Save (localStorage) | Αυτόματη αποθήκευση κάθε αλλαγής |
+| JSON Export | Εξαγωγή τρέχουσας αρχιτεκτονικής σε JSON |
 | Export PNG | Εικόνα υψηλής ανάλυσης (2x scale) |
 | PowerShell Script Generation | Πλήρες .ps1 deployment script |
 | Bicep Template Generation | IaC template σε Bicep format |
@@ -199,18 +234,17 @@ python -m http.server 8000
 | IaC Export (Bicep) | ✅ Λειτουργικό |
 | IaC Export (Terraform) | ❌ Δεν υπάρχει ακόμα |
 | Auto-Save | ✅ localStorage |
-| JSON Import/Export | ❌ Δεν υπάρχει ακόμα |
+| JSON Import/Export | ✅ Λειτουργικό |
+| Azure Resource Import | ✅ Λειτουργικό |
 | Undo/Redo | ✅ Λειτουργικό (Ctrl+Z / Ctrl+Y) |
 | Automated Tests | ❌ Δεν υπάρχουν |
 | CI/CD Pipeline | ❌ Δεν υπάρχει |
 
 ---
 
-## 🗺️ Μελλοντικό Πλάνο Βελτίωσης
+## 🗺️ Επόμενα Βήματα
 
-Δείτε το αρχείο **[tobeupdate.md](./tobeupdate.md)** για αναλυτικό πλάνο μελλοντικών βελτιώσεων και αναβαθμίσεων.
-
-Δείτε επίσης το **[ROADMAP.md](./ROADMAP.md)** για το πλήρες development roadmap με GitHub Issues format.
+Δείτε το αρχείο **[nextsteps.md](./nextsteps.md)** για αναλυτικό πλάνο μελλοντικών αναβαθμίσεων, nice-to-have features και technical debt.
 
 ---
 
