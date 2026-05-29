@@ -104,7 +104,7 @@ const defaultState={
   onPrem: { enabled: false, id: 'onprem', name: 'Corp Datacenter', cidr: '192.168.0.0/16' },
   customPos: {}, 
   subscriptions:[
-    {id:'sub-1',name:'My Subscription',subscriptionId:'00000000-0000-0000-0000-000000000000',tenantId:'00000000-0000-0000-0000-000000000000',tags:{}}
+    {id:'sub-1',name:'My Subscription',subscriptionId:'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',tenantId:'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',tags:{}}
   ],
   resourceGroups:[
     {id:'rg-1', name:'rg-main', location:'eastus', subId:'sub-1', tags:{}, lock:'None', budgetLimit:'', budgetAlertThreshold:'80'}
@@ -230,6 +230,7 @@ export function calculateDynamicCost(res) {
     case 'agw': {
       const sku = c.sku || 'WAF_v2';
       const capacity = parseInt(c.capacity) || 2;
+      // Base price is for capacity=2 (default), scale linearly
       return (PRICING_TABLES.agw[sku] || baseCost) * (capacity / 2);
     }
     case 'foundry': {
