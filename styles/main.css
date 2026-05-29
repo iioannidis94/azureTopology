@@ -47,6 +47,8 @@
   body:not(.theme-drawio) .calculator-link{color:var(--azure-light);border-color:var(--azure-light);background:rgba(80,230,255,.08);}
   .calculator-link:hover{transform:translateY(-1px);background:rgba(0,120,212,.16);box-shadow:0 6px 20px rgba(0,120,212,.18);}
   .calculator-link.is-hidden{display:none;}
+  .cost-flash { animation: costPulse 0.6s ease-out; }
+  @keyframes costPulse { 0%{transform:scale(1.15);color:var(--accent);} 100%{transform:scale(1);} }
 
   /* ON PREM BLOCK */
   .onprem-block {background: rgba(16,124,16,0.05); border: 1px dashed #107C10; border-radius: 6px; padding: 10px; margin-bottom: 16px; display:flex; align-items:center; justify-content:space-between;}
