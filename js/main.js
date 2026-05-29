@@ -26,7 +26,11 @@ function deleteSelectedElement() {
   const id = state.selectedId;
   
   // Check if it's a peering
-  if (id.startsWith('peering:')) { state.selectedId = null; fullUpdateImpl(); return; }
+  if (id.startsWith('peering:')) {
+    const parts = id.split(':');
+    togglePeering(parts[1], parts[2]);
+    return;
+  }
   // Check if it's on-prem
   if (id === 'onprem') { state.onPrem.enabled = false; state.selectedId = null; fullUpdateImpl(); return; }
   // Check if it's a subscription
