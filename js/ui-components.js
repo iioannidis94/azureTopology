@@ -221,7 +221,20 @@ export function updateOnPremCidr(val) { state.onPrem.cidr = val; fullUpdate(); }
 // ================================================================
 // MANAGEMENT GROUPS
 // ================================================================
-export function toggleMgEnabled() { state.mgEnabled = !state.mgEnabled; if(!state.mgEnabled){ state.subscriptions.forEach(s=>s.mgId=null); } fullUpdate(); }
+export function toggleMgEnabled() {
+  state.mgEnabled = !state.mgEnabled;
+  if(!state.mgEnabled){
+    state.subscriptions.forEach(s=>s.mgId=null);
+  } else {
+    // Auto-create first MG and assign all existing subs to it
+    if(state.managementGroups.length===0 && state.subscriptions.length>0){
+      const id='mg-'+uid();
+      state.managementGroups.push({id, name:'Management Group 1', parentId:null});
+      state.subscriptions.forEach(s=>{ s.mgId=id; });
+    }
+  }
+  fullUpdate();
+}
 export function addMg(parentId) { const id='mg-'+uid(); state.managementGroups.push({id, name:'Management Group '+(state.managementGroups.length+1), parentId: parentId||null}); fullUpdate(); }
 export function deleteMg(id) { if(!confirm('Delete this Management Group? Subscriptions will be unassigned.')) return; state.subscriptions.forEach(s=>{if(s.mgId===id)s.mgId=null;}); const children=state.managementGroups.filter(mg=>mg.parentId===id); children.forEach(c=>{c.parentId=state.managementGroups.find(mg=>mg.id===id)?.parentId||null;}); state.managementGroups=state.managementGroups.filter(mg=>mg.id!==id); fullUpdate(); }
 export function renameMg(id,val) { const mg=state.managementGroups.find(m=>m.id===id); if(mg){mg.name=val;saveState();window._draw();} }
@@ -482,9 +495,21 @@ export function renderEditor(){
       </div>
       <div style="font-size:10px;color:var(--muted);margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">Subscriptions in this MG:</div>`;
     mgSubs.forEach(s => {
-      mgHtml += `<div style="font-size:10px;color:var(--text);padding:2px 0;">☁️ ${esc(s.name)}</div>`;
+      mgHtml += `<div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text);padding:3px 0;">
+        <span>☁️ ${esc(s.name)}</span>
+        <button class="icon-btn danger" style="font-size:9px;padding:1px 4px;" title="Remove from MG" onclick="window._assignSubToMg('${s.id}','')">✕</button>
+      </div>`;
     });
     if (mgSubs.length === 0) mgHtml += `<div style="font-size:10px;color:var(--muted);font-style:italic;">No subscriptions assigned</div>`;
+    // Show unassigned subs that can be added to this MG
+    const unassignedSubs = state.subscriptions.filter(s => !s.mgId);
+    if (unassignedSubs.length > 0) {
+      mgHtml += `<div style="font-size:10px;color:var(--muted);margin-top:6px;border-top:1px dashed var(--border);padding-top:6px;">Assign existing subscription:</div>`;
+      mgHtml += `<select class="input-field" style="font-size:10px;margin-top:4px;" onchange="if(this.value){window._assignSubToMg(this.value,'${selectedMg.id}');}">
+        <option value="">— Select subscription —</option>
+        ${unassignedSubs.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}
+      </select>`;
+    }
     mgHtml += `</div>`;
     el.innerHTML = mgHtml;
     return;
