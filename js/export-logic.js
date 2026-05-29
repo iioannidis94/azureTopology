@@ -84,15 +84,18 @@ function generatePowerShellResource(res, rg, varN, sn) {
       break;
     }
     case 'fw': {
-      lines.push(`$fwPip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard`);
-      lines.push(`New-AzFirewall -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -VirtualNetwork ${varN} -PublicIpAddress $fwPip -Sku "${c.sku||'Premium'}"`);
+      const fwZones = c.availabilityZones ? c.availabilityZones.split(',').map(z => `"${z.trim()}"`).join(',') : '"1","2","3"';
+      lines.push(`$fwPip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard -Zone @(${fwZones})`);
+      lines.push(`$fwPolicy = New-AzFirewallPolicy -Name "${c.policyName || res.name + '-policy'}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -ThreatIntelMode "${c.threatIntelMode||'Alert'}" -DnsSetting @{ EnableProxy = $${c.dnsProxy||'true'} }`);
+      lines.push(`New-AzFirewall -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -VirtualNetwork ${varN} -PublicIpAddress $fwPip -Sku "${c.sku||'Premium'}" -FirewallPolicyId $fwPolicy.Id -Zone @(${fwZones})`);
       break;
     }
     case 'nva': {
-      lines.push(`# FortiGate NVA: ${res.name} (Mode: ${c.mode||'Active/Passive'})`);
+      lines.push(`# FortiGate NVA: ${res.name} (Vendor: ${c.vendor||'Fortinet'}, Mode: ${c.mode||'Active/Passive'}, Version: ${c.version||'7.4'}, License: ${c.licenseType||'PAYG'})`);
       lines.push(`# Deploy via Azure Marketplace — use New-AzMarketplaceTerms and New-AzVM with plan`);
       lines.push(`$nvaConfig = New-AzVMConfig -VMName "${res.name}" -VMSize "Standard_F4s_v2"`);
-      lines.push(`$nvaConfig = Set-AzVMPlan -VM $nvaConfig -Publisher "fortinet" -Product "fortinet_fortigate-vm_v5" -Name "fortinet_fg-vm"`);
+      lines.push(`$nvaConfig = Set-AzVMPlan -VM $nvaConfig -Publisher "${(c.vendor||'fortinet').toLowerCase()}" -Product "fortinet_fortigate-vm_v5" -Name "fortinet_fg-vm"`);
+      lines.push(`# License Type: ${c.licenseType||'PAYG'} | Version: ${c.version||'7.4'}`);
       lines.push(`New-AzVM -ResourceGroupName "${rg.name}" -Location "${rg.location}" -VM $nvaConfig`);
       break;
     }
@@ -105,14 +108,22 @@ function generatePowerShellResource(res, rg, varN, sn) {
       lines.push(`$agwBackendSettings = New-AzApplicationGatewayBackendHttpSetting -Name "appGatewayBackendHttpSettings" -Port 80 -Protocol Http -RequestTimeout 30`);
       lines.push(`$agwListener = New-AzApplicationGatewayHttpListener -Name "appGatewayHttpListener" -Protocol Http -FrontendIPConfiguration $agwFrontendIp -FrontendPort $agwFrontendPort`);
       lines.push(`$agwRule = New-AzApplicationGatewayRequestRoutingRule -Name "rule1" -RuleType Basic -HttpListener $agwListener -BackendAddressPool $agwBackendPool -BackendHttpSettings $agwBackendSettings -Priority 100`);
-      lines.push(`$agwSku = New-AzApplicationGatewaySku -Name "${c.sku||'WAF_v2'}" -Tier "${c.sku||'WAF_v2'}" -Capacity 2`);
-      lines.push(`New-AzApplicationGateway -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Sku $agwSku -GatewayIPConfigurations $agwIpConfig -FrontendIPConfigurations $agwFrontendIp -FrontendPorts $agwFrontendPort -BackendAddressPools $agwBackendPool -BackendHttpSettingsCollection $agwBackendSettings -HttpListeners $agwListener -RequestRoutingRules $agwRule`);
+      lines.push(`$agwSku = New-AzApplicationGatewaySku -Name "${c.sku||'WAF_v2'}" -Tier "${c.tier||c.sku||'WAF_v2'}" -Capacity ${c.capacity||2}`);
+      lines.push(`$agwSslPolicy = New-AzApplicationGatewaySslPolicy -PolicyType Predefined -PolicyName "${c.sslPolicy||'AppGwSslPolicy20220101'}"`);
+      lines.push(`New-AzApplicationGateway -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Sku $agwSku -SslPolicy $agwSslPolicy -GatewayIPConfigurations $agwIpConfig -FrontendIPConfigurations $agwFrontendIp -FrontendPorts $agwFrontendPort -BackendAddressPools $agwBackendPool -BackendHttpSettingsCollection $agwBackendSettings -HttpListeners $agwListener -RequestRoutingRules $agwRule`);
       break;
     }
     case 'lb': {
-      lines.push(`$lbFrontendIp = New-AzLoadBalancerFrontendIpConfig -Name "${res.name}-frontend" -SubnetId (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}).Id`);
+      const lbIsPublic = (c.type||'Internal') === 'Public';
+      if (lbIsPublic) {
+        lines.push(`$lbPip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard`);
+        lines.push(`$lbFrontendIp = New-AzLoadBalancerFrontendIpConfig -Name "${res.name}-frontend" -PublicIpAddress $lbPip`);
+      } else {
+        lines.push(`$lbFrontendIp = New-AzLoadBalancerFrontendIpConfig -Name "${res.name}-frontend" -SubnetId (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}).Id`);
+      }
       lines.push(`$lbBackendPool = New-AzLoadBalancerBackendAddressPoolConfig -Name "${res.name}-backend"`);
-      lines.push(`$lbProbe = New-AzLoadBalancerProbeConfig -Name "${res.name}-probe" -Protocol Tcp -Port 80 -IntervalInSeconds 15 -ProbeCount 2`);
+      const probeparts = (c.healthProbe||'TCP/80').split('/');
+      lines.push(`$lbProbe = New-AzLoadBalancerProbeConfig -Name "${res.name}-probe" -Protocol ${probeparts[0]||'Tcp'} -Port ${probeparts[1]||80} -IntervalInSeconds 15 -ProbeCount 2`);
       lines.push(`$lbRule = New-AzLoadBalancerRuleConfig -Name "${res.name}-rule" -FrontendIpConfiguration $lbFrontendIp -BackendAddressPool $lbBackendPool -Probe $lbProbe -Protocol Tcp -FrontendPort 80 -BackendPort 80`);
       lines.push(`New-AzLoadBalancer -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Sku "${c.sku||'Standard'}" -FrontendIpConfiguration $lbFrontendIp -BackendAddressPool $lbBackendPool -Probe $lbProbe -LoadBalancingRule $lbRule`);
       break;
@@ -121,35 +132,62 @@ function generatePowerShellResource(res, rg, varN, sn) {
       lines.push(`$gwPip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard`);
       lines.push(`$gwSubnet = Get-AzVirtualNetworkSubnetConfig -Name "GatewaySubnet" -VirtualNetwork ${varN}`);
       lines.push(`$gwIpConfig = New-AzVirtualNetworkGatewayIpConfig -Name "${res.name}-ipconfig" -Subnet $gwSubnet -PublicIpAddress $gwPip`);
-      lines.push(`New-AzVirtualNetworkGateway -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -IpConfigurations $gwIpConfig -GatewayType Vpn -VpnType RouteBased -GatewaySku "${c.sku||'VpnGw2AZ'}"`);
+      const gwActiveActive = c.activeActive === 'true' ? ' -EnableActiveActiveFeature' : '';
+      const gwBgp = c.bgpAsn && c.bgpAsn !== '65515' ? ` -EnableBgp $true -Asn ${c.bgpAsn}` : '';
+      lines.push(`New-AzVirtualNetworkGateway -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -IpConfigurations $gwIpConfig -GatewayType Vpn -VpnType "${c.vpnType||'RouteBased'}" -VpnGatewayGeneration "${c.generation||'Generation2'}" -GatewaySku "${c.sku||'VpnGw2AZ'}"${gwActiveActive}${gwBgp}`);
       break;
     }
     case 'ergw': {
       lines.push(`$ergwPip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard`);
       lines.push(`$ergwSubnet = Get-AzVirtualNetworkSubnetConfig -Name "GatewaySubnet" -VirtualNetwork ${varN}`);
       lines.push(`$ergwIpConfig = New-AzVirtualNetworkGatewayIpConfig -Name "${res.name}-ipconfig" -Subnet $ergwSubnet -PublicIpAddress $ergwPip`);
-      lines.push(`New-AzVirtualNetworkGateway -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -IpConfigurations $ergwIpConfig -GatewayType ExpressRoute -GatewaySku "${c.sku||'ErGw2AZ'}"`);
+      lines.push(`New-AzVirtualNetworkGateway -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -IpConfigurations $ergwIpConfig -GatewayType "${c.gatewayType||'ExpressRoute'}" -GatewaySku "${c.sku||'ErGw2AZ'}"`);
+      if (c.expressRouteCircuitId) {
+        lines.push(`# Connect to ExpressRoute Circuit: ${c.expressRouteCircuitId}`);
+        lines.push(`New-AzVirtualNetworkGatewayConnection -Name "${res.name}-connection" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -VirtualNetworkGateway1 (Get-AzVirtualNetworkGateway -Name "${res.name}" -ResourceGroupName "${rg.name}") -ConnectionType ExpressRoute -PeerId "${c.expressRouteCircuitId}"`);
+      }
       break;
     }
     case 'bas': {
       lines.push(`$basPip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard`);
-      lines.push(`New-AzBastion -Name "${res.name}" -ResourceGroupName "${rg.name}" -VirtualNetworkId ${varN}.Id -PublicIpAddressId $basPip.Id -Sku "${c.sku||'Standard'}"`);
+      lines.push(`New-AzBastion -Name "${res.name}" -ResourceGroupName "${rg.name}" -VirtualNetworkId ${varN}.Id -PublicIpAddressId $basPip.Id -Sku "${c.sku||'Standard'}" -ScaleUnit ${c.scaleUnits||2}${c.shareableLink==='true' ? ' -EnableShareableLink' : ''}${c.ipConnect==='true' ? ' -EnableIpConnect' : ''}${c.tunneling==='true' ? ' -EnableTunneling' : ''}`);
       break;
     }
     case 'afd': {
       lines.push(`New-AzFrontDoorCdnProfile -ProfileName "${res.name}" -ResourceGroupName "${rg.name}" -Location "Global" -SkuName "${c.sku||'Premium'}_AzureFrontDoor"`);
-      lines.push(`New-AzFrontDoorCdnEndpoint -EndpointName "${res.name}-endpoint" -ProfileName "${res.name}" -ResourceGroupName "${rg.name}" -Location "Global"`);
+      lines.push(`$afdEndpoint = New-AzFrontDoorCdnEndpoint -EndpointName "${c.endpoints||res.name+'-endpoint'}" -ProfileName "${res.name}" -ResourceGroupName "${rg.name}" -Location "Global"`);
+      lines.push(`$afdOriginGroup = New-AzFrontDoorCdnOriginGroup -OriginGroupName "${c.originGroups||'default-origin-group'}" -ProfileName "${res.name}" -ResourceGroupName "${rg.name}" -LoadBalancingSettingSampleSize 4 -LoadBalancingSettingSuccessfulSamplesRequired 3`);
+      if (c.wafPolicy) {
+        lines.push(`# WAF Policy: ${c.wafPolicy}`);
+        lines.push(`$afdSecurityPolicy = New-AzFrontDoorCdnSecurityPolicy -ProfileName "${res.name}" -ResourceGroupName "${rg.name}" -Name "${c.wafPolicy}" -PolicyType "WebApplicationFirewall"`);
+      }
+      lines.push(`New-AzFrontDoorCdnRoute -RouteName "${c.routingRules||'default-route'}" -EndpointName "${c.endpoints||res.name+'-endpoint'}" -ProfileName "${res.name}" -ResourceGroupName "${rg.name}" -OriginGroupId $afdOriginGroup.Id -SupportedProtocol @("Http","Https") -PatternsToMatch @("/*")`);
       break;
     }
     case 'pe': {
-      lines.push(`$privateEndpointConnection = New-AzPrivateLinkServiceConnection -Name "${res.name}-connection" -PrivateLinkServiceId "<target-resource-id>" -GroupId "${c.target||'blob'}"`);
+      const peConnectionName = c.connectionName || `${res.name}-connection`;
+      const peGroupId = c.groupId || c.subResource || c.target || 'blob';
+      lines.push(`$privateEndpointConnection = New-AzPrivateLinkServiceConnection -Name "${peConnectionName}" -PrivateLinkServiceId "<target-resource-id>" -GroupId "${peGroupId}"`);
       lines.push(`New-AzPrivateEndpoint -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Subnet (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}) -PrivateLinkServiceConnection $privateEndpointConnection`);
+      if (c.privateDnsZoneId) {
+        lines.push(`$privateDnsZoneConfig = New-AzPrivateDnsZoneConfig -Name "default" -PrivateDnsZoneId "${c.privateDnsZoneId}"`);
+        lines.push(`New-AzPrivateDnsZoneGroup -Name "${res.name}-dns-group" -ResourceGroupName "${rg.name}" -PrivateEndpointName "${res.name}" -PrivateDnsZoneConfig $privateDnsZoneConfig`);
+      }
       break;
     }
     case 'nsg': {
+      let nsgRules = [];
+      try { nsgRules = JSON.parse(c.rules || '[]'); } catch(e) { nsgRules = []; }
+      if (nsgRules.length === 0) {
+        nsgRules = [
+          {name:'Allow-HTTP',priority:'100',direction:'Inbound',access:'Allow',protocol:'Tcp',srcPort:'*',dstPort:'80',srcAddr:'*',dstAddr:'*'},
+          {name:'Allow-HTTPS',priority:'110',direction:'Inbound',access:'Allow',protocol:'Tcp',srcPort:'*',dstPort:'443',srcAddr:'*',dstAddr:'*'}
+        ];
+      }
       lines.push(`$nsgRules = @()`);
-      lines.push(`$nsgRules += New-AzNetworkSecurityRuleConfig -Name "Allow-HTTP" -Protocol Tcp -Direction Inbound -Priority 100 -SourceAddressPrefix "*" -SourcePortRange "*" -DestinationAddressPrefix "*" -DestinationPortRange 80 -Access Allow`);
-      lines.push(`$nsgRules += New-AzNetworkSecurityRuleConfig -Name "Allow-HTTPS" -Protocol Tcp -Direction Inbound -Priority 110 -SourceAddressPrefix "*" -SourcePortRange "*" -DestinationAddressPrefix "*" -DestinationPortRange 443 -Access Allow`);
+      nsgRules.forEach(rule => {
+        lines.push(`$nsgRules += New-AzNetworkSecurityRuleConfig -Name "${rule.name}" -Protocol ${rule.protocol||'Tcp'} -Direction ${rule.direction||'Inbound'} -Priority ${rule.priority||100} -SourceAddressPrefix "${rule.srcAddr||'*'}" -SourcePortRange "${rule.srcPort||'*'}" -DestinationAddressPrefix "${rule.dstAddr||'*'}" -DestinationPortRange ${rule.dstPort||80} -Access ${rule.access||'Allow'}`);
+      });
       lines.push(`New-AzNetworkSecurityGroup -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SecurityRules $nsgRules`);
       break;
     }
@@ -285,17 +323,19 @@ export function generatePowerShell(){
           });
           lines.push('');
         } else if(res.type === 'dns') {
-          lines.push(`# -- Private DNS Zone: ${res.config.zone} --`);
-          lines.push(`$privateDnsZone = New-AzPrivateDnsZone -Name "${res.config.zone}" -ResourceGroupName "${rg.name}"\n`);
+          const zoneName = res.config.fullZoneName || res.config.zone;
+          lines.push(`# -- Private DNS Zone: ${zoneName} --`);
+          lines.push(`$privateDnsZone = New-AzPrivateDnsZone -Name "${zoneName}" -ResourceGroupName "${rg.name}"\n`);
           (res.config.records||[]).forEach(rec => {
             if(rec.type === 'A') {
-              lines.push(`New-AzPrivateDnsRecordSet -Name "${rec.name}" -RecordType A -ZoneName "${res.config.zone}" -ResourceGroupName "${rg.name}" -Ttl ${rec.ttl||3600} -PrivateDnsRecords (New-AzPrivateDnsRecordConfig -IPv4Address "${rec.value}")`);
+              lines.push(`New-AzPrivateDnsRecordSet -Name "${rec.name}" -RecordType A -ZoneName "${zoneName}" -ResourceGroupName "${rg.name}" -Ttl ${rec.ttl||3600} -PrivateDnsRecords (New-AzPrivateDnsRecordConfig -IPv4Address "${rec.value}")`);
             } else {
               lines.push(`# ${rec.type} Record: ${rec.name} -> ${rec.value}`);
             }
           });
           (res.config.vnetLinks||[]).forEach(link => {
-            lines.push(`New-AzPrivateDnsVirtualNetworkLink -Name "link-${link.vnetName}" -ResourceGroupName "${rg.name}" -ZoneName "${res.config.zone}" -VirtualNetworkId $vnet_${link.vnetName.replace(/[^a-zA-Z0-9]/g,'_')}.Id${link.registrationEnabled ? ' -EnableRegistration' : ''}`);
+            const enableReg = link.registrationEnabled || res.config.autoRegistration === 'true';
+            lines.push(`New-AzPrivateDnsVirtualNetworkLink -Name "link-${link.vnetName}" -ResourceGroupName "${rg.name}" -ZoneName "${zoneName}" -VirtualNetworkId $vnet_${link.vnetName.replace(/[^a-zA-Z0-9]/g,'_')}.Id${enableReg ? ' -EnableRegistration' : ''}`);
           });
           lines.push('');
         }
@@ -398,26 +438,36 @@ function generateBicepResource(res, rg, vnet, sn) {
       break;
     }
     case 'fw': {
+      const fwZones = c.availabilityZones ? c.availabilityZones.split(',').map(z => z.trim()) : ['1','2','3'];
       lines.push(`module ${safeName} 'br/public:avm/res/network/azure-firewall:0.3.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    skuTier: '${c.sku||'Premium'}'`);
+      lines.push(`    threatIntelMode: '${c.threatIntelMode||'Alert'}'`);
       lines.push(`    hubIPAddresses: { publicIPs: { count: 1 } }`);
+      lines.push(`    zones: [${fwZones.map(z => `'${z}'`).join(', ')}]`);
+      if (c.dnsProxy === 'true') {
+        lines.push(`    additionalProperties: { 'Network.DNS.EnableProxy': 'true' }`);
+      }
+      if (c.policyName) {
+        lines.push(`    firewallPolicyId: '${c.policyName}'`);
+      }
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
     }
     case 'nva': {
-      lines.push(`// FortiGate NVA: ${res.name} — Deploy via Marketplace module`);
+      lines.push(`// FortiGate NVA: ${res.name} — Vendor: ${c.vendor||'Fortinet'}, Version: ${c.version||'7.4'}, License: ${c.licenseType||'PAYG'}`);
       lines.push(`module ${safeName} 'br/public:avm/res/compute/virtual-machine:0.5.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    vmSize: 'Standard_F4s_v2'`);
-      lines.push(`    plan: { publisher: 'fortinet', product: 'fortinet_fortigate-vm_v5', name: 'fortinet_fg-vm' }`);
+      lines.push(`    plan: { publisher: '${(c.vendor||'fortinet').toLowerCase()}', product: 'fortinet_fortigate-vm_v5', name: 'fortinet_fg-vm' }`);
+      lines.push(`    // Mode: ${c.mode||'Active/Passive'} | License: ${c.licenseType||'PAYG'}`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -428,7 +478,8 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    sku: { name: '${c.sku||'WAF_v2'}', tier: '${c.sku||'WAF_v2'}', capacity: 2 }`);
+      lines.push(`    sku: { name: '${c.sku||'WAF_v2'}', tier: '${c.tier||c.sku||'WAF_v2'}', capacity: ${c.capacity||2} }`);
+      lines.push(`    sslPolicy: { policyType: 'Predefined', policyName: '${c.sslPolicy||'AppGwSslPolicy20220101'}' }`);
       lines.push(`    gatewayIPConfigurations: [{ subnetId: '${sn.name}' }]`);
       lines.push(`    frontendIPConfigurations: [{ publicIPAddressId: '${res.name}-pip' }]`);
       lines.push(`    frontendPorts: [{ port: 80 }]`);
@@ -439,15 +490,21 @@ function generateBicepResource(res, rg, vnet, sn) {
       break;
     }
     case 'lb': {
+      const lbIsPublic = (c.type||'Internal') === 'Public';
       lines.push(`module ${safeName} 'br/public:avm/res/network/load-balancer:0.2.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    sku: '${c.sku||'Standard'}'`);
-      lines.push(`    frontendIPConfigurations: [{ name: '${res.name}-frontend', subnetId: '${sn.name}' }]`);
+      if (lbIsPublic) {
+        lines.push(`    frontendIPConfigurations: [{ name: '${res.name}-frontend', publicIPAddressId: '${res.name}-pip' }]`);
+      } else {
+        lines.push(`    frontendIPConfigurations: [{ name: '${res.name}-frontend', subnetId: '${sn.name}' }]`);
+      }
+      const probeparts = (c.healthProbe||'TCP/80').split('/');
       lines.push(`    backendAddressPools: [{ name: '${res.name}-backend' }]`);
-      lines.push(`    probes: [{ name: '${res.name}-probe', protocol: 'Tcp', port: 80 }]`);
+      lines.push(`    probes: [{ name: '${res.name}-probe', protocol: '${probeparts[0]||'Tcp'}', port: ${probeparts[1]||80} }]`);
       lines.push(`    loadBalancingRules: [{ name: '${res.name}-rule', frontendPort: 80, backendPort: 80, protocol: 'Tcp' }]`);
       lines.push(`  }`);
       lines.push(`}\n`);
@@ -460,8 +517,14 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    gatewayType: 'Vpn'`);
-      lines.push(`    vpnType: 'RouteBased'`);
+      lines.push(`    vpnType: '${c.vpnType||'RouteBased'}'`);
+      lines.push(`    vpnGatewayGeneration: '${c.generation||'Generation2'}'`);
       lines.push(`    sku: { name: '${c.sku||'VpnGw2AZ'}', tier: '${c.sku||'VpnGw2AZ'}' }`);
+      lines.push(`    activeActive: ${c.activeActive||'false'}`);
+      if (c.bgpAsn && c.bgpAsn !== '65515') {
+        lines.push(`    enableBgp: true`);
+        lines.push(`    bgpSettings: { asn: ${c.bgpAsn} }`);
+      }
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -472,8 +535,11 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    gatewayType: 'ExpressRoute'`);
+      lines.push(`    gatewayType: '${c.gatewayType||'ExpressRoute'}'`);
       lines.push(`    sku: { name: '${c.sku||'ErGw2AZ'}', tier: '${c.sku||'ErGw2AZ'}' }`);
+      if (c.expressRouteCircuitId) {
+        lines.push(`    // ExpressRoute Circuit: ${c.expressRouteCircuitId}`);
+      }
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -485,7 +551,11 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    sku: '${c.sku||'Standard'}'`);
+      lines.push(`    scaleUnits: ${c.scaleUnits||2}`);
       lines.push(`    virtualNetworkId: '${vnet.name}'`);
+      if (c.shareableLink === 'true') lines.push(`    enableShareableLink: true`);
+      if (c.ipConnect === 'true') lines.push(`    enableIpConnect: true`);
+      if (c.tunneling === 'true') lines.push(`    enableTunneling: true`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -498,31 +568,50 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    name: '${res.name}'`);
       lines.push(`    sku: { name: '${c.sku||'Premium'}_AzureFrontDoor' }`);
       lines.push(`    originResponseTimeoutSeconds: 60`);
+      lines.push(`    endpoints: [{ name: '${c.endpoints||res.name+'-endpoint'}' }]`);
+      lines.push(`    originGroups: [{ name: '${c.originGroups||'default-origin-group'}' }]`);
+      if (c.wafPolicy) {
+        lines.push(`    securityPolicies: [{ name: '${c.wafPolicy}' }]`);
+      }
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
     }
     case 'pe': {
+      const peGroupId = c.groupId || c.subResource || c.target || 'blob';
+      const peConnectionName = c.connectionName || `${res.name}-connection`;
       lines.push(`module ${safeName} 'br/public:avm/res/network/private-endpoint:0.4.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    subnetResourceId: '${sn.name}'`);
-      lines.push(`    privateLinkServiceConnections: [{ privateLinkServiceId: '<target-resource-id>', groupIds: ['${c.target||'blob'}'] }]`);
+      lines.push(`    privateLinkServiceConnections: [{ name: '${peConnectionName}', privateLinkServiceId: '<target-resource-id>', groupIds: ['${peGroupId}'] }]`);
+      if (c.privateDnsZoneId) {
+        lines.push(`    privateDnsZoneGroup: { privateDnsZoneGroupConfigs: [{ privateDnsZoneResourceId: '${c.privateDnsZoneId}' }] }`);
+      }
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
     }
     case 'nsg': {
+      let nsgRules = [];
+      try { nsgRules = JSON.parse(c.rules || '[]'); } catch(e) { nsgRules = []; }
+      if (nsgRules.length === 0) {
+        nsgRules = [
+          {name:'Allow-HTTP',priority:'100',direction:'Inbound',access:'Allow',protocol:'Tcp',srcPort:'*',dstPort:'80',srcAddr:'*',dstAddr:'*'},
+          {name:'Allow-HTTPS',priority:'110',direction:'Inbound',access:'Allow',protocol:'Tcp',srcPort:'*',dstPort:'443',srcAddr:'*',dstAddr:'*'}
+        ];
+      }
       lines.push(`module ${safeName} 'br/public:avm/res/network/network-security-group:0.3.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    securityRules: [`);
-      lines.push(`      { name: 'Allow-HTTP', priority: 100, direction: 'Inbound', access: 'Allow', protocol: 'Tcp', sourceAddressPrefix: '*', destinationAddressPrefix: '*', sourcePortRange: '*', destinationPortRange: '80' }`);
-      lines.push(`      { name: 'Allow-HTTPS', priority: 110, direction: 'Inbound', access: 'Allow', protocol: 'Tcp', sourceAddressPrefix: '*', destinationAddressPrefix: '*', sourcePortRange: '*', destinationPortRange: '443' }`);
+      nsgRules.forEach(rule => {
+        lines.push(`      { name: '${rule.name}', priority: ${rule.priority||100}, direction: '${rule.direction||'Inbound'}', access: '${rule.access||'Allow'}', protocol: '${rule.protocol||'Tcp'}', sourceAddressPrefix: '${rule.srcAddr||'*'}', destinationAddressPrefix: '${rule.dstAddr||'*'}', sourcePortRange: '${rule.srcPort||'*'}', destinationPortRange: '${rule.dstPort||'80'}' }`);
+      });
       lines.push(`    ]`);
       lines.push(`  }`);
       lines.push(`}\n`);
@@ -745,16 +834,18 @@ export function generateBicep(){
             lines.push(`// DNS Record: ${rec.name} ${rec.type} ${rec.value}`);
           });
         } else if(res.type === 'dns') {
-          const safeName = res.config.zone.replace(/[^a-zA-Z0-9]/g,'_');
+          const zoneName = res.config.fullZoneName || res.config.zone;
+          const safeName = zoneName.replace(/[^a-zA-Z0-9]/g,'_');
           lines.push(`module privateDnsZone_${safeName} 'br/public:avm/res/network/private-dns-zone:0.3.0' = {`);
-          lines.push(`  name: '${res.config.zone}'`);
+          lines.push(`  name: '${zoneName}'`);
           lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
           lines.push(`  params: {`);
-          lines.push(`    name: '${res.config.zone}'`);
+          lines.push(`    name: '${zoneName}'`);
           if(res.config.vnetLinks && res.config.vnetLinks.length > 0) {
             lines.push(`    virtualNetworkLinks: [`);
             res.config.vnetLinks.forEach(link => {
-              lines.push(`      { virtualNetworkResourceId: ${link.vnetName.replace(/[^a-zA-Z0-9]/g,'_')}.id, registrationEnabled: ${link.registrationEnabled||false} }`);
+              const enableReg = link.registrationEnabled || res.config.autoRegistration === 'true';
+              lines.push(`      { virtualNetworkResourceId: ${link.vnetName.replace(/[^a-zA-Z0-9]/g,'_')}.id, registrationEnabled: ${enableReg} }`);
             });
             lines.push(`    ]`);
           }
