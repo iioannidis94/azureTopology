@@ -50,6 +50,8 @@
     
     <div class="export-area">
       <button class="export-btn secondary" onclick="window._exportPng()">⬇ Export as PNG</button>
+      <button class="export-btn secondary" onclick="window._exportJson()">📤 Export as JSON</button>
+      <button class="export-btn secondary" onclick="window._openJsonImportModal()">📥 Import JSON</button>
       <button class="export-btn secondary" onclick="window._openPsModal()">⚡ Deploy via PowerShell</button>
       <button class="export-btn secondary" onclick="window._openBicepModal()">📄 Generate Bicep</button>
       <div style="display:flex; gap:8px;">
@@ -86,6 +88,26 @@
       <button class="modal-btn secondary" onclick="window._closeModal('bicep-modal')">✕ Close</button>
       <button class="modal-btn primary" onclick="window._copyText('bicep-output')">📋 Copy Bicep</button>
       <button class="modal-btn primary" onclick="window._downloadText('bicep-output','main.bicep')">⬇ Download .bicep</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="json-import-modal">
+  <div class="modal">
+    <h2>📥 Import JSON Diagram</h2>
+    <div class="json-import-section">
+      <label for="json-file-input" class="json-import-label">Select a JSON file:</label>
+      <input type="file" id="json-file-input" accept=".json,application/json" onchange="window._handleJsonFile()">
+    </div>
+    <div class="json-import-section">
+      <label for="json-paste-input" class="json-import-label">Or paste JSON content:</label>
+      <textarea id="json-paste-input" rows="8" placeholder='{"_format":"AzureArchitectureBuilder", ...}' oninput="window._previewPastedJson()"></textarea>
+    </div>
+    <div id="json-import-error" class="json-import-error"></div>
+    <pre id="json-import-preview" class="json-import-preview" style="display:none;"></pre>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="window._closeModal('json-import-modal')">✕ Close</button>
+      <button class="modal-btn primary" onclick="window._confirmJsonImport()">✅ Import & Replace</button>
     </div>
   </div>
 </div>

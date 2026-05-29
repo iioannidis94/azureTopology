@@ -195,6 +195,14 @@
   .modal-btn.secondary{background:transparent;border:1px solid var(--muted);color:var(--muted);}
   .modal-btn:hover{opacity:.85;transform:translateY(-1px);}
   
+  .json-import-section{display:flex;flex-direction:column;gap:6px;}
+  .json-import-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+  .json-import-section input[type="file"]{font-family:'JetBrains Mono';font-size:11px;color:var(--text);padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;}
+  .json-import-section textarea{font-family:'JetBrains Mono';font-size:11px;color:var(--text);padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;resize:vertical;line-height:1.5;}
+  .json-import-section textarea:focus{border-color:var(--azure-blue);outline:none;}
+  .json-import-error{color:#E81123;font-family:'JetBrains Mono';font-size:11px;min-height:16px;}
+  .json-import-preview{background:var(--bg3);border:1px solid var(--azure-blue);border-radius:8px;padding:12px;font-size:11px;color:var(--accent);line-height:1.7;white-space:pre-wrap;}
+
   #rename-overlay{display:none;position:fixed;z-index:500;}
   #rename-input{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;border:2px solid #0078D4;border-radius:6px;background:#fff;color:#111;outline:none;min-width:140px;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
   
