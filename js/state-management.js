@@ -131,12 +131,92 @@ try{
 }catch(e){state=JSON.parse(JSON.stringify(defaultState));}
 
 // ================================================================
+// UNDO / REDO HISTORY
+// ================================================================
+const MAX_HISTORY = 50;
+const _undoStack = [];
+const _redoStack = [];
+let _isUndoRedoAction = false;
+
+// Properties that are transient and should NOT be tracked in history
+const TRANSIENT_KEYS = ['dragging','dragStart','offsetStart','dragNodeId','dragGroup','selectedId','offset','scale','mouseStart','dragNodeStart'];
+
+function _getSerializableState() {
+  const snap = {};
+  for (const key of Object.keys(state)) {
+    if (!TRANSIENT_KEYS.includes(key)) snap[key] = JSON.parse(JSON.stringify(state[key]));
+  }
+  return snap;
+}
+
+function _restoreSnapshot(snap) {
+  for (const key of Object.keys(state)) {
+    if (!TRANSIENT_KEYS.includes(key)) delete state[key];
+  }
+  Object.assign(state, JSON.parse(JSON.stringify(snap)));
+  if (state.theme === 'dark') document.body.classList.remove('theme-drawio');
+  else document.body.classList.add('theme-drawio');
+}
+
+let _lastSavedSnapshot = null;
+
+/** Called after saveState to record the new state in history */
+function _recordStateForUndo() {
+  if (_isUndoRedoAction) return;
+  const snap = _getSerializableState();
+  // If this is identical to the last saved snapshot, skip
+  const snapStr = JSON.stringify(snap);
+  if (_lastSavedSnapshot && JSON.stringify(_lastSavedSnapshot) === snapStr) return;
+  // Push the PREVIOUS state to undo stack (so we can go back to it)
+  if (_lastSavedSnapshot !== null) {
+    _undoStack.push(_lastSavedSnapshot);
+    if (_undoStack.length > MAX_HISTORY) _undoStack.shift();
+    _redoStack.length = 0;
+  }
+  _lastSavedSnapshot = snap;
+}
+
+/** Undo last action */
+export function undo() {
+  if (_undoStack.length === 0) return;
+  _isUndoRedoAction = true;
+  // Push current state to redo
+  _redoStack.push(_getSerializableState());
+  const prev = _undoStack.pop();
+  _restoreSnapshot(prev);
+  _lastSavedSnapshot = prev;
+  localStorage.setItem(KEY, JSON.stringify(state));
+  fullUpdate();
+  _isUndoRedoAction = false;
+}
+
+/** Redo last undone action */
+export function redo() {
+  if (_redoStack.length === 0) return;
+  _isUndoRedoAction = true;
+  // Push current state to undo
+  _undoStack.push(_getSerializableState());
+  const next = _redoStack.pop();
+  _restoreSnapshot(next);
+  _lastSavedSnapshot = next;
+  localStorage.setItem(KEY, JSON.stringify(state));
+  fullUpdate();
+  _isUndoRedoAction = false;
+}
+
+export function canUndo() { return _undoStack.length > 0; }
+export function canRedo() { return _redoStack.length > 0; }
+
+// ================================================================
 // UTILITY FUNCTIONS
 // ================================================================
 export const uid=()=>'id-'+Math.random().toString(36).substring(2,11);
 export const esc=s=>String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-export function saveState(){localStorage.setItem(KEY,JSON.stringify(state));}
+export function saveState(){
+  localStorage.setItem(KEY,JSON.stringify(state));
+  _recordStateForUndo();
+}
 
 export function getAllDiagramResources(){
   const vnetRes = [state.hub, ...state.spokes].flatMap(vnet => vnet.subnets.flatMap(sn => sn.resources));

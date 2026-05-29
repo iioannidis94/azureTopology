@@ -6,70 +6,211 @@
 
 ---
 
-## ✨ Βασικά Χαρακτηριστικά (Features)
+## 📋 Τρέχουσες Λειτουργίες (Current Features)
 
-*   **🌍 Πλήρης Ιεραρχία Azure:** Υποστήριξη πολλαπλών Subscriptions, Resource Groups, VNets (Hub/Spokes), On-Premises Datacenters και επιμέρους Azure Resources.
-*   **🆕 Βελτιωμένη Ορατότητα Στοιχείων:** Τα Subnets, Resource Groups και Subscriptions εμφανίζονται με πιο έντονα χρώματα, μεγαλύτερα borders και ευκρινέστερες ετικέτες για εύκολη αναγνώριση στο διάγραμμα.
-*   **🎨 Διπλό Οπτικό Θέμα (Themes):** 
-    *   **Draw.io / Light Theme:** Επίσημη εταιρική (corporate) απεικόνιση με λευκό φόντο, σκιές και καθαρές γραμμές.
-    *   **Dark / Cyberpunk Theme:** Σκοτεινό θέμα υψηλής αντίθεσης για ξεκούραστη νυχτερινή εργασία.
-*   **📐 Έξυπνη Μηχανή Διάταξης & Drag and Drop:**
-    *   **Grid (Αρχιτεκτονικό):** Οργανώνει τα Resources μέσα σε VNet "κουτιά" (Enterprise Landing Zones).
-    *   **Radial (Κυκλικό):** Απεικονίζει το Hub στο κέντρο και τα Spokes κυκλικά γύρω του.
-    *   **Freeform Drag & Drop:** Μπορείτε να "πιάσετε" (click & drag) οποιοδήποτε δίκτυο ή resource και να το τοποθετήσετε όπου ακριβώς θέλετε στον καμβά!
-    *   **🆕 Group Drag (Resource Group):** Κάνοντας drag σε ένα Resource Group box, μετακινούνται **όλα** τα VNets, Subnets και Resources που περιέχει μαζί του.
-    *   **🆕 Group Drag (Subscription):** Κάνοντας drag σε ένα Subscription box, μετακινείται ολόκληρη η ιεραρχία (RGs, VNets, resources) μαζί.
-    *   **🆕 VNet Group Drag:** Όταν σύρετε ένα VNet, τα subnets και τα resources μέσα του ακολουθούν αυτόματα.
-*   **🔗 Any-to-Any VNet Peering & Hybrid:** Δυνατότητα σύνδεσης οποιουδήποτε VNet με οποιοδήποτε άλλο. Επίσης υποστηρίζεται σύνδεση με **On-Premises** υποδομή μέσω S2S VPN / ExpressRoute.
-*   **🖼️ Επίσημα Azure Icons:** Χρήση των πραγματικών SVG λογοτύπων της Microsoft.
-*   **💰 Ζωντανή Εκτίμηση Κόστους (Cost Estimator):** Υπολογίζει αυτόματα το εκτιμώμενο μηνιαίο κόστος της υποδομής σας καθώς προσθέτετε ή αφαιρείτε πόρους.
-*   **💾 Auto-Save (Τοπική Μνήμη):** Κάθε αλλαγή αποθηκεύεται αυτόματα στον browser (`localStorage`).
-*   **⚙️ Live Properties Editor:** Ζωντανή επεξεργασία ρυθμίσεων με άμεση οπτική ενημέρωση του καμβά.
-*   **🚀 Εξαγωγή (Export & IaC):** Εξαγωγή σε εικόνα (PNG), καθώς και αυτόματη δημιουργία **PowerShell Script** ή **Bicep Template** για άμεσο deployment.
+### 🏗️ Σχεδιασμός Αρχιτεκτονικής
+| Λειτουργία | Περιγραφή |
+|------------|-----------|
+| Πλήρης Ιεραρχία Azure | Subscriptions → Resource Groups → VNets → Subnets → Resources |
+| Hub & Spoke Topology | Κεντρικό Hub VNet με πολλαπλά Spoke VNets |
+| On-Premises / Hybrid | Σύνδεση με τοπικό Datacenter μέσω VPN/ExpressRoute |
+| Any-to-Any VNet Peering | Σύνδεση οποιουδήποτε VNet με οποιοδήποτε άλλο |
+| 35+ Azure Resource Types | VMs, AKS, SQL, Cosmos DB, Firewall, App Gateway, OpenAI κ.ά. |
+| DNS Zones (Private & Public) | Διαχείριση DNS records και VNet links |
 
----
+### 🎨 Οπτικοποίηση & Interaction
+| Λειτουργία | Περιγραφή |
+|------------|-----------|
+| Dual Themes | Light (Draw.io style) & Dark (Cyberpunk) θέματα |
+| Grid Layout | Αρχιτεκτονική διάταξη σε "κουτιά" (Enterprise Landing Zones) |
+| Radial Layout | Hub στο κέντρο, Spokes κυκλικά |
+| Freeform Drag & Drop | Ελεύθερη μετακίνηση στοιχείων στον καμβά |
+| Group Drag | Drag RG/Subscription/VNet → μετακινούνται όλα τα παιδιά μαζί |
+| Pan & Zoom | Scroll zoom + drag πλοήγηση στον canvas |
+| Inline Rename | Διπλό κλικ για μετονομασία στον καμβά |
+| Επίσημα Azure SVG Icons | Microsoft official icons μέσω CDN |
 
-## 🛠️ Πώς Λειτουργεί - Βήμα προς Βήμα
+### 💰 Εκτίμηση Κόστους
+| Λειτουργία | Περιγραφή |
+|------------|-----------|
+| Live Cost Estimator | Αυτόματος υπολογισμός μηνιαίου κόστους |
+| Per-Resource Pricing | Κάθε resource έχει estimated monthly cost |
+| Azure Pricing Calculator Link | Direct link στο επίσημο calculator |
 
-Το περιβάλλον χωρίζεται σε τρεις κύριες στήλες:
+### 🔒 Security
+| Λειτουργία | Περιγραφή |
+|------------|-----------|
+| Security Posture Panel | Ανίχνευση βασικών security issues |
+| NSG Rules Editor | Παραμετροποίηση Network Security Groups |
+| Private Endpoints | Υποστήριξη Private Link connectivity |
 
-### 1. Η Αριστερή Μπάρα (Azure Hierarchy Builder)
-Εδώ χτίζετε τη "ραχοκοκαλιά" της υποδομής σας.
-*   **Hybrid / On-Premises:** Ενεργοποιήστε το τοπικό σας Datacenter για να σχεδιάσετε υβριδικές αρχιτεκτονικές.
-*   **Subscriptions:** Πατήστε *"+ Add Subscription"* για να προσθέσετε νέα συνδρομή.
-*   **Resource Groups:** Μέσα σε κάθε Subscription δημιουργείτε πολλαπλά RGs.
-*   **VNet & Spokes:** Σε κάθε RG προσθέτετε νέα Spoke VNets.
-*   **Resources:** Κάθε VNet έχει ένα μενού *"+ Add Resource"*. Από εκεί ανοίγει μια κατηγοριοποιημένη λίστα για να "ρίξετε" πόρους μέσα στο VNet.
+### 💾 Αποθήκευση & Εξαγωγή
+| Λειτουργία | Περιγραφή |
+|------------|-----------|
+| Auto-Save (localStorage) | Αυτόματη αποθήκευση κάθε αλλαγής |
+| Export PNG | Εικόνα υψηλής ανάλυσης (2x scale) |
+| PowerShell Script Generation | Πλήρες .ps1 deployment script |
+| Bicep Template Generation | IaC template σε Bicep format |
 
-### 2. Ο Κεντρικός Καμβάς (Interactive Canvas)
-Ο καμβάς (στη μέση) οπτικοποιεί ζωντανά την αρχιτεκτονική σας.
-*   **Πλοήγηση (Pan & Zoom):** Κάντε drag-and-drop στο κενό φόντο για να μετακινηθείτε και scroll για Zoom in/out.
-*   **Drag & Drop Πόρων:** Κάντε "αριστερό κλικ και σύρσιμο" πάνω σε ένα VNet ή Resource για να το μετακινήσετε ελεύθερα.
-*   **🆕 Group Drag (RG/Subscription):** Κάντε κλικ και σύρσιμο πάνω σε ένα Resource Group ή Subscription box — όλα τα στοιχεία μέσα μετακινούνται μαζί, δίνοντας τη δυνατότητα μαζικής αναδιάταξης.
-*   **Επιλογή (Select):** Κάντε κλικ σε οποιοδήποτε εικονίδιο για να εμφανιστούν οι ιδιότητές του δεξιά.
-*   **Μετονομασία (Rename):** Κάντε διπλό κλικ πάνω σε οποιοδήποτε όνομα στον καμβά.
-
-### 3. Η Δεξιά Μπάρα (Properties Editor & Cost)
-Όταν επιλέγετε ένα στοιχείο, αυτή η μπάρα μετατρέπεται σε κέντρο ελέγχου:
-*   **Για VNets:** Αλλάξτε όνομα, CIDR Block, RG. 
-*   **Για Peerings:** Θα δείτε μια λίστα με όλα τα υπόλοιπα VNets. Πατώντας το κουμπί `🔗 / 🔌`, μπορείτε να ενώσετε (Peering) ή να αποκόψετε τα δίκτυα.
-*   **Cost Estimator:** Στο πάνω μέρος προβάλλεται το συνολικό εκτιμώμενο κόστος.
-
-### 4. Εξαγωγή (Exports)
-Στο κάτω δεξί μέρος βρίσκονται τα εργαλεία εξαγωγής:
-1.  **⬇ Export as PNG:** Παράγει μια εικόνα υψηλής ανάλυσης (2x Scale) της αρχιτεκτονικής σας.
-2.  **⚡ Deploy via PowerShell:** Παράγει έτοιμο `.ps1` script (με RGs, VNets, Peerings, Gateways).
-3.  **📄 Generate Bicep:** Παράγει σκελετό κώδικα Bicep.
-4.  **🔄 Reset / 🧹 Clear Positions:** Επαναφορά της εφαρμογής ή απλή εκκαθάριση των custom συντεταγμένων του Drag & Drop.
+### ⚙️ Properties Editor
+| Λειτουργία | Περιγραφή |
+|------------|-----------|
+| Live Editing | Αλλαγές εφαρμόζονται αμέσως στον καμβά |
+| VNet Configuration | CIDR, subnets, peerings, resource group |
+| Resource Configuration | Size, SKU, tier, networking options κ.ά. |
+| Tags Management | Προσθήκη/επεξεργασία tags σε resources |
 
 ---
 
-## 💻 Τεχνολογίες που Χρησιμοποιήθηκαν (Tech Stack)
+## 🛠️ Οδηγός Χρήσης - Βήμα προς Βήμα
+
+### Βήμα 1: Άνοιγμα της Εφαρμογής
+Ανοίξτε το `index.html` σε οποιονδήποτε σύγχρονο browser (Chrome, Firefox, Edge). Δεν χρειάζεται server — τρέχει 100% client-side.
+
+### Βήμα 2: Δημιουργία Subscriptions
+1. Στην **αριστερή μπάρα**, πατήστε **"+ Add Subscription"**
+2. Δώστε όνομα στο subscription (π.χ. "Production", "Development")
+3. Επαναλάβετε για κάθε subscription που χρειάζεστε
+
+### Βήμα 3: Δημιουργία Resource Groups
+1. Μέσα σε κάθε Subscription, πατήστε **"+ Add Resource Group"**
+2. Ονομάστε το RG (π.χ. "rg-networking", "rg-compute")
+3. Επιλέξτε location (region)
+
+### Βήμα 4: Προσθήκη VNets
+1. Σε κάθε Resource Group, πατήστε **"+ Add VNet"**
+2. Ορίστε όνομα και CIDR block (π.χ. 10.0.0.0/16)
+3. Το πρώτο VNet γίνεται αυτόματα Hub (ή μπορείτε να αλλάξετε)
+
+### Βήμα 5: Προσθήκη Resources
+1. Μέσα σε κάθε VNet, πατήστε **"+ Add Resource"**
+2. Επιλέξτε κατηγορία (Compute, Networking, Data, Security, κ.λπ.)
+3. Επιλέξτε τον πόρο (VM, AKS, Firewall, SQL, κ.λπ.)
+4. Ο πόρος εμφανίζεται αυτόματα στον καμβά
+
+### Βήμα 6: Σύνδεση VNets (Peering)
+1. Κάντε κλικ σε ένα VNet στον καμβά
+2. Στη **δεξιά μπάρα**, βρείτε την ενότητα Peerings
+3. Πατήστε 🔗 δίπλα στο VNet που θέλετε να συνδέσετε
+4. Η σύνδεση εμφανίζεται αμέσως στον καμβά
+
+### Βήμα 7: Παραμετροποίηση
+1. Κάντε κλικ σε οποιοδήποτε στοιχείο στον καμβά
+2. Στη δεξιά μπάρα, τροποποιήστε τις ρυθμίσεις (size, SKU, CIDR κ.λπ.)
+3. Οι αλλαγές αποθηκεύονται αυτόματα
+
+### Βήμα 8: Οργάνωση Layout
+- **Toggle Layout**: Εναλλαγή μεταξύ Grid / Radial διάταξης
+- **Drag & Drop**: Σύρετε στοιχεία ελεύθερα στον καμβά
+- **Fit to Screen**: Προσαρμογή zoom για να χωράει όλο το diagram
+- **Group Drag**: Σύρετε ένα RG ή Subscription box → μετακινούνται όλα τα περιεχόμενα
+
+### Βήμα 9: Εξαγωγή
+1. **Export PNG**: Για documentation ή presentations
+2. **Deploy via PowerShell**: Παράγει script για Azure deployment
+3. **Generate Bicep**: Παράγει IaC template
+4. Κατεβάστε ή αντιγράψτε τον κώδικα
+
+### Βήμα 10: Hybrid Connectivity (Προαιρετικό)
+1. Ενεργοποιήστε **"On-Premises"** στην αριστερή μπάρα
+2. Ορίστε όνομα και CIDR του τοπικού datacenter
+3. Προσθέστε VPN Gateway ή ExpressRoute Gateway σε ένα VNet
+4. Η σύνδεση εμφανίζεται αυτόματα στο diagram
+
+---
+
+## ❓ Τι Προβλήματα Λύνει
+
+### 1. Γρήγορος Σχεδιασμός Αρχιτεκτονικής
+**Πρόβλημα:** Ο σχεδιασμός Azure αρχιτεκτονικών σε Visio/Draw.io είναι αργός και δεν παράγει κώδικα.  
+**Λύση:** Drag & drop builder που παράγει αυτόματα IaC (PowerShell/Bicep).
+
+### 2. Οπτικοποίηση Hub & Spoke
+**Πρόβλημα:** Δύσκολο να απεικονίσεις σύνθετα hub-spoke topologies με πολλαπλά subscriptions.  
+**Λύση:** Αυτόματη διάταξη (Grid/Radial) με ιεραρχική δομή Subscription → RG → VNet → Resources.
+
+### 3. Εκτίμηση Κόστους σε Real-Time
+**Πρόβλημα:** Δεν ξέρεις πόσο κοστίζει η αρχιτεκτονική σου μέχρι να κάνεις deploy.  
+**Λύση:** Live cost estimator που ενημερώνεται καθώς προσθέτεις/αφαιρείς resources.
+
+### 4. Γρήγορο Prototyping
+**Πρόβλημα:** Θέλεις να δοκιμάσεις γρήγορα διαφορετικά architecture patterns.  
+**Λύση:** Zero-setup εργαλείο (ανοίγεις ένα HTML αρχείο) — δεν χρειάζεται εγκατάσταση.
+
+### 5. Infrastructure as Code Generation
+**Πρόβλημα:** Η συγγραφή IaC από το μηδέν είναι χρονοβόρα και error-prone.  
+**Λύση:** Αυτόματη δημιουργία PowerShell scripts και Bicep templates από το visual diagram.
+
+### 6. Security Awareness
+**Πρόβλημα:** Εύκολα ξεχνάς security best practices κατά τον σχεδιασμό.  
+**Λύση:** Security posture panel που εντοπίζει βασικά issues στην αρχιτεκτονική.
+
+---
+
+## 💻 Τεχνολογίες (Tech Stack)
 
 Το project ακολουθεί τη λογική **Zero Dependencies** (δεν απαιτεί NPM, React, Vue, ή Node.js).
-*   **HTML5 & CSS3:** Σημασιολογική δόμηση, CSS Variables, CSS Grid.
-*   **Vanilla JavaScript (ES6+):** HTML5 Canvas API (Αλγόριθμοι σχεδίασης, Orthogonal routing, Drag & Drop), LocalStorage API.
-*   **CDN Assets:** Επίσημα Microsoft Azure SVGs.
+
+| Τεχνολογία | Χρήση |
+|------------|-------|
+| HTML5 | Σημασιολογική δόμηση, Canvas element |
+| CSS3 | CSS Variables, CSS Grid, Responsive Design |
+| Vanilla JavaScript (ES6+) | Canvas API, Drag & Drop, LocalStorage, Module system |
+| CDN Assets | Επίσημα Microsoft Azure SVG icons |
+
+### Αρχιτεκτονική Κώδικα
+
+```
+index.html              → Entry point, HTML structure
+js/
+├── main.js             → Αρχικοποίηση, wire-up global functions
+├── state-management.js → State, resource types, save/load, cost calculation
+├── canvas-engine.js    → Canvas rendering, drawing, layout algorithms
+├── ui-components.js    → Sidebar, editor, UI interactions
+└── export-logic.js     → PNG/PowerShell/Bicep export
+styles/
+└── main.css            → Styling, themes, responsive layout
+```
+
+---
+
+## 🚀 Γρήγορη Εκκίνηση (Quick Start)
+
+```bash
+# Δεν χρειάζεται εγκατάσταση! Απλά ανοίξτε:
+open index.html
+# ή σε Linux:
+xdg-open index.html
+# ή σερβίρετε τοπικά (για module support):
+python -m http.server 8000
+# και ανοίξτε http://localhost:8000
+```
+
+---
+
+## 📍 Τρέχουσα Κατάσταση (Status)
+
+| Πεδίο | Κατάσταση |
+|-------|-----------|
+| Core Functionality | ✅ Πλήρως λειτουργικό |
+| Desktop Experience | ✅ Εξαιρετική |
+| Mobile Experience | ⚠️ Βασικό (χρειάζεται βελτίωση) |
+| IaC Export (PowerShell) | ✅ Λειτουργικό |
+| IaC Export (Bicep) | ✅ Λειτουργικό |
+| IaC Export (Terraform) | ❌ Δεν υπάρχει ακόμα |
+| Auto-Save | ✅ localStorage |
+| JSON Import/Export | ❌ Δεν υπάρχει ακόμα |
+| Undo/Redo | ✅ Λειτουργικό (Ctrl+Z / Ctrl+Y) |
+| Automated Tests | ❌ Δεν υπάρχουν |
+| CI/CD Pipeline | ❌ Δεν υπάρχει |
+
+---
+
+## 🗺️ Μελλοντικό Πλάνο Βελτίωσης
+
+Δείτε το αρχείο **[tobeupdate.md](./tobeupdate.md)** για αναλυτικό πλάνο μελλοντικών βελτιώσεων και αναβαθμίσεων.
+
+Δείτε επίσης το **[ROADMAP.md](./ROADMAP.md)** για το πλήρες development roadmap με GitHub Issues format.
 
 ---
 
