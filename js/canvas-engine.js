@@ -285,6 +285,39 @@ function getRgBounds(rgId,nodes){
   return{x:mx-15,y:my-30,w:Mx-mx+30,h:My-my+45};
 }
 
+function getMgBounds(mgId, nodes) {
+  // Get all subscription IDs under this MG (direct children)
+  const mgSubs = state.subscriptions.filter(s => s.mgId === mgId).map(s => s.id);
+  // Get child MGs
+  const childMgs = (state.managementGroups || []).filter(m => m.parentId === mgId);
+  
+  let mx = Infinity, my = Infinity, Mx = -Infinity, My = -Infinity;
+  let hasContent = false;
+  
+  // Include subscription bounds
+  mgSubs.forEach(subId => {
+    const b = getSubBounds(subId, nodes);
+    if (b) {
+      hasContent = true;
+      mx = Math.min(mx, b.x); my = Math.min(my, b.y);
+      Mx = Math.max(Mx, b.x + b.w); My = Math.max(My, b.y + b.h);
+    }
+  });
+  
+  // Include child MG bounds recursively
+  childMgs.forEach(child => {
+    const b = getMgBounds(child.id, nodes);
+    if (b) {
+      hasContent = true;
+      mx = Math.min(mx, b.x); my = Math.min(my, b.y);
+      Mx = Math.max(Mx, b.x + b.w); My = Math.max(My, b.y + b.h);
+    }
+  });
+  
+  if (!hasContent) return null;
+  return { x: mx - 20, y: my - 40, w: Mx - mx + 40, h: My - my + 55 };
+}
+
 export function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.save();ctx.translate(state.offset.x,state.offset.y);ctx.scale(state.scale,state.scale);
@@ -293,6 +326,20 @@ export function draw(){
   const dw=state.theme==='drawio';
 
   if(state.layout==='grid'){
+    // Draw Management Group bounds (if enabled)
+    if (state.mgEnabled && state.managementGroups && state.managementGroups.length > 0) {
+      state.managementGroups.forEach((mg) => {
+        const b = getMgBounds(mg.id, nodes);
+        if (!b) return;
+        ctx.beginPath(); safeRR(ctx, b.x, b.y, b.w, b.h, 20);
+        ctx.fillStyle = dw ? 'rgba(0,120,212,0.04)' : 'rgba(0,120,212,0.03)'; ctx.fill();
+        ctx.setLineDash([12, 6]); ctx.strokeStyle = dw ? 'rgba(0,120,212,0.6)' : 'rgba(0,120,212,0.4)'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.setLineDash([]);
+        ctx.font = 'bold 13px Syne'; ctx.fillStyle = dw ? '#1E40AF' : '#60A5FA';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('🏛️ ' + mg.name, b.x + 15, b.y + 20);
+      });
+    }
+
     state.subscriptions.forEach((sub,si)=>{
       const b=getSubBounds(sub.id,nodes);
       if(!b)return;

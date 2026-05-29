@@ -1,6 +1,6 @@
 import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, setRenderAll, resetDiagram, resetPositions, undo, redo } from './state-management.js';
 import { draw, resize, selectNode, getRenderNodes } from './canvas-engine.js';
-import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
+import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMgEnabled, addMg, deleteMg, renameMg, assignSubToMg, assignMgParent, addSubToMg, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText, exportJson, openJsonImportModal, handleJsonFile, confirmJsonImport, previewPastedJson, openAzureInventoryModal, handleInventoryFile, previewInventory, confirmInventoryImport, toggleExportPanel } from './export-logic.js';
 import { openTemplateGallery, closeTemplateGallery, applyTemplate } from './template-gallery.js';
 
@@ -33,6 +33,8 @@ function deleteSelectedElement() {
   }
   // Check if it's on-prem
   if (id === 'onprem') { state.onPrem.enabled = false; state.selectedId = null; fullUpdateImpl(); return; }
+  // Check if it's a management group
+  if ((state.managementGroups||[]).find(mg => mg.id === id)) { deleteMg(id); return; }
   // Check if it's a subscription
   if (state.subscriptions.find(s => s.id === id)) { deleteSub(id); return; }
   // Check if it's a resource group
@@ -145,6 +147,13 @@ window._fitToScreen = fitToScreen;
 window._toggleOnPrem = toggleOnPrem;
 window._updateOnPremName = updateOnPremName;
 window._updateOnPremCidr = updateOnPremCidr;
+window._toggleMgEnabled = toggleMgEnabled;
+window._addMg = addMg;
+window._deleteMg = deleteMg;
+window._renameMg = renameMg;
+window._assignSubToMg = assignSubToMg;
+window._assignMgParent = assignMgParent;
+window._addSubToMg = addSubToMg;
 window._toggleMobileMenu = toggleMobileMenu;
 window._showMobilePanel = showMobilePanel;
 window._addSub = addSub;
