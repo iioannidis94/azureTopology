@@ -1267,7 +1267,11 @@ function _mergeJsonData(data) {
     // Merge hub peerings
     if (importedHub.peerings) {
       importedHub.peerings.forEach(p => {
-        if (!state.hub.peerings.find(ep => ep === p)) {
+        const isDup = state.hub.peerings.some(ep => 
+          (typeof ep === 'string' && ep === p) || 
+          (typeof ep === 'object' && typeof p === 'object' && ep.id === p.id)
+        );
+        if (!isDup) {
           state.hub.peerings.push(p);
         }
       });
