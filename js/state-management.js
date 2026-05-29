@@ -102,9 +102,11 @@ export const VNET_COLORS=['#0078D4','#00BCF2','#00B294','#FF8C00','#8764B8','#10
 const defaultState={
   theme:'dark', layout:'grid',
   onPrem: { enabled: false, id: 'onprem', name: 'Corp Datacenter', cidr: '192.168.0.0/16' },
+  mgEnabled: false,
+  managementGroups: [],
   customPos: {}, 
   subscriptions:[
-    {id:'sub-1',name:'My Subscription',subscriptionId:'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',tenantId:'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',tags:{}}
+    {id:'sub-1',name:'My Subscription',subscriptionId:'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',tenantId:'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',tags:{},mgId:null}
   ],
   resourceGroups:[
     {id:'rg-1', name:'rg-main', location:'eastus', subId:'sub-1', tags:{}, lock:'None', budgetLimit:'', budgetAlertThreshold:'80'}
@@ -126,6 +128,9 @@ try{
   if(!state.rgResources) state.rgResources=[];
   if(!state.hub.peeringConfigs) state.hub.peeringConfigs={};
   state.spokes.forEach(s => { if(!s.peeringConfigs) s.peeringConfigs = {}; });
+  if(state.mgEnabled===undefined) state.mgEnabled=false;
+  if(!state.managementGroups) state.managementGroups=[];
+  state.subscriptions.forEach(s => { if(s.mgId===undefined) s.mgId=null; });
   if(state.theme==='dark') document.body.classList.remove('theme-drawio');
   else document.body.classList.add('theme-drawio');
 }catch(e){state=JSON.parse(JSON.stringify(defaultState));}
