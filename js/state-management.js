@@ -202,7 +202,7 @@ export function undo() {
     _redoStack.push(_getSerializableState());
     const prev = _undoStack.pop();
     _restoreSnapshot(prev);
-    _lastSavedSnapshot = _getSerializableState();
+    _lastSavedSnapshot = prev;
     localStorage.setItem(KEY, JSON.stringify(state));
     // Use render-only path to avoid saveState interference
     renderAll();
@@ -220,7 +220,7 @@ export function redo() {
     _undoStack.push(_getSerializableState());
     const next = _redoStack.pop();
     _restoreSnapshot(next);
-    _lastSavedSnapshot = _getSerializableState();
+    _lastSavedSnapshot = next;
     localStorage.setItem(KEY, JSON.stringify(state));
     // Use render-only path to avoid saveState interference
     renderAll();
