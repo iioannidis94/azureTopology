@@ -28,7 +28,9 @@
 
 <div class="app">
   <div class="sidebar" id="sidebar-left"></div>
+  <button class="sidebar-toggle toggle-left" id="toggle-left" onclick="window._toggleSidebar('left')" title="Toggle Left Panel">◀</button>
   <div class="canvas-area"><canvas id="diagram-canvas"></canvas></div>
+  <button class="sidebar-toggle toggle-right" id="toggle-right" onclick="window._toggleSidebar('right')" title="Toggle Right Panel">▶</button>
   <div class="sidebar right" id="sidebar-right">
     
     <div class="tree-section-title cost-section-title" onclick="window._toggleCostPanel()">// Cost Estimator <span id="cost-panel-toggle" style="font-size:8px;color:var(--muted);">▶</span></div>

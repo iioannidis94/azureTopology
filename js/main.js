@@ -235,6 +235,23 @@ window._applyTemplate = applyTemplate;
 window._openShortcutsModal = openShortcutsModal;
 
 // ================================================================
+// SIDEBAR COLLAPSE/EXPAND
+// ================================================================
+window._toggleSidebar = function(side) {
+  const sidebar = document.getElementById(side === 'left' ? 'sidebar-left' : 'sidebar-right');
+  const btn = document.getElementById(side === 'left' ? 'toggle-left' : 'toggle-right');
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  if (side === 'left') {
+    btn.textContent = isCollapsed ? '▶' : '◀';
+    btn.title = isCollapsed ? 'Show Left Panel' : 'Hide Left Panel';
+  } else {
+    btn.textContent = isCollapsed ? '◀' : '▶';
+    btn.title = isCollapsed ? 'Show Right Panel' : 'Hide Right Panel';
+  }
+  setTimeout(resize, 350);
+};
+
+// ================================================================
 // INIT & LOAD REAL ICONS
 // ================================================================
 loadAzureIcons(() => {
