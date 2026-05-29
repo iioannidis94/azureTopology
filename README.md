@@ -200,7 +200,7 @@ python -m http.server 8000
 | IaC Export (Terraform) | ❌ Δεν υπάρχει ακόμα |
 | Auto-Save | ✅ localStorage |
 | JSON Import/Export | ❌ Δεν υπάρχει ακόμα |
-| Undo/Redo | ❌ Δεν υπάρχει ακόμα |
+| Undo/Redo | ✅ Λειτουργικό (Ctrl+Z / Ctrl+Y) |
 | Automated Tests | ❌ Δεν υπάρχουν |
 | CI/CD Pipeline | ❌ Δεν υπάρχει |
 

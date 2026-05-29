@@ -6,12 +6,12 @@
 
 ## 🔴 Φάση 1 - Κρίσιμα (Must-Have)
 
-### 1.1 Undo/Redo Functionality
-- [ ] Υλοποίηση command pattern για undo/redo
-- [ ] History stack (τουλάχιστον 50 ενέργειες)
-- [ ] Keyboard shortcuts: Ctrl+Z / Ctrl+Y
-- [ ] Υποστήριξη για: add/remove, move, rename, peering
-- [ ] Visual buttons στο header
+### 1.1 ~~Undo/Redo Functionality~~ ✅ DONE
+- [x] Υλοποίηση command pattern για undo/redo
+- [x] History stack (τουλάχιστον 50 ενέργειες)
+- [x] Keyboard shortcuts: Ctrl+Z / Ctrl+Y
+- [x] Υποστήριξη για: add/remove, move, rename, peering
+- [x] Visual buttons στο header
 
 ### 1.2 JSON Import/Export
 - [ ] Export τρέχουσας αρχιτεκτονικής σε JSON αρχείο

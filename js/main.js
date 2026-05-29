@@ -23,7 +23,7 @@ document.addEventListener('keydown', (e) => {
     undo();
   }
   // Ctrl+Y / Cmd+Y / Ctrl+Shift+Z / Cmd+Shift+Z = Redo
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
     e.preventDefault();
     redo();
   }
