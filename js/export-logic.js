@@ -91,10 +91,13 @@ function generatePowerShellResource(res, rg, varN, sn) {
       break;
     }
     case 'nva': {
-      lines.push(`# FortiGate NVA: ${res.name} (Vendor: ${c.vendor||'Fortinet'}, Mode: ${c.mode||'Active/Passive'}, Version: ${c.version||'7.4'}, License: ${c.licenseType||'PAYG'})`);
+      const nvaVendor = (c.vendor||'Fortinet').toLowerCase();
+      const nvaProduct = nvaVendor === 'fortinet' ? 'fortinet_fortigate-vm_v5' : `${nvaVendor}_nva`;
+      const nvaPlanName = nvaVendor === 'fortinet' ? 'fortinet_fg-vm' : `${nvaVendor}_nva`;
+      lines.push(`# NVA: ${res.name} (Vendor: ${c.vendor||'Fortinet'}, Mode: ${c.mode||'Active/Passive'}, Version: ${c.version||'7.4'}, License: ${c.licenseType||'PAYG'})`);
       lines.push(`# Deploy via Azure Marketplace — use New-AzMarketplaceTerms and New-AzVM with plan`);
       lines.push(`$nvaConfig = New-AzVMConfig -VMName "${res.name}" -VMSize "Standard_F4s_v2"`);
-      lines.push(`$nvaConfig = Set-AzVMPlan -VM $nvaConfig -Publisher "${(c.vendor||'fortinet').toLowerCase()}" -Product "fortinet_fortigate-vm_v5" -Name "fortinet_fg-vm"`);
+      lines.push(`$nvaConfig = Set-AzVMPlan -VM $nvaConfig -Publisher "${nvaVendor}" -Product "${nvaProduct}" -Name "${nvaPlanName}"`);
       lines.push(`# License Type: ${c.licenseType||'PAYG'} | Version: ${c.version||'7.4'}`);
       lines.push(`New-AzVM -ResourceGroupName "${rg.name}" -Location "${rg.location}" -VM $nvaConfig`);
       break;
@@ -186,7 +189,7 @@ function generatePowerShellResource(res, rg, varN, sn) {
       }
       lines.push(`$nsgRules = @()`);
       nsgRules.forEach(rule => {
-        lines.push(`$nsgRules += New-AzNetworkSecurityRuleConfig -Name "${rule.name}" -Protocol ${rule.protocol||'Tcp'} -Direction ${rule.direction||'Inbound'} -Priority ${rule.priority||100} -SourceAddressPrefix "${rule.srcAddr||'*'}" -SourcePortRange "${rule.srcPort||'*'}" -DestinationAddressPrefix "${rule.dstAddr||'*'}" -DestinationPortRange ${rule.dstPort||80} -Access ${rule.access||'Allow'}`);
+        lines.push(`$nsgRules += New-AzNetworkSecurityRuleConfig -Name "${rule.name}" -Protocol ${rule.protocol||'Tcp'} -Direction ${rule.direction||'Inbound'} -Priority ${rule.priority||100} -SourceAddressPrefix "${rule.srcAddr||'*'}" -SourcePortRange "${rule.srcPort||'*'}" -DestinationAddressPrefix "${rule.dstAddr||'*'}" -DestinationPortRange "${rule.dstPort||'80'}" -Access ${rule.access||'Allow'}`);
       });
       lines.push(`New-AzNetworkSecurityGroup -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SecurityRules $nsgRules`);
       break;
@@ -459,14 +462,17 @@ function generateBicepResource(res, rg, vnet, sn) {
       break;
     }
     case 'nva': {
-      lines.push(`// FortiGate NVA: ${res.name} — Vendor: ${c.vendor||'Fortinet'}, Version: ${c.version||'7.4'}, License: ${c.licenseType||'PAYG'}`);
+      const nvaVendor = (c.vendor||'Fortinet').toLowerCase();
+      const nvaProduct = nvaVendor === 'fortinet' ? 'fortinet_fortigate-vm_v5' : `${nvaVendor}_nva`;
+      const nvaPlanName = nvaVendor === 'fortinet' ? 'fortinet_fg-vm' : `${nvaVendor}_nva`;
+      lines.push(`// NVA: ${res.name} — Vendor: ${c.vendor||'Fortinet'}, Version: ${c.version||'7.4'}, License: ${c.licenseType||'PAYG'}`);
       lines.push(`module ${safeName} 'br/public:avm/res/compute/virtual-machine:0.5.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    vmSize: 'Standard_F4s_v2'`);
-      lines.push(`    plan: { publisher: '${(c.vendor||'fortinet').toLowerCase()}', product: 'fortinet_fortigate-vm_v5', name: 'fortinet_fg-vm' }`);
+      lines.push(`    plan: { publisher: '${nvaVendor}', product: '${nvaProduct}', name: '${nvaPlanName}' }`);
       lines.push(`    // Mode: ${c.mode||'Active/Passive'} | License: ${c.licenseType||'PAYG'}`);
       lines.push(`  }`);
       lines.push(`}\n`);
