@@ -13,22 +13,22 @@
 - [x] Υποστήριξη για: add/remove, move, rename, peering
 - [x] Visual buttons στο header
 
-### 1.2 JSON Import/Export
-- [ ] Export τρέχουσας αρχιτεκτονικής σε JSON αρχείο
-- [ ] Import αρχιτεκτονικής από JSON
-- [ ] Schema validation κατά το import
-- [ ] File picker dialog + download trigger
+### ~~1.2 JSON Import/Export~~ ✅ DONE
+- [x] Export τρέχουσας αρχιτεκτονικής σε JSON αρχείο
+- [x] Import αρχιτεκτονικής από JSON
+- [x] Schema validation κατά το import
+- [x] File picker dialog + download trigger
 - [ ] Δυνατότητα sharing configurations μεταξύ χρηστών
 
-### 1.3 Azure Resource Inventory Import
-- [ ] Import JSON από `az resource list -o json` ή `az graph query`
-- [ ] Mapping Azure resource types → εσωτερικά types (π.χ. `Microsoft.Compute/virtualMachines` → `vm`, `Microsoft.Network/virtualNetworks` → VNet)
-- [ ] Auto-detect δομή: Subscription → Resource Groups → VNets → Subnets → Resources
-- [ ] Ανακατασκευή VNet/Subnet hierarchy από resource IDs (π.χ. `/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/...`)
-- [ ] Preview panel πριν το import (πόσα RGs, VNets, resources βρέθηκαν)
-- [ ] Υποστήριξη πολλαπλών resource groups σε ένα import
-- [ ] Αντιστοίχιση configurations (VM size, SKU, tier κλπ.) από τα resource properties
-- [ ] Graceful handling για resource types που δεν υποστηρίζονται (εμφάνιση warning, skip)
+### 1.3 ~~Azure Resource Inventory Import~~ ✅ DONE
+- [x] Import JSON από `az resource list -o json` ή `az graph query`
+- [x] Mapping Azure resource types → εσωτερικά types (π.χ. `Microsoft.Compute/virtualMachines` → `vm`, `Microsoft.Network/virtualNetworks` → VNet)
+- [x] Auto-detect δομή: Subscription → Resource Groups → VNets → Subnets → Resources
+- [x] Ανακατασκευή VNet/Subnet hierarchy από resource IDs (π.χ. `/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/...`)
+- [x] Preview panel πριν το import (πόσα RGs, VNets, resources βρέθηκαν)
+- [x] Υποστήριξη πολλαπλών resource groups σε ένα import
+- [x] Αντιστοίχιση configurations (VM size, SKU, tier κλπ.) από τα resource properties
+- [x] Graceful handling για resource types που δεν υποστηρίζονται (εμφάνιση warning, skip)
 - [ ] Δυνατότητα merge με υπάρχον diagram ή clean import
 
 ### 1.4 Mobile Experience Fix

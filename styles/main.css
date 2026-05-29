@@ -172,6 +172,7 @@
   
   /* EXPORT AREA */
   .export-area{padding-top:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+  .export-area.collapsed{display:none;}
   .export-btn{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;padding:10px;border-radius:6px;border:none;background:linear-gradient(135deg,var(--azure-blue),#00BCF2);color:white;cursor:pointer;width:100%;transition:all .2s;text-transform:uppercase;letter-spacing:0.5px;}
   .export-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,120,212,.3);}
   .export-btn.secondary{background:transparent;border:1px solid var(--azure-blue);color:var(--azure-blue);}
@@ -202,6 +203,7 @@
   .json-import-section textarea:focus{border-color:var(--azure-blue);outline:none;}
   .json-import-error{color:#E81123;font-family:'JetBrains Mono';font-size:11px;min-height:16px;}
   .json-import-preview{background:var(--bg3);border:1px solid var(--azure-blue);border-radius:8px;padding:12px;font-size:11px;color:var(--accent);line-height:1.7;white-space:pre-wrap;}
+  .inventory-ps-cmd{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:'JetBrains Mono';font-size:11px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-all;margin:0;}
 
   #rename-overlay{display:none;position:fixed;z-index:500;}
   #rename-input{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;border:2px solid #0078D4;border-radius:6px;background:#fff;color:#111;outline:none;min-width:140px;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
