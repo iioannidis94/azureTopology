@@ -1,4 +1,4 @@
-import { state, getVnetsInRg, RES_TYPES } from './state-management.js';
+import { state, getVnetsInRg, RES_TYPES, KEY, saveState, fullUpdate } from './state-management.js';
 
 // ================================================================
 // EXPORTS (PNG, PowerShell, Bicep)
@@ -1011,5 +1011,141 @@ export function closeModal(id){document.getElementById(id).classList.remove('sho
 export function copyText(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>alert('Copied successfully!'));}
 export function downloadText(id,fn){const b=new Blob([document.getElementById(id).textContent],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;a.click();}
 
+// ================================================================
+// JSON EXPORT / IMPORT
+// ================================================================
+const JSON_EXPORT_VERSION = 1;
+const TRANSIENT_KEYS = ['dragging','dragStart','offsetStart','dragNodeId','dragGroup','selectedId','offset','scale','mouseStart','dragNodeStart'];
+
+export function exportJson(){
+  const exportData = {};
+  for (const key of Object.keys(state)) {
+    if (!TRANSIENT_KEYS.includes(key)) {
+      exportData[key] = JSON.parse(JSON.stringify(state[key]));
+    }
+  }
+  const wrapper = {
+    _format: 'AzureArchitectureBuilder',
+    _version: JSON_EXPORT_VERSION,
+    _exportedAt: new Date().toISOString(),
+    state: exportData
+  };
+  const blob = new Blob([JSON.stringify(wrapper, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `azure-architecture-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+export function openJsonImportModal(){
+  document.getElementById('json-import-modal').classList.add('show');
+  document.getElementById('json-file-input').value = '';
+  document.getElementById('json-paste-input').value = '';
+  document.getElementById('json-import-error').textContent = '';
+  document.getElementById('json-import-preview').textContent = '';
+  document.getElementById('json-import-preview').style.display = 'none';
+}
+
+export function handleJsonFile(){
+  const fileInput = document.getElementById('json-file-input');
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('json-paste-input').value = e.target.result;
+    _previewJson(e.target.result);
+  };
+  reader.readAsText(file);
+}
+
+function _previewJson(raw){
+  const errEl = document.getElementById('json-import-error');
+  const previewEl = document.getElementById('json-import-preview');
+  errEl.textContent = '';
+  previewEl.style.display = 'none';
+  try {
+    const parsed = JSON.parse(raw);
+    const data = parsed._format === 'AzureArchitectureBuilder' ? parsed.state : parsed;
+    const subs = (data.subscriptions || []).length;
+    const rgs = (data.resourceGroups || []).length;
+    const spokes = (data.spokes || []).length;
+    const hubSubnets = data.hub ? (data.hub.subnets || []).length : 0;
+    const totalRes = _countResources(data);
+    const lines = [
+      `Subscriptions: ${subs}`,
+      `Resource Groups: ${rgs}`,
+      `Hub VNet subnets: ${hubSubnets}`,
+      `Spoke VNets: ${spokes}`,
+      `Total resources: ${totalRes}`
+    ];
+    if (parsed._exportedAt) lines.push(`Exported: ${parsed._exportedAt}`);
+    previewEl.textContent = lines.join('\n');
+    previewEl.style.display = 'block';
+  } catch(e) {
+    errEl.textContent = '⚠ Invalid JSON: ' + e.message;
+  }
+}
+
+function _countResources(data){
+  let count = 0;
+  if (data.hub && data.hub.subnets) {
+    data.hub.subnets.forEach(sn => { count += (sn.resources || []).length; });
+  }
+  (data.spokes || []).forEach(spoke => {
+    (spoke.subnets || []).forEach(sn => { count += (sn.resources || []).length; });
+  });
+  count += (data.rgResources || []).length;
+  return count;
+}
+
+export function confirmJsonImport(){
+  const errEl = document.getElementById('json-import-error');
+  const raw = document.getElementById('json-paste-input').value.trim();
+  if (!raw) { errEl.textContent = '⚠ Please select a file or paste JSON content.'; return; }
+  
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch(e) { errEl.textContent = '⚠ Invalid JSON: ' + e.message; return; }
+
+  const data = parsed._format === 'AzureArchitectureBuilder' ? parsed.state : parsed;
+
+  // Validate minimum structure
+  if (!data.subscriptions || !data.resourceGroups || !data.hub) {
+    errEl.textContent = '⚠ Invalid diagram format: missing required fields (subscriptions, resourceGroups, hub).';
+    return;
+  }
+
+  if (!confirm('This will replace your current diagram. Continue?')) return;
+
+  // Apply imported data onto state
+  for (const key of Object.keys(state)) {
+    if (!TRANSIENT_KEYS.includes(key) && data[key] !== undefined) {
+      state[key] = JSON.parse(JSON.stringify(data[key]));
+    }
+  }
+
+  // Ensure required arrays exist
+  if (!state.rgResources) state.rgResources = [];
+  if (!state.spokes) state.spokes = [];
+  if (!state.hub.peeringConfigs) state.hub.peeringConfigs = {};
+  state.spokes.forEach(s => { if (!s.peeringConfigs) s.peeringConfigs = {}; });
+
+  // Apply theme
+  if (state.theme === 'dark') document.body.classList.remove('theme-drawio');
+  else document.body.classList.add('theme-drawio');
+
+  saveState();
+  closeModal('json-import-modal');
+  fullUpdate();
+}
+
+export function previewPastedJson(){
+  const raw = document.getElementById('json-paste-input').value.trim();
+  if (raw) _previewJson(raw);
+}
+
 // Setup modal close on backdrop click
-['ps-modal','bicep-modal'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeModal(id);}));
+['ps-modal','bicep-modal','json-import-modal'].forEach(id=>{
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click',e=>{if(e.target===el)closeModal(id);});
+});
