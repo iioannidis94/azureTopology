@@ -1,4 +1,4 @@
-import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, resetDiagram, resetPositions } from './state-management.js';
+import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, resetDiagram, resetPositions, undo, redo } from './state-management.js';
 import { draw, resize, selectNode } from './canvas-engine.js';
 import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText } from './export-logic.js';
@@ -6,13 +6,35 @@ import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadT
 // ================================================================
 // WIRE UP fullUpdate
 // ================================================================
-function fullUpdateImpl(){ saveState(); updateCost(); renderSecurityPanel(); renderSidebar(); renderEditor(); draw(); }
+function fullUpdateImpl(){ 
+  saveState(); updateCost(); renderSecurityPanel(); renderSidebar(); renderEditor(); draw(); 
+}
 setFullUpdate(fullUpdateImpl);
+
+// ================================================================
+// KEYBOARD SHORTCUTS
+// ================================================================
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  
+  // Ctrl+Z / Cmd+Z = Undo
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+    e.preventDefault();
+    undo();
+  }
+  // Ctrl+Y / Cmd+Y / Ctrl+Shift+Z / Cmd+Shift+Z = Redo
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+    e.preventDefault();
+    redo();
+  }
+});
 
 // ================================================================
 // EXPOSE TO GLOBAL SCOPE (for inline onclick handlers)
 // ================================================================
 window._fullUpdate = fullUpdateImpl;
+window._undo = undo;
+window._redo = redo;
 window._draw = draw;
 window._resize = resize;
 window._selectNode = selectNode;
