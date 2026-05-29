@@ -1035,7 +1035,7 @@ export function exportJson(){
   a.href = URL.createObjectURL(blob);
   a.download = `azure-architecture-${Date.now()}.json`;
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(a.href), 200);
 }
 
 export function openJsonImportModal(){
