@@ -1,6 +1,6 @@
 import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, resetDiagram, resetPositions } from './state-management.js';
 import { draw, resize, selectNode } from './canvas-engine.js';
-import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
+import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText } from './export-logic.js';
 
 // ================================================================
@@ -31,6 +31,12 @@ window._addRg = addRg;
 window._deleteRg = deleteRg;
 window._renameRg = renameRg;
 window._setRgLocation = setRgLocation;
+window._updateSubProp = updateSubProp;
+window._updateRgProp = updateRgProp;
+window._addTag = addTag;
+window._updateTag = updateTag;
+window._renameTag = renameTag;
+window._deleteTag = deleteTag;
 window._addSpoke = addSpoke;
 window._addVnetToRg = addVnetToRg;
 window._deleteSpoke = deleteSpoke;
@@ -41,6 +47,8 @@ window._selectPeering = selectPeering;
 window._addSubnet = addSubnet;
 window._deleteSubnet = deleteSubnet;
 window._updateSubnet = updateSubnet;
+window._updateVnetProp = updateVnetProp;
+window._updateSubnetProp = updateSubnetProp;
 window._toggleDropdown = toggleDropdown;
 window._filterResources = filterResources;
 window._addResource = addResource;

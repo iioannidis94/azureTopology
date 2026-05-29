@@ -233,44 +233,63 @@ function generatePowerShellResource(res, rg, varN, sn) {
       break;
     }
     case 'kv': {
-      lines.push(`New-AzKeyVault -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Sku "${c.sku||'Premium'}" -EnablePurgeProtection -EnableRbacAuthorization`);
+      let kvCmd = `New-AzKeyVault -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Sku "${c.sku||'Premium'}"`;
+      if(c.purgeProtection !== 'false') kvCmd += ` -EnablePurgeProtection`;
+      if(c.enableRbacAuth !== 'false') kvCmd += ` -EnableRbacAuthorization`;
+      if(c.softDeleteDays && c.softDeleteDays !== '90') kvCmd += ` -SoftDeleteRetentionInDays ${c.softDeleteDays}`;
+      if(c.networkAcls && c.networkAcls !== 'Allow') kvCmd += ` -NetworkRuleSet @{ DefaultAction = "Deny" }`;
+      lines.push(kvCmd);
       break;
     }
     case 'app': {
       lines.push(`New-AzAppServicePlan -Name "${res.name}-plan" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Tier "PremiumV3" -WorkerSize "Small" -Linux`);
-      lines.push(`New-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AppServicePlan "${res.name}-plan"`);
+      let appCmd = `New-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AppServicePlan "${res.name}-plan"`;
+      lines.push(appCmd);
+      if(c.httpsOnly !== 'false') lines.push(`Set-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -HttpsOnly $true`);
+      if(c.runtime) lines.push(`# Runtime: ${c.runtime} ${c.runtimeVersion||''}`);
+      if(c.alwaysOn === 'true') lines.push(`# AlwaysOn: Enabled`);
+      if(c.minTlsVersion) lines.push(`# Min TLS Version: ${c.minTlsVersion}`);
+      if(c.managedIdentity && c.managedIdentity !== 'None') lines.push(`Set-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -AssignIdentity $true`);
       break;
     }
     case 'apim': {
-      lines.push(`New-AzApiManagement -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Organization "MyOrg" -AdminEmail "admin@example.com" -Sku "${c.tier||'Developer'}" -Capacity 1`);
+      lines.push(`New-AzApiManagement -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Organization "${c.publisherName||'MyOrg'}" -AdminEmail "${c.publisherEmail||'admin@example.com'}" -Sku "${c.tier||'Developer'}" -Capacity ${c.capacity||1}${c.vnetType && c.vnetType!=='None' ? ` -VpnType "${c.vnetType}"` : ''}`);
       break;
     }
     case 'sb': {
-      lines.push(`New-AzServiceBusNamespace -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "${c.tier||'Premium'}" -SkuCapacity 1`);
+      let sbCmd = `New-AzServiceBusNamespace -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "${c.tier||'Premium'}" -SkuCapacity ${c.messagingUnits||1}`;
+      if(c.zoneRedundant === 'true') sbCmd += ` -ZoneRedundant`;
+      lines.push(sbCmd);
       break;
     }
     case 'evh': {
-      lines.push(`New-AzEventHubNamespace -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "${c.tier||'Standard'}" -SkuCapacity 1`);
-      lines.push(`New-AzEventHub -Name "${res.name}-hub" -NamespaceName "${res.name}" -ResourceGroupName "${rg.name}" -PartitionCount 4 -MessageRetentionInDays 7`);
+      let evhCmd = `New-AzEventHubNamespace -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SkuName "${c.tier||'Standard'}" -SkuCapacity ${c.throughputUnits||1}`;
+      lines.push(evhCmd);
+      lines.push(`New-AzEventHub -Name "${res.name}-hub" -NamespaceName "${res.name}" -ResourceGroupName "${rg.name}" -PartitionCount ${c.partitions||4} -MessageRetentionInDays ${c.retentionDays||7}${c.captureEnabled==='true' ? ' -CaptureEnabled' : ''}`);
       break;
     }
     case 'logic': {
-      lines.push(`# Logic App (Standard): ${res.name}`);
-      lines.push(`New-AzLogicApp -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -State "Enabled"`);
+      lines.push(`# Logic App (${c.plan||'Standard'}): ${res.name} — Trigger: ${c.triggerType||'HTTP'}${c.connectors ? ', Connectors: '+c.connectors : ''}`);
+      lines.push(`New-AzLogicApp -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -State "${c.state||'Enabled'}"`);
       break;
     }
     case 'foundry': {
-      lines.push(`New-AzCognitiveServicesAccount -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Kind "AIServices" -SkuName "${c.sku||'S0'}"`);
+      let foundryCmd = `New-AzCognitiveServicesAccount -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Kind "${c.kind||'AIServices'}" -SkuName "${c.sku||'S0'}"`;
+      if(c.customSubdomain) foundryCmd += ` -CustomSubdomainName "${c.customSubdomain}"`;
+      if(c.networkRules && c.networkRules !== 'Allow') foundryCmd += ` -NetworkRuleSet @{ DefaultAction = "Deny" }`;
+      lines.push(foundryCmd);
       break;
     }
     case 'openai': {
       lines.push(`New-AzCognitiveServicesAccount -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Kind "OpenAI" -SkuName "S0" -CustomSubdomainName "${res.name}"`);
-      lines.push(`# Deploy model: ${c.model||'gpt-4o'}`);
-      lines.push(`New-AzCognitiveServicesAccountDeployment -ResourceGroupName "${rg.name}" -AccountName "${res.name}" -Name "${c.model||'gpt-4o'}" -Properties @{ model = @{ format = "OpenAI"; name = "${c.model||'gpt-4o'}"; version = "latest" } } -Sku @{ name = "Standard"; capacity = 10 }`);
+      lines.push(`# Deploy model: ${c.model||'gpt-4o'} (deployment: ${c.deploymentName||c.model||'gpt-4o'}, version: ${c.modelVersion||'latest'})`);
+      lines.push(`New-AzCognitiveServicesAccountDeployment -ResourceGroupName "${rg.name}" -AccountName "${res.name}" -Name "${c.deploymentName||c.model||'gpt-4o'}" -Properties @{ model = @{ format = "OpenAI"; name = "${c.model||'gpt-4o'}"; version = "${c.modelVersion||'latest'}" } } -Sku @{ name = "Standard"; capacity = ${c.capacity||10} }`);
+      if(c.contentFilter && c.contentFilter !== 'Default') lines.push(`# Content Filter: ${c.contentFilter}`);
       break;
     }
     case 'monitor': {
-      lines.push(`New-AzOperationalInsightsWorkspace -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -Sku "PerGB2018" -RetentionInDays ${c.retentionDays||90}`);
+      lines.push(`New-AzOperationalInsightsWorkspace -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -Sku "${c.workspaceSku||'PerGB2018'}" -RetentionInDays ${c.retentionDays||90}${c.dailyCapGB ? ` -DailyQuotaGb ${c.dailyCapGB}` : ''}`);
+      if(c.solutions) lines.push(`# Solutions: ${c.solutions}`);
       break;
     }
     default: {
@@ -291,16 +310,41 @@ export function generatePowerShell(){
     const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
     subRgs.forEach(rg=>{
       lines.push(`# -- Resource Group: ${rg.name} --`);
-      lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location}" -ErrorAction SilentlyContinue\n`);
+      const rgTags = rg.tags && Object.keys(rg.tags).length > 0 ? ` -Tag @{${Object.entries(rg.tags).map(([k,v])=>`"${k}"="${v}"`).join(';')}}` : '';
+      lines.push(`New-AzResourceGroup -Name "${rg.name}" -Location "${rg.location}"${rgTags} -ErrorAction SilentlyContinue`);
+      if(rg.lock && rg.lock !== 'None') lines.push(`New-AzResourceLock -LockName "${rg.name}-lock" -LockLevel "${rg.lock}" -ResourceGroupName "${rg.name}" -Force`);
+      lines.push('');
       getVnetsInRg(rg.id).forEach(vnet=>{
         const varN=`$vnet_${vnet.name.replace(/[^a-zA-Z0-9]/g,'_')}`;
         
         lines.push(`$subnets = @()`);
         vnet.subnets.forEach(sn => {
-          lines.push(`$subnets += New-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -AddressPrefix "${sn.cidr}"`);
+          let snCmd = `$subnets += New-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -AddressPrefix "${sn.cidr}"`;
+          if(sn.serviceEndpoints) {
+            const eps = sn.serviceEndpoints.split(',').map(e=>e.trim()).filter(Boolean);
+            if(eps.length) snCmd += ` -ServiceEndpoint @(${eps.map(e=>`"${e}"`).join(',')})`;
+          }
+          if(sn.delegation && sn.delegation !== 'None') snCmd += ` -Delegation (New-AzDelegation -Name "delegation" -ServiceName "${sn.delegation}")`;
+          if(sn.privateEndpointNetworkPolicies === 'Enabled') snCmd += ` -PrivateEndpointNetworkPoliciesFlag "Enabled"`;
+          if(sn.privateLinkServiceNetworkPolicies === 'Enabled') snCmd += ` -PrivateLinkServiceNetworkPoliciesFlag "Enabled"`;
+          lines.push(snCmd);
         });
 
-        lines.push(`${varN} = New-AzVirtualNetwork -Name "${vnet.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AddressPrefix "${vnet.cidr}" -Subnet $subnets`);
+        let vnetCmd = `${varN} = New-AzVirtualNetwork -Name "${vnet.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AddressPrefix "${vnet.cidr}" -Subnet $subnets`;
+        if(vnet.dnsServers) {
+          const dns = vnet.dnsServers.split(',').map(d=>d.trim()).filter(Boolean);
+          if(dns.length) vnetCmd += ` -DnsServer @(${dns.map(d=>`"${d}"`).join(',')})`;
+        }
+        if(vnet.ddosProtectionPlan === 'true') vnetCmd += ` -EnableDdosProtection`;
+        if(vnet.encryption === 'true') vnetCmd += ` -EnableEncryption -EncryptionEnforcementPolicy "AllowUnencrypted"`;
+        lines.push(vnetCmd);
+
+        // NSG and Route Table associations
+        vnet.subnets.forEach(sn => {
+          if(sn.nsgId) lines.push(`Set-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN} -AddressPrefix "${sn.cidr}" -NetworkSecurityGroupId (Get-AzNetworkSecurityGroup -Name "${sn.nsgId}" -ResourceGroupName "${rg.name}").Id | Set-AzVirtualNetwork`);
+          if(sn.routeTableId) lines.push(`Set-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN} -AddressPrefix "${sn.cidr}" -RouteTableId (Get-AzRouteTable -Name "${sn.routeTableId}" -ResourceGroupName "${rg.name}").Id | Set-AzVirtualNetwork`);
+          if(sn.natGatewayId) lines.push(`Set-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN} -AddressPrefix "${sn.cidr}" -NatGatewayId (Get-AzNatGateway -Name "${sn.natGatewayId}" -ResourceGroupName "${rg.name}").Id | Set-AzVirtualNetwork`);
+        });
         
         if (vnet.peerings && vnet.peerings.length > 0) {
             vnet.peerings.forEach(pId => {
@@ -732,8 +776,10 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    sku: { family: 'A', name: '${(c.sku||'premium').toLowerCase()}' }`);
-      lines.push(`    enablePurgeProtection: true`);
-      lines.push(`    enableRbacAuthorization: true`);
+      lines.push(`    enablePurgeProtection: ${c.purgeProtection !== 'false'}`);
+      lines.push(`    enableRbacAuthorization: ${c.enableRbacAuth !== 'false'}`);
+      lines.push(`    softDeleteRetentionInDays: ${c.softDeleteDays || 90}`);
+      if(c.networkAcls && c.networkAcls !== 'Allow') lines.push(`    networkAcls: { defaultAction: 'Deny' }`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -746,7 +792,9 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    name: '${res.name}'`);
       lines.push(`    kind: 'app,linux'`);
       lines.push(`    serverFarmResourceId: '${res.name}-plan'`);
-      lines.push(`    siteConfig: { alwaysOn: true, httpsOnly: true, minTlsVersion: '1.2' }`);
+      lines.push(`    siteConfig: { alwaysOn: ${c.alwaysOn === 'true'}, httpsOnly: ${c.httpsOnly !== 'false'}, minTlsVersion: '${c.minTlsVersion||'1.2'}' }`);
+      if(c.runtime) lines.push(`    // Runtime: ${c.runtime} ${c.runtimeVersion||''}`);
+      if(c.managedIdentity && c.managedIdentity !== 'None') lines.push(`    managedIdentities: { systemAssigned: true }`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -757,9 +805,10 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    publisherName: 'MyOrganization'`);
-      lines.push(`    publisherEmail: 'admin@example.com'`);
-      lines.push(`    sku: { name: '${c.tier||'Developer'}', capacity: 1 }`);
+      lines.push(`    publisherName: '${c.publisherName||'MyOrganization'}'`);
+      lines.push(`    publisherEmail: '${c.publisherEmail||'admin@example.com'}'`);
+      lines.push(`    sku: { name: '${c.tier||'Developer'}', capacity: ${c.capacity||1} }`);
+      if(c.vnetType && c.vnetType !== 'None') lines.push(`    virtualNetworkType: '${c.vnetType}'`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -770,7 +819,8 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    sku: { name: '${c.tier||'Premium'}', tier: '${c.tier||'Premium'}', capacity: 1 }`);
+      lines.push(`    sku: { name: '${c.tier||'Premium'}', tier: '${c.tier||'Premium'}', capacity: ${c.messagingUnits||1} }`);
+      lines.push(`    zoneRedundant: ${c.zoneRedundant === 'true'}`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -781,8 +831,8 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    sku: { name: '${c.tier||'Standard'}', tier: '${c.tier||'Standard'}', capacity: 1 }`);
-      lines.push(`    eventhubs: [{ name: '${res.name}-hub', partitionCount: 4, messageRetentionInDays: 7 }]`);
+      lines.push(`    sku: { name: '${c.tier||'Standard'}', tier: '${c.tier||'Standard'}', capacity: ${c.throughputUnits||1} }`);
+      lines.push(`    eventhubs: [{ name: '${res.name}-hub', partitionCount: ${c.partitions||4}, messageRetentionInDays: ${c.retentionDays||7}${c.captureEnabled==='true' ? ', captureDescription: { enabled: true }' : ''} }]`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -793,7 +843,9 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    state: 'Enabled'`);
+      lines.push(`    state: '${c.state||'Enabled'}'`);
+      if(c.triggerType) lines.push(`    // Trigger: ${c.triggerType}`);
+      if(c.connectors) lines.push(`    // Connectors: ${c.connectors}`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -804,8 +856,10 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    kind: 'AIServices'`);
+      lines.push(`    kind: '${c.kind||'AIServices'}'`);
       lines.push(`    sku: { name: '${c.sku||'S0'}' }`);
+      if(c.customSubdomain) lines.push(`    customSubDomainName: '${c.customSubdomain}'`);
+      if(c.networkRules && c.networkRules !== 'Allow') lines.push(`    networkAcls: { defaultAction: 'Deny' }`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -819,7 +873,8 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    kind: 'OpenAI'`);
       lines.push(`    sku: { name: 'S0' }`);
       lines.push(`    customSubDomainName: '${res.name}'`);
-      lines.push(`    deployments: [{ name: '${c.model||'gpt-4o'}', model: { format: 'OpenAI', name: '${c.model||'gpt-4o'}', version: 'latest' }, sku: { name: 'Standard', capacity: 10 } }]`);
+      lines.push(`    deployments: [{ name: '${c.deploymentName||c.model||'gpt-4o'}', model: { format: 'OpenAI', name: '${c.model||'gpt-4o'}', version: '${c.modelVersion||'latest'}' }, sku: { name: 'Standard', capacity: ${c.capacity||10} } }]`);
+      if(c.contentFilter && c.contentFilter !== 'Default') lines.push(`    // Content Filter: ${c.contentFilter}`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -830,8 +885,10 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    sku: { name: 'PerGB2018' }`);
+      lines.push(`    sku: { name: '${c.workspaceSku||'PerGB2018'}' }`);
       lines.push(`    retentionInDays: ${c.retentionDays||90}`);
+      if(c.dailyCapGB) lines.push(`    workspaceCapping: { dailyQuotaGb: ${c.dailyCapGB} }`);
+      if(c.solutions) lines.push(`    // Solutions: ${c.solutions}`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -850,10 +907,50 @@ export function generateBicep(){
     lines.push(`// --- Subscription: ${sub.name} ---`);
     const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
     subRgs.forEach(rg=>{
-      lines.push(`resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {\n  name: '${rg.name}'\n  location: '${rg.location}'\n}\n`);
+      let rgBicep = `resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {\n  name: '${rg.name}'\n  location: '${rg.location}'`;
+      if(rg.tags && Object.keys(rg.tags).length > 0) {
+        rgBicep += `\n  tags: {${Object.entries(rg.tags).map(([k,v])=>`\n    '${k}': '${v}'`).join('')}\n  }`;
+      }
+      rgBicep += `\n}\n`;
+      lines.push(rgBicep);
+      if(rg.lock && rg.lock !== 'None') {
+        lines.push(`resource ${rg.id.replace(/-/g,'_')}_lock 'Microsoft.Authorization/locks@2020-05-01' = {\n  name: '${rg.name}-lock'\n  scope: ${rg.id.replace(/-/g,'_')}\n  properties: {\n    level: '${rg.lock}'\n  }\n}\n`);
+      }
       getVnetsInRg(rg.id).forEach(vnet=>{
-        lines.push(`// VNet: ${vnet.name}`);
-        lines.push(`// Subnets: ` + vnet.subnets.map(s => s.name).join(', '));
+        const vnetSafeName = vnet.name.replace(/[^a-zA-Z0-9]/g,'_');
+        lines.push(`module vnet_${vnetSafeName} 'br/public:avm/res/network/virtual-network:0.2.0' = {`);
+        lines.push(`  name: '${vnet.name}'`);
+        lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
+        lines.push(`  params: {`);
+        lines.push(`    name: '${vnet.name}'`);
+        lines.push(`    addressPrefixes: ['${vnet.cidr}']`);
+        if(vnet.dnsServers) {
+          const dns = vnet.dnsServers.split(',').map(d=>d.trim()).filter(Boolean);
+          if(dns.length) lines.push(`    dnsServers: [${dns.map(d=>`'${d}'`).join(', ')}]`);
+        }
+        if(vnet.ddosProtectionPlan === 'true') lines.push(`    enableDdosProtection: true`);
+        if(vnet.encryption === 'true') lines.push(`    encryption: { enabled: true }`);
+        if(vnet.flowTimeout) lines.push(`    flowTimeoutInMinutes: ${vnet.flowTimeout}`);
+        lines.push(`    subnets: [`);
+        vnet.subnets.forEach(sn => {
+          let snProps = `{ name: '${sn.name}', addressPrefix: '${sn.cidr}'`;
+          if(sn.nsgId) snProps += `, networkSecurityGroupId: '${sn.nsgId}'`;
+          if(sn.routeTableId) snProps += `, routeTableId: '${sn.routeTableId}'`;
+          if(sn.natGatewayId) snProps += `, natGatewayId: '${sn.natGatewayId}'`;
+          if(sn.serviceEndpoints) {
+            const eps = sn.serviceEndpoints.split(',').map(e=>e.trim()).filter(Boolean);
+            if(eps.length) snProps += `, serviceEndpoints: [${eps.map(e=>`{ service: '${e}' }`).join(', ')}]`;
+          }
+          if(sn.delegation && sn.delegation !== 'None') snProps += `, delegations: [{ name: 'delegation', properties: { serviceName: '${sn.delegation}' } }]`;
+          if(sn.privateEndpointNetworkPolicies === 'Enabled') snProps += `, privateEndpointNetworkPolicies: 'Enabled'`;
+          if(sn.privateLinkServiceNetworkPolicies === 'Enabled') snProps += `, privateLinkServiceNetworkPolicies: 'Enabled'`;
+          snProps += ` }`;
+          lines.push(`      ${snProps}`);
+        });
+        lines.push(`    ]`);
+        lines.push(`  }`);
+        lines.push(`}\n`);
+        
         vnet.subnets.forEach(sn => {
           sn.resources.forEach(res => {
             lines.push(...generateBicepResource(res, rg, vnet, sn));

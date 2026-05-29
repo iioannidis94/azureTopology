@@ -1,4 +1,4 @@
-import { state, esc, uid, fullUpdate, saveState, getVnetsInRg, getRgResources, RES_TYPES, RES_CATEGORIES, AZURE_ICON_BASE, VNET_COLORS, SUB_COLORS, isValidCidr, checkCidrOverlap, nextAvailableVnetCidr, nextAvailableSubnetCidr, nextAvailableSubnetCidrFromParsed, parseCidr, AZURE_PRIVATE_DNS_ZONES, getRecommendedDnsZones } from './state-management.js';
+import { state, esc, uid, fullUpdate, saveState, updateCost, getVnetsInRg, getRgResources, RES_TYPES, RES_CATEGORIES, AZURE_ICON_BASE, VNET_COLORS, SUB_COLORS, isValidCidr, checkCidrOverlap, nextAvailableVnetCidr, nextAvailableSubnetCidr, nextAvailableSubnetCidrFromParsed, parseCidr, AZURE_PRIVATE_DNS_ZONES, getRecommendedDnsZones } from './state-management.js';
 import { selectNode } from './canvas-engine.js';
 
 // ================================================================
@@ -242,8 +242,8 @@ export function renderSidebar(){
     const subColor=SUB_COLORS[si%SUB_COLORS.length];
     h+=`<div class="sub-block">
       <div class="sub-header" style="border-left-color:${subColor}">
-        <span class="sub-icon">☁️</span>
-        <input class="sub-name-input" value="${esc(sub.name)}" onchange="window._renameSub('${sub.id}',this.value)" onclick="event.stopPropagation()">
+        <span class="sub-icon" style="cursor:pointer;" onclick="window._selectNode('${sub.id}')">☁️</span>
+        <input class="sub-name-input" value="${esc(sub.name)}" onchange="window._renameSub('${sub.id}',this.value)" onclick="window._selectNode('${sub.id}')">
         <button class="icon-btn" title="Add Resource Group" onclick="window._addRg('${sub.id}')">📁+</button>
         <button class="icon-btn danger" title="Delete Subscription" onclick="window._deleteSub('${sub.id}')">🗑</button>
       </div>
@@ -253,8 +253,8 @@ export function renderSidebar(){
       const rgVnets=getVnetsInRg(rg.id);
       h+=`<div class="rg-block" id="rgblock-${rg.id}">
         <div class="rg-header">
-          <span style="font-size:12px;">📁</span>
-          <input class="rg-name-input" value="${esc(rg.name)}" onchange="window._renameRg('${rg.id}',this.value)" onclick="event.stopPropagation()">
+          <span style="font-size:12px;cursor:pointer;" onclick="window._selectNode('${rg.id}')">📁</span>
+          <input class="rg-name-input" value="${esc(rg.name)}" onchange="window._renameRg('${rg.id}',this.value)" onclick="window._selectNode('${rg.id}')">
           <select class="rg-loc-select" onchange="window._setRgLocation('${rg.id}',this.value)" onclick="event.stopPropagation()">
             ${['eastus','westeurope','westus2','northeurope','southeastasia','australiaeast','uksouth'].map(l=>`<option value="${l}"${rg.location===l?' selected':''}>${l}</option>`).join('')}
           </select>
@@ -414,21 +414,33 @@ export function renderEditor(){
   let obj=null, parent=null, typeObj='none';
   const allVnets = [state.hub, ...state.spokes];
   
-  // Check RG-level resources first
-  const rgRes = (state.rgResources||[]).find(r => r.id === state.selectedId);
-  if (rgRes) {
-    obj = rgRes; typeObj = 'rgResource';
-  } else {
-    for (let v of allVnets) {
-      if (v.id === state.selectedId) { obj=v; typeObj='vnet'; break; }
-      for (let sn of v.subnets) {
-        if (sn.id === state.selectedId) { obj=sn; parent=v; typeObj='subnet'; break; }
-        for (let r of sn.resources) {
-          if (r.id === state.selectedId) { obj=r; parent=sn; typeObj='resource'; break; }
+  // Check subscription
+  const selSub = state.subscriptions.find(s => s.id === state.selectedId);
+  if (selSub) { obj = selSub; typeObj = 'subscription'; }
+  
+  // Check resource group
+  if (!obj) {
+    const selRg = state.resourceGroups.find(r => r.id === state.selectedId);
+    if (selRg) { obj = selRg; typeObj = 'resourceGroup'; }
+  }
+
+  // Check RG-level resources
+  if (!obj) {
+    const rgRes = (state.rgResources||[]).find(r => r.id === state.selectedId);
+    if (rgRes) {
+      obj = rgRes; typeObj = 'rgResource';
+    } else {
+      for (let v of allVnets) {
+        if (v.id === state.selectedId) { obj=v; typeObj='vnet'; break; }
+        for (let sn of v.subnets) {
+          if (sn.id === state.selectedId) { obj=sn; parent=v; typeObj='subnet'; break; }
+          for (let r of sn.resources) {
+            if (r.id === state.selectedId) { obj=r; parent=sn; typeObj='resource'; break; }
+          }
+          if (obj) break;
         }
         if (obj) break;
       }
-      if (obj) break;
     }
   }
 
@@ -436,7 +448,39 @@ export function renderEditor(){
 
   let h=`<div class="editor-panel">`;
 
-  if(typeObj === 'vnet'){
+  if(typeObj === 'subscription'){
+    if(!obj.tags) obj.tags={};
+    h+=`<div class="editor-header">☁️ Subscription</div>
+      <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._renameSub('${obj.id}',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">Subscription ID</span><input class="input-field" value="${esc(obj.subscriptionId||'')}" onchange="window._updateSubProp('${obj.id}','subscriptionId',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">Tenant ID</span><input class="input-field" value="${esc(obj.tenantId||'')}" onchange="window._updateSubProp('${obj.id}','tenantId',this.value)"></div>
+      <div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">🏷️ Tags</span></div>`;
+    Object.keys(obj.tags).forEach(tk => {
+      h+=`<div class="editor-row" style="gap:4px;"><input class="input-field" style="flex:1" value="${esc(tk)}" onchange="window._renameTag('sub','${obj.id}','${esc(tk)}',this.value)"><input class="input-field" style="flex:1" value="${esc(obj.tags[tk])}" onchange="window._updateTag('sub','${obj.id}','${esc(tk)}',this.value)"><button class="icon-btn danger" onclick="window._deleteTag('sub','${obj.id}','${esc(tk)}')">✕</button></div>`;
+    });
+    h+=`<button class="add-btn" onclick="window._addTag('sub','${obj.id}')" style="margin-top:4px;">➕ Add Tag</button>`;
+
+  } else if(typeObj === 'resourceGroup'){
+    if(!obj.tags) obj.tags={};
+    h+=`<div class="editor-header">📁 Resource Group</div>
+      <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._renameRg('${obj.id}',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">Location</span><select class="input-field" onchange="window._setRgLocation('${obj.id}',this.value)">
+        ${['eastus','westeurope','westus2','northeurope','southeastasia','australiaeast','uksouth'].map(l=>`<option value="${l}"${obj.location===l?' selected':''}>${l}</option>`).join('')}
+      </select></div>
+      <div class="editor-row"><span class="editor-label">Lock</span><select class="input-field" onchange="window._updateRgProp('${obj.id}','lock',this.value)">
+        <option value="None"${(obj.lock||'None')==='None'?' selected':''}>None</option>
+        <option value="CanNotDelete"${obj.lock==='CanNotDelete'?' selected':''}>CanNotDelete</option>
+        <option value="ReadOnly"${obj.lock==='ReadOnly'?' selected':''}>ReadOnly</option>
+      </select></div>
+      <div class="editor-row"><span class="editor-label">Budget Limit ($/mo)</span><input class="input-field" value="${esc(obj.budgetLimit||'')}" onchange="window._updateRgProp('${obj.id}','budgetLimit',this.value)" placeholder="e.g. 5000"></div>
+      <div class="editor-row"><span class="editor-label">Alert Threshold %</span><input class="input-field" value="${esc(obj.budgetAlertThreshold||'80')}" onchange="window._updateRgProp('${obj.id}','budgetAlertThreshold',this.value)"></div>
+      <div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">🏷️ Tags</span></div>`;
+    Object.keys(obj.tags).forEach(tk => {
+      h+=`<div class="editor-row" style="gap:4px;"><input class="input-field" style="flex:1" value="${esc(tk)}" onchange="window._renameTag('rg','${obj.id}','${esc(tk)}',this.value)"><input class="input-field" style="flex:1" value="${esc(obj.tags[tk])}" onchange="window._updateTag('rg','${obj.id}','${esc(tk)}',this.value)"><button class="icon-btn danger" onclick="window._deleteTag('rg','${obj.id}','${esc(tk)}')">✕</button></div>`;
+    });
+    h+=`<button class="add-btn" onclick="window._addTag('rg','${obj.id}')" style="margin-top:4px;">➕ Add Tag</button>`;
+
+  } else if(typeObj === 'vnet'){
     const allRgOpts=state.resourceGroups.map(rg=>{
       const sub=state.subscriptions.find(s=>s.id===rg.subId);
       return `<option value="${rg.id}" ${obj.rgId===rg.id?'selected':''}>${sub?sub.name+' / ':''} ${rg.name}</option>`;
@@ -445,7 +489,12 @@ export function renderEditor(){
     h+=`<div class="editor-header">🌐 ${esc(obj.name)}</div>
       <div class="editor-row"><span class="editor-label">VNet Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._updateVnet('${obj.id}','name',this.value)"></div>
       <div class="editor-row"><span class="editor-label">CIDR Block</span><input class="input-field" value="${esc(obj.cidr)}" onchange="window._updateVnet('${obj.id}','cidr',this.value)"></div>
-      <div class="editor-row"><span class="editor-label">Resource Group</span><select class="input-field" onchange="window._updateVnet('${obj.id}','rgId',this.value)">${allRgOpts}</select></div>`;
+      <div class="editor-row"><span class="editor-label">Resource Group</span><select class="input-field" onchange="window._updateVnet('${obj.id}','rgId',this.value)">${allRgOpts}</select></div>
+      <div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">⚙️ Advanced</span></div>
+      <div class="editor-row"><span class="editor-label">DNS Servers</span><input class="input-field" value="${esc(obj.dnsServers||'')}" onchange="window._updateVnetProp('${obj.id}','dnsServers',this.value)" placeholder="comma-separated IPs"></div>
+      <div class="editor-row"><span class="editor-label">DDoS Protection</span><select class="input-field" onchange="window._updateVnetProp('${obj.id}','ddosProtectionPlan',this.value)"><option value="false"${(obj.ddosProtectionPlan||'false')==='false'?' selected':''}>Disabled</option><option value="true"${obj.ddosProtectionPlan==='true'?' selected':''}>Standard</option></select></div>
+      <div class="editor-row"><span class="editor-label">Encryption</span><select class="input-field" onchange="window._updateVnetProp('${obj.id}','encryption',this.value)"><option value="false"${(obj.encryption||'false')==='false'?' selected':''}>Disabled</option><option value="true"${obj.encryption==='true'?' selected':''}>Enabled</option></select></div>
+      <div class="editor-row"><span class="editor-label">Flow Timeout (min)</span><input class="input-field" value="${esc(obj.flowTimeout||'4')}" onchange="window._updateVnetProp('${obj.id}','flowTimeout',this.value)"></div>`;
     
     let peerHtml = `<div class="editor-row" style="margin-top:10px;"><span class="editor-label">VNet Peerings</span><div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">`;
     allVnets.forEach(v => {
@@ -465,9 +514,23 @@ export function renderEditor(){
     }
 
   } else if (typeObj === 'subnet') {
+    const serviceEndpointOptions = ['Microsoft.Storage','Microsoft.Sql','Microsoft.KeyVault','Microsoft.AzureActiveDirectory','Microsoft.EventHub','Microsoft.ServiceBus','Microsoft.Web','Microsoft.ContainerRegistry'];
+    const delegationOptions = ['None','Microsoft.Web/serverFarms','Microsoft.ContainerInstance/containerGroups','Microsoft.Databricks/workspaces','Microsoft.DBforMySQL/flexibleServers','Microsoft.DBforPostgreSQL/flexibleServers'];
     h+=`<div class="editor-header">⬚ Subnet</div>
       <div class="editor-row"><span class="editor-label">Subnet Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._updateSubnet('${parent.id}','${obj.id}','name',this.value)"></div>
       <div class="editor-row"><span class="editor-label">CIDR Block</span><input class="input-field" value="${esc(obj.cidr)}" onchange="window._updateSubnet('${parent.id}','${obj.id}','cidr',this.value)"></div>
+      <div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">🔒 Security & Routing</span></div>
+      <div class="editor-row"><span class="editor-label">NSG</span><input class="input-field" value="${esc(obj.nsgId||'')}" onchange="window._updateSubnetProp('${parent.id}','${obj.id}','nsgId',this.value)" placeholder="NSG resource name"></div>
+      <div class="editor-row"><span class="editor-label">Route Table</span><input class="input-field" value="${esc(obj.routeTableId||'')}" onchange="window._updateSubnetProp('${parent.id}','${obj.id}','routeTableId',this.value)" placeholder="Route table name"></div>
+      <div class="editor-row"><span class="editor-label">NAT Gateway</span><input class="input-field" value="${esc(obj.natGatewayId||'')}" onchange="window._updateSubnetProp('${parent.id}','${obj.id}','natGatewayId',this.value)" placeholder="NAT Gateway name"></div>
+      <div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">🌐 Service Endpoints</span></div>
+      <div class="editor-row"><span class="editor-label">Endpoints</span><input class="input-field" value="${esc(obj.serviceEndpoints||'')}" onchange="window._updateSubnetProp('${parent.id}','${obj.id}','serviceEndpoints',this.value)" placeholder="${serviceEndpointOptions.slice(0,3).join(', ')}"></div>
+      <div class="editor-row"><span class="editor-label">Delegation</span><select class="input-field" onchange="window._updateSubnetProp('${parent.id}','${obj.id}','delegation',this.value)">
+        ${delegationOptions.map(d => `<option value="${d}"${(obj.delegation||'None')===d?' selected':''}>${d}</option>`).join('')}
+      </select></div>
+      <div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">🔐 Private Link</span></div>
+      <div class="editor-row"><span class="editor-label">PE Network Policies</span><select class="input-field" onchange="window._updateSubnetProp('${parent.id}','${obj.id}','privateEndpointNetworkPolicies',this.value)"><option value="Disabled"${(obj.privateEndpointNetworkPolicies||'Disabled')==='Disabled'?' selected':''}>Disabled</option><option value="Enabled"${obj.privateEndpointNetworkPolicies==='Enabled'?' selected':''}>Enabled</option></select></div>
+      <div class="editor-row"><span class="editor-label">PLS Network Policies</span><select class="input-field" onchange="window._updateSubnetProp('${parent.id}','${obj.id}','privateLinkServiceNetworkPolicies',this.value)"><option value="Disabled"${(obj.privateLinkServiceNetworkPolicies||'Disabled')==='Disabled'?' selected':''}>Disabled</option><option value="Enabled"${obj.privateLinkServiceNetworkPolicies==='Enabled'?' selected':''}>Enabled</option></select></div>
       <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteSubnet('${parent.id}','${obj.id}')">🗑 Delete Subnet</button>`;
   } else if (typeObj === 'resource') {
     const rt=RES_TYPES[obj.type]||{color:'#888',label:'Resource', icon:'❓'};
@@ -605,14 +668,34 @@ export function renderEditor(){
 // ================================================================
 // STATE MUTATIONS
 // ================================================================
-export function addSub(){ const n=state.subscriptions.length; const id='sub-'+uid(); state.subscriptions.push({id,name:`Subscription ${n+1}`}); state.resourceGroups.push({id:'rg-'+uid(),name:'rg-new',location:'eastus',subId:id}); fullUpdate(); }
+export function addSub(){ const n=state.subscriptions.length; const id='sub-'+uid(); state.subscriptions.push({id,name:`Subscription ${n+1}`,subscriptionId:'00000000-0000-0000-0000-000000000000',tenantId:'00000000-0000-0000-0000-000000000000',tags:{}}); state.resourceGroups.push({id:'rg-'+uid(),name:'rg-new',location:'eastus',subId:id,tags:{},lock:'None',budgetLimit:'',budgetAlertThreshold:'80'}); fullUpdate(); }
 export function deleteSub(id){ if(state.subscriptions.length<=1){alert('Need at least one subscription.');return;} if(!confirm('Delete subscription? VNets will be moved.')) return; const fallbackRg=state.resourceGroups.find(r=>r.subId!==id); if(!fallbackRg){alert('Cannot delete.');return;} const subRgIds=state.resourceGroups.filter(r=>r.subId===id).map(r=>r.id); if(state.hub.rgId&&subRgIds.includes(state.hub.rgId)) state.hub.rgId=fallbackRg.id; state.spokes.forEach(s=>{if(subRgIds.includes(s.rgId))s.rgId=fallbackRg.id;}); state.resourceGroups=state.resourceGroups.filter(r=>r.subId!==id); state.subscriptions=state.subscriptions.filter(s=>s.id!==id); fullUpdate(); }
 export function renameSub(id,val){const s=state.subscriptions.find(s=>s.id===id);if(s){s.name=val;saveState();window._draw();}}
 
-export function addRg(subId){ const n=state.resourceGroups.filter(r=>r.subId===subId).length; state.resourceGroups.push({id:'rg-'+uid(),name:`rg-new-${n+1}`,location:'eastus',subId}); fullUpdate(); }
+export function addRg(subId){ const n=state.resourceGroups.filter(r=>r.subId===subId).length; state.resourceGroups.push({id:'rg-'+uid(),name:`rg-new-${n+1}`,location:'eastus',subId,tags:{},lock:'None',budgetLimit:'',budgetAlertThreshold:'80'}); fullUpdate(); }
 export function deleteRg(id){ if(state.resourceGroups.length<=1){alert('Need at least one resource group.');return;} const fallback=state.resourceGroups.find(r=>r.id!==id); if(!fallback){alert('No fallback.');return;} if(!confirm('Delete resource group?')) return; if(state.hub.rgId===id) state.hub.rgId=fallback.id; state.spokes.forEach(s=>{if(s.rgId===id)s.rgId=fallback.id;}); state.rgResources=(state.rgResources||[]).filter(r=>r.rgId!==id); state.resourceGroups=state.resourceGroups.filter(r=>r.id!==id); fullUpdate(); }
 export function renameRg(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.name=val;saveState();window._draw();}}
 export function setRgLocation(id,val){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){rg.location=val;saveState();}}
+
+export function updateSubProp(subId,key,val){const s=state.subscriptions.find(s=>s.id===subId);if(s){s[key]=val;saveState();renderEditor();}}
+export function updateRgProp(rgId,key,val){const rg=state.resourceGroups.find(r=>r.id===rgId);if(rg){rg[key]=val;saveState();renderEditor();}}
+export function addTag(scope,id){
+  if(scope==='sub'){const s=state.subscriptions.find(s=>s.id===id);if(s){if(!s.tags)s.tags={};s.tags['newKey']='value';saveState();renderEditor();}}
+  else if(scope==='rg'){const rg=state.resourceGroups.find(r=>r.id===id);if(rg){if(!rg.tags)rg.tags={};rg.tags['newKey']='value';saveState();renderEditor();}}
+}
+export function updateTag(scope,id,key,val){
+  if(scope==='sub'){const s=state.subscriptions.find(s=>s.id===id);if(s&&s.tags){s.tags[key]=val;saveState();renderEditor();}}
+  else if(scope==='rg'){const rg=state.resourceGroups.find(r=>r.id===id);if(rg&&rg.tags){rg.tags[key]=val;saveState();renderEditor();}}
+}
+export function renameTag(scope,id,oldKey,newKey){
+  if(oldKey===newKey)return;
+  if(scope==='sub'){const s=state.subscriptions.find(s=>s.id===id);if(s&&s.tags){const val=s.tags[oldKey];delete s.tags[oldKey];s.tags[newKey]=val;saveState();renderEditor();}}
+  else if(scope==='rg'){const rg=state.resourceGroups.find(r=>r.id===id);if(rg&&rg.tags){const val=rg.tags[oldKey];delete rg.tags[oldKey];rg.tags[newKey]=val;saveState();renderEditor();}}
+}
+export function deleteTag(scope,id,key){
+  if(scope==='sub'){const s=state.subscriptions.find(s=>s.id===id);if(s&&s.tags){delete s.tags[key];saveState();renderEditor();}}
+  else if(scope==='rg'){const rg=state.resourceGroups.find(r=>r.id===id);if(rg&&rg.tags){delete rg.tags[key];saveState();renderEditor();}}
+}
 
 export function addSpoke(rgId){
   const n=state.spokes.length;
@@ -650,6 +733,18 @@ export function updateVnet(id,key,val){
     if(overlap){ alert(`CIDR ${val} overlaps with VNet "${overlap.name}" (${overlap.cidr})`); return; }
   }
   v[key]=val; fullUpdate();
+}
+export function updateVnetProp(id,key,val){
+  const v=[state.hub,...state.spokes].find(v=>v.id===id);
+  if(!v) return;
+  v[key]=val; saveState(); renderEditor();
+}
+export function updateSubnetProp(vnetId,snId,key,val){
+  const v=[state.hub,...state.spokes].find(v=>v.id===vnetId);
+  if(!v) return;
+  const sn = v.subnets.find(s=>s.id===snId);
+  if(!sn) return;
+  sn[key]=val; saveState(); renderEditor();
 }
 export function togglePeering(id1, id2) {
   const v1 = [state.hub,...state.spokes].find(s => s.id === id1);
@@ -783,7 +878,7 @@ export function updateResConfig(resId,configKey,val){
   // Also check RG-level resources
   const rgRes = (state.rgResources||[]).find(r => r.id === resId);
   if(rgRes) rgRes.config[configKey] = val;
-  saveState(); renderEditor(); 
+  saveState(); updateCost(); renderEditor(); 
 }
 
 // ================================================================
