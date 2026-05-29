@@ -221,7 +221,20 @@ export function updateOnPremCidr(val) { state.onPrem.cidr = val; fullUpdate(); }
 // ================================================================
 // MANAGEMENT GROUPS
 // ================================================================
-export function toggleMgEnabled() { state.mgEnabled = !state.mgEnabled; if(!state.mgEnabled){ state.subscriptions.forEach(s=>s.mgId=null); } fullUpdate(); }
+export function toggleMgEnabled() {
+  state.mgEnabled = !state.mgEnabled;
+  if(!state.mgEnabled){
+    state.subscriptions.forEach(s=>s.mgId=null);
+  } else {
+    // Auto-create first MG and assign all existing subs to it
+    if(state.managementGroups.length===0 && state.subscriptions.length>0){
+      const id='mg-'+uid();
+      state.managementGroups.push({id, name:'Management Group 1', parentId:null});
+      state.subscriptions.forEach(s=>{ s.mgId=id; });
+    }
+  }
+  fullUpdate();
+}
 export function addMg(parentId) { const id='mg-'+uid(); state.managementGroups.push({id, name:'Management Group '+(state.managementGroups.length+1), parentId: parentId||null}); fullUpdate(); }
 export function deleteMg(id) { if(!confirm('Delete this Management Group? Subscriptions will be unassigned.')) return; state.subscriptions.forEach(s=>{if(s.mgId===id)s.mgId=null;}); const children=state.managementGroups.filter(mg=>mg.parentId===id); children.forEach(c=>{c.parentId=state.managementGroups.find(mg=>mg.id===id)?.parentId||null;}); state.managementGroups=state.managementGroups.filter(mg=>mg.id!==id); fullUpdate(); }
 export function renameMg(id,val) { const mg=state.managementGroups.find(m=>m.id===id); if(mg){mg.name=val;saveState();window._draw();} }
@@ -482,9 +495,21 @@ export function renderEditor(){
       </div>
       <div style="font-size:10px;color:var(--muted);margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">Subscriptions in this MG:</div>`;
     mgSubs.forEach(s => {
-      mgHtml += `<div style="font-size:10px;color:var(--text);padding:2px 0;">☁️ ${esc(s.name)}</div>`;
+      mgHtml += `<div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text);padding:3px 0;">
+        <span>☁️ ${esc(s.name)}</span>
+        <button class="icon-btn danger" style="font-size:9px;padding:1px 4px;" title="Remove from MG" onclick="window._assignSubToMg('${s.id}','')">✕</button>
+      </div>`;
     });
     if (mgSubs.length === 0) mgHtml += `<div style="font-size:10px;color:var(--muted);font-style:italic;">No subscriptions assigned</div>`;
+    // Show unassigned subs that can be added to this MG
+    const unassignedSubs = state.subscriptions.filter(s => !s.mgId);
+    if (unassignedSubs.length > 0) {
+      mgHtml += `<div style="font-size:10px;color:var(--muted);margin-top:6px;border-top:1px dashed var(--border);padding-top:6px;">Assign existing subscription:</div>`;
+      mgHtml += `<select class="input-field" style="font-size:10px;margin-top:4px;" onchange="if(this.value){window._assignSubToMg(this.value,'${selectedMg.id}');}">
+        <option value="">— Select subscription —</option>
+        ${unassignedSubs.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}
+      </select>`;
+    }
     mgHtml += `</div>`;
     el.innerHTML = mgHtml;
     return;
@@ -515,6 +540,29 @@ export function renderEditor(){
       <div class="editor-row"><span class="editor-label">Allow Gateway Transit</span>${boolSelect(id2,id1,'allowGatewayTransit',cfg2.allowGatewayTransit)}</div>
       <div class="editor-row"><span class="editor-label">Use Remote Gateways</span>${boolSelect(id2,id1,'useRemoteGateways',cfg2.useRemoteGateways)}</div>
       <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._togglePeering('${id1}','${id2}')">🗑 Remove Peering</button>
+    </div>`;
+    el.innerHTML = h;
+    return;
+  }
+
+  // VNet Link editor
+  if (state.selectedId && state.selectedId.startsWith('vnetlink:')) {
+    const parts = state.selectedId.split(':');
+    const resId = parts[1], vnetId = parts[2];
+    const dnsRes = (state.rgResources||[]).find(r => r.id === resId);
+    const allVnetsVL = [state.hub, ...state.spokes];
+    const vnet = allVnetsVL.find(v => v.id === vnetId);
+    if (!dnsRes || !vnet) { state.selectedId = null; return renderEditor(); }
+    const link = (dnsRes.config.vnetLinks||[]).find(l => l.vnetId === vnetId);
+    if (!link) { state.selectedId = null; return renderEditor(); }
+    const linkName = link.linkName || `${vnet.name}-link`;
+    const boolSelectVL = (key, val) => `<select class="input-field" onchange="window._updateVnetLinkConfig('${resId}','${vnetId}','${key}',this.value==='true')"><option value="true"${val?' selected':''}>Enabled</option><option value="false"${!val?' selected':''}>Disabled</option></select>`;
+    let h = `<div class="editor-panel" style="border-color:#00B294">
+      <div class="editor-header" style="color:#00B294">🔗 VNet Link</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px;">🌐 ${esc(dnsRes.name)} ↔ 🔗 ${esc(vnet.name)}</div>
+      <div class="editor-row"><span class="editor-label">Link Name</span><input class="input-field" value="${esc(linkName)}" onchange="window._updateVnetLinkConfig('${resId}','${vnetId}','linkName',this.value)"></div>
+      <div class="editor-row"><span class="editor-label">Auto Registration</span>${boolSelectVL('registrationEnabled', link.registrationEnabled)}</div>
+      <button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._toggleVnetLink('${resId}','${vnetId}')">🗑 Remove VNet Link</button>
     </div>`;
     el.innerHTML = h;
     return;
@@ -735,6 +783,7 @@ export function renderEditor(){
     }
     
     // DNS Records
+    if(obj.type === 'publicDns' && !obj.config.records) obj.config.records = [];
     if(obj.config.records) {
       h+=`<div class="editor-row" style="margin-top:10px;"><span class="editor-label" style="font-weight:bold;">DNS Records</span></div>`;
       obj.config.records.forEach((rec, idx) => {
@@ -751,16 +800,21 @@ export function renderEditor(){
       h+=`<button style="width:100%;padding:6px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--azure-blue);background:transparent;color:var(--azure-blue);font-family:JetBrains Mono;margin-top:4px;" onclick="window._addDnsRecord('${obj.id}')">➕ Add Record</button>`;
     }
     
-    // VNet Links (for Private DNS)
+    // VNet Links (for Private DNS) - shown like peerings
     if(obj.type === 'dns' && obj.config.vnetLinks !== undefined) {
+      const allVnetsForLink = [state.hub, ...state.spokes];
+      const linkedIds = (obj.config.vnetLinks||[]).map(l => l.vnetId);
       h+=`<div class="editor-row" style="margin-top:10px;"><span class="editor-label" style="font-weight:bold;">VNet Links</span></div>`;
-      (obj.config.vnetLinks||[]).forEach((link, idx) => {
-        h+=`<div class="editor-row" style="gap:4px;border:1px solid var(--border);border-radius:4px;padding:6px;margin-bottom:4px;">
-          <span style="flex:1;font-size:10px;">🔗 ${esc(link.vnetName)}</span>
-          <button class="icon-btn danger" onclick="window._deleteVnetLink('${obj.id}',${idx})">🗑</button>
-        </div>`;
+      h+=`<div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">`;
+      allVnetsForLink.forEach(v => {
+        const isLinked = linkedIds.includes(v.id);
+        if (isLinked) {
+          h+=`<div style="display:flex;gap:4px;"><button style="flex:1;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:10px;font-weight:bold;border:1px solid #00B294;background:rgba(0,178,148,.1);color:#00B294;transition:0.2s;" onclick="window._selectVnetLink('${obj.id}','${v.id}')">🔗 ${esc(v.name)}</button><button style="padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px solid var(--danger);background:transparent;color:var(--danger);" onclick="window._toggleVnetLink('${obj.id}','${v.id}')" title="Remove link">✕</button></div>`;
+        } else {
+          h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-family:JetBrains Mono;font-size:10px;font-weight:bold;border:1px solid var(--border);background:transparent;color:var(--text);transition:0.2s;" onclick="window._toggleVnetLink('${obj.id}','${v.id}')">🔌 ${esc(v.name)}</button>`;
+        }
       });
-      h+=`<button style="width:100%;padding:6px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--azure-blue);background:transparent;color:var(--azure-blue);font-family:JetBrains Mono;margin-top:4px;" onclick="window._addVnetLink('${obj.id}')">🔗 Link VNet</button>`;
+      h+=`</div>`;
     }
     
     // Add Another DNS Zone button (for Private DNS zones)
@@ -1070,6 +1124,36 @@ export function deleteVnetLink(resId, idx) {
   if(!r || !r.config || !r.config.vnetLinks) return;
   r.config.vnetLinks.splice(idx, 1);
   saveState(); renderEditor();
+}
+
+export function toggleVnetLink(resId, vnetId) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(!r || !r.config) return;
+  if(!r.config.vnetLinks) r.config.vnetLinks = [];
+  const idx = r.config.vnetLinks.findIndex(l => l.vnetId === vnetId);
+  if(idx >= 0) {
+    r.config.vnetLinks.splice(idx, 1);
+  } else {
+    const vnet = [state.hub, ...state.spokes].find(v => v.id === vnetId);
+    if(vnet) {
+      const linkName = `${vnet.name}-link`;
+      r.config.vnetLinks.push({vnetId: vnet.id, vnetName: vnet.name, linkName: linkName, registrationEnabled: false});
+    }
+  }
+  fullUpdate();
+}
+
+export function selectVnetLink(resId, vnetId) {
+  state.selectedId = `vnetlink:${resId}:${vnetId}`;
+  fullUpdate();
+}
+
+export function updateVnetLinkConfig(resId, vnetId, key, val) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(!r || !r.config || !r.config.vnetLinks) return;
+  const link = r.config.vnetLinks.find(l => l.vnetId === vnetId);
+  if(link) { link[key] = val; }
+  fullUpdate();
 }
 
 // ================================================================
