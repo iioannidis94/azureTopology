@@ -243,19 +243,19 @@
 Άνοιξε το αρχείο:
 
 ```bash
-open /tmp/workspace/iioannidis94/azureTopology/index.html
+open ./index.html
 ```
 
 ή σε Linux:
 
 ```bash
-xdg-open /tmp/workspace/iioannidis94/azureTopology/index.html
+xdg-open ./index.html
 ```
 
 ### Επιλογή 2: Τοπικό static server
 
 ```bash
-cd /tmp/workspace/iioannidis94/azureTopology
+cd azureTopology
 python -m http.server 8000
 ```
 
@@ -314,7 +314,7 @@ http://localhost:8000
 ### Δομή αρχείων
 
 ```text
-/tmp/workspace/iioannidis94/azureTopology
+azureTopology
 ├── index.html
 ├── README.md
 ├── nextsteps.md
