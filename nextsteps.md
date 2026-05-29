@@ -49,8 +49,8 @@
 - [ ] Download .tf αρχείο
 
 ### 3. Merge με Υπάρχον Diagram κατά το Import
-- [ ] Δυνατότητα merge (αντί για clean import only) στο Azure Resource Import
-- [ ] Merge option και στο JSON Import
+- [x] Δυνατότητα merge (αντί για clean import only) στο Azure Resource Import
+- [x] Merge option και στο JSON Import
 
 ---
 
