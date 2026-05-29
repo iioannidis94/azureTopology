@@ -216,6 +216,7 @@
   .json-import-error{color:#E81123;font-family:'JetBrains Mono';font-size:11px;min-height:16px;}
   .json-import-preview{background:var(--bg3);border:1px solid var(--azure-blue);border-radius:8px;padding:12px;font-size:11px;color:var(--accent);line-height:1.7;white-space:pre-wrap;}
   .inventory-ps-cmd{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:'JetBrains Mono';font-size:11px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-all;margin:0;}
+  .inventory-scope-btn.active{background:var(--azure-blue)!important;color:white!important;border-color:var(--azure-blue)!important;}
 
   /* Template Gallery */
   .template-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;overflow-y:auto;max-height:60vh;padding:4px;}
