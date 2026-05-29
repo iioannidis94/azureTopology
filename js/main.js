@@ -1,6 +1,6 @@
 import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, setRenderAll, resetDiagram, resetPositions, undo, redo } from './state-management.js';
 import { draw, resize, selectNode, getRenderNodes } from './canvas-engine.js';
-import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMgEnabled, addMg, deleteMg, renameMg, assignSubToMg, assignMgParent, addSubToMg, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
+import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMgEnabled, addMg, deleteMg, renameMg, assignSubToMg, assignMgParent, addSubToMg, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, toggleVnetLink, selectVnetLink, updateVnetLinkConfig, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText, exportJson, openJsonImportModal, handleJsonFile, confirmJsonImport, previewPastedJson, openAzureInventoryModal, handleInventoryFile, previewInventory, confirmInventoryImport, toggleExportPanel } from './export-logic.js';
 import { openTemplateGallery, closeTemplateGallery, applyTemplate } from './template-gallery.js';
 
@@ -29,6 +29,12 @@ function deleteSelectedElement() {
   if (id.startsWith('peering:')) {
     const parts = id.split(':');
     togglePeering(parts[1], parts[2]);
+    return;
+  }
+  // Check if it's a VNet link
+  if (id.startsWith('vnetlink:')) {
+    const parts = id.split(':');
+    toggleVnetLink(parts[1], parts[2]);
     return;
   }
   // Check if it's on-prem
@@ -195,6 +201,9 @@ window._deleteDnsRecord = deleteDnsRecord;
 window._updateDnsRecord = updateDnsRecord;
 window._addVnetLink = addVnetLink;
 window._deleteVnetLink = deleteVnetLink;
+window._toggleVnetLink = toggleVnetLink;
+window._selectVnetLink = selectVnetLink;
+window._updateVnetLinkConfig = updateVnetLinkConfig;
 window._showDnsZoneDropdown = showDnsZoneDropdown;
 window._filterDnsZones = filterDnsZones;
 window._selectDnsZone = selectDnsZone;
