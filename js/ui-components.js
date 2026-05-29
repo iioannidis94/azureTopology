@@ -783,6 +783,7 @@ export function renderEditor(){
     }
     
     // DNS Records
+    if(obj.type === 'publicDns' && !obj.config.records) obj.config.records = [];
     if(obj.config.records) {
       h+=`<div class="editor-row" style="margin-top:10px;"><span class="editor-label" style="font-weight:bold;">DNS Records</span></div>`;
       obj.config.records.forEach((rec, idx) => {
