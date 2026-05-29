@@ -17,13 +17,15 @@ setFullUpdate(fullUpdateImpl);
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
   
+  const key = e.key.toLowerCase();
+  
   // Ctrl+Z / Cmd+Z = Undo
-  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && key === 'z') {
     e.preventDefault();
     undo();
   }
   // Ctrl+Y / Cmd+Y / Ctrl+Shift+Z / Cmd+Shift+Z = Redo
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+  else if ((e.ctrlKey || e.metaKey) && (key === 'y' || (e.shiftKey && key === 'z'))) {
     e.preventDefault();
     redo();
   }

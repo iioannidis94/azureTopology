@@ -180,28 +180,34 @@ function _recordStateForUndo() {
 export function undo() {
   if (_undoStack.length === 0) return;
   _isUndoRedoAction = true;
-  // Push current state to redo
-  _redoStack.push(_getSerializableState());
-  const prev = _undoStack.pop();
-  _restoreSnapshot(prev);
-  _lastSavedSnapshot = prev;
-  localStorage.setItem(KEY, JSON.stringify(state));
-  fullUpdate();
-  _isUndoRedoAction = false;
+  try {
+    // Push current state to redo
+    _redoStack.push(_getSerializableState());
+    const prev = _undoStack.pop();
+    _restoreSnapshot(prev);
+    _lastSavedSnapshot = prev;
+    localStorage.setItem(KEY, JSON.stringify(state));
+    fullUpdate();
+  } finally {
+    _isUndoRedoAction = false;
+  }
 }
 
 /** Redo last undone action */
 export function redo() {
   if (_redoStack.length === 0) return;
   _isUndoRedoAction = true;
-  // Push current state to undo
-  _undoStack.push(_getSerializableState());
-  const next = _redoStack.pop();
-  _restoreSnapshot(next);
-  _lastSavedSnapshot = next;
-  localStorage.setItem(KEY, JSON.stringify(state));
-  fullUpdate();
-  _isUndoRedoAction = false;
+  try {
+    // Push current state to undo
+    _undoStack.push(_getSerializableState());
+    const next = _redoStack.pop();
+    _restoreSnapshot(next);
+    _lastSavedSnapshot = next;
+    localStorage.setItem(KEY, JSON.stringify(state));
+    fullUpdate();
+  } finally {
+    _isUndoRedoAction = false;
+  }
 }
 
 export function canUndo() { return _undoStack.length > 0; }
