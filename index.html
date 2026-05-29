@@ -18,7 +18,7 @@
   <div class="header-actions">
     <button class="hdr-btn" onclick="window._undo()" title="Undo (Ctrl+Z)">↩ Undo</button>
     <button class="hdr-btn" onclick="window._redo()" title="Redo (Ctrl+Y)">↪ Redo</button>
-    <button class="hdr-btn" onclick="window._toggleLayout()">📐 Toggle Layout</button>
+    <button class="hdr-btn" id="full-view-btn" onclick="window._toggleFullView()">⛶ Full View</button>
     <button class="hdr-btn" onclick="window._toggleTheme()">🎨 Toggle Theme</button>
     <button class="hdr-btn" onclick="window._fitToScreen()">⊡ Fit to Screen</button>
     <div class="badge">● Live Mode</div>
@@ -28,9 +28,7 @@
 
 <div class="app">
   <div class="sidebar" id="sidebar-left"></div>
-  <button class="sidebar-toggle toggle-left" id="toggle-left" onclick="window._toggleSidebar('left')" title="Toggle Left Panel">◀</button>
   <div class="canvas-area"><canvas id="diagram-canvas"></canvas></div>
-  <button class="sidebar-toggle toggle-right" id="toggle-right" onclick="window._toggleSidebar('right')" title="Toggle Right Panel">▶</button>
   <div class="sidebar right" id="sidebar-right">
     
     <div class="tree-section-title cost-section-title" onclick="window._toggleCostPanel()">// Cost Estimator <span id="cost-panel-toggle" style="font-size:8px;color:var(--muted);">▶</span></div>

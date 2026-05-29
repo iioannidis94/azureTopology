@@ -1,6 +1,6 @@
 import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, setRenderAll, resetDiagram, resetPositions, undo, redo } from './state-management.js';
 import { draw, resize, selectNode, getRenderNodes } from './canvas-engine.js';
-import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMgEnabled, addMg, deleteMg, renameMg, assignSubToMg, assignMgParent, addSubToMg, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, toggleVnetLink, selectVnetLink, updateVnetLinkConfig, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
+import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMgEnabled, addMg, deleteMg, renameMg, assignSubToMg, assignMgParent, addSubToMg, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, toggleVnetLink, selectVnetLink, updateVnetLinkConfig, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText, exportJson, openJsonImportModal, handleJsonFile, confirmJsonImport, previewPastedJson, openAzureInventoryModal, handleInventoryFile, previewInventory, confirmInventoryImport, toggleExportPanel, setInventoryScope } from './export-logic.js';
 import { openTemplateGallery, closeTemplateGallery, applyTemplate } from './template-gallery.js';
 
@@ -148,7 +148,6 @@ window._draw = draw;
 window._resize = resize;
 window._selectNode = selectNode;
 window._toggleTheme = toggleTheme;
-window._toggleLayout = toggleLayout;
 window._fitToScreen = fitToScreen;
 window._toggleOnPrem = toggleOnPrem;
 window._updateOnPremName = updateOnPremName;
@@ -235,18 +234,22 @@ window._applyTemplate = applyTemplate;
 window._openShortcutsModal = openShortcutsModal;
 
 // ================================================================
-// SIDEBAR COLLAPSE/EXPAND
+// FULL VIEW TOGGLE (collapse/expand both sidebars)
 // ================================================================
-window._toggleSidebar = function(side) {
-  const sidebar = document.getElementById(side === 'left' ? 'sidebar-left' : 'sidebar-right');
-  const btn = document.getElementById(side === 'left' ? 'toggle-left' : 'toggle-right');
-  const isCollapsed = sidebar.classList.toggle('collapsed');
-  if (side === 'left') {
-    btn.textContent = isCollapsed ? '▶' : '◀';
-    btn.title = isCollapsed ? 'Show Left Panel' : 'Hide Left Panel';
+let _fullViewActive = false;
+window._toggleFullView = function() {
+  _fullViewActive = !_fullViewActive;
+  const left = document.getElementById('sidebar-left');
+  const right = document.getElementById('sidebar-right');
+  const btn = document.getElementById('full-view-btn');
+  if (_fullViewActive) {
+    left.classList.add('collapsed');
+    right.classList.add('collapsed');
+    btn.textContent = '⛶ Exit Full View';
   } else {
-    btn.textContent = isCollapsed ? '◀' : '▶';
-    btn.title = isCollapsed ? 'Show Right Panel' : 'Hide Right Panel';
+    left.classList.remove('collapsed');
+    right.classList.remove('collapsed');
+    btn.textContent = '⛶ Full View';
   }
   setTimeout(resize, 350);
 };

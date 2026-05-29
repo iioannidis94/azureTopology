@@ -212,7 +212,6 @@ export function toggleCostPanel() {
 // TOGGLES & ON PREM
 // ================================================================
 export function toggleTheme(){ state.theme=state.theme==='drawio'?'dark':'drawio'; document.body.classList.toggle('theme-drawio',state.theme==='drawio'); fullUpdate(); }
-export function toggleLayout(){ state.layout=state.layout==='grid'?'radial':'grid'; state.offset={x:0,y:0}; state.scale=1; fullUpdate(); }
 export function fitToScreen(){state.offset={x:0,y:0};state.scale=1;saveState();window._draw();}
 export function toggleOnPrem() { state.onPrem.enabled = !state.onPrem.enabled; fullUpdate(); }
 export function updateOnPremName(val) { state.onPrem.name = val; fullUpdate(); }
