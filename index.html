@@ -50,6 +50,7 @@
     
     <div class="tree-section-title" onclick="window._toggleExportPanel()">// Import / Export <span id="export-panel-toggle" style="font-size:8px;color:var(--muted);">▶</span></div>
     <div class="export-area collapsed" id="export-panel">
+      <button class="export-btn secondary" onclick="window._openTemplateGallery()">📋 Template Gallery</button>
       <button class="export-btn secondary" onclick="window._exportPng()">⬇ Export as PNG</button>
       <button class="export-btn secondary" onclick="window._exportJson()">📤 Export as JSON</button>
       <button class="export-btn secondary" onclick="window._openJsonImportModal()">📥 Import JSON</button>
@@ -148,6 +149,17 @@
     <div class="modal-actions">
       <button class="modal-btn secondary" onclick="window._closeModal('azure-inventory-modal')">✕ Close</button>
       <button class="modal-btn primary" onclick="window._confirmInventoryImport()">✅ Import Inventory</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="template-gallery-modal">
+  <div class="modal" style="max-width:900px;">
+    <h2>📋 Template Gallery</h2>
+    <p style="color:var(--muted);font-size:11px;margin:-8px 0 8px;">Choose a pre-built architecture template to quick-start your diagram. This will replace the current diagram.</p>
+    <div class="template-gallery-grid" id="template-gallery-grid"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="window._closeTemplateGallery()">✕ Close</button>
     </div>
   </div>
 </div>

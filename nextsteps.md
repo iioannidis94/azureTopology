@@ -57,13 +57,13 @@
 ## 🟡 Φάση 2 — Σημαντικά (Should-Have)
 
 ### 4. Template Gallery
-- [ ] Template picker modal
-- [ ] Hub-and-Spoke basic template
-- [ ] Multi-region DR template
-- [ ] Web App + Database template
-- [ ] AKS networking template
-- [ ] Landing Zone (CAF) template
-- [ ] Preview thumbnails
+- [x] Template picker modal
+- [x] Hub-and-Spoke basic template
+- [x] Multi-region DR template
+- [x] Web App + Database template
+- [x] AKS networking template
+- [x] Landing Zone (CAF) template
+- [x] Preview thumbnails
 
 ### 5. Keyboard Shortcuts
 - [ ] Delete/Backspace → διαγραφή στοιχείου
