@@ -1,4 +1,4 @@
-import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, resetDiagram, resetPositions, undo, redo } from './state-management.js';
+import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, setRenderAll, resetDiagram, resetPositions, undo, redo } from './state-management.js';
 import { draw, resize, selectNode } from './canvas-engine.js';
 import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText } from './export-logic.js';
@@ -10,6 +10,12 @@ function fullUpdateImpl(){
   saveState(); updateCost(); renderSecurityPanel(); renderSidebar(); renderEditor(); draw(); 
 }
 setFullUpdate(fullUpdateImpl);
+
+// Render-only (no saveState) - used by undo/redo to re-render without creating history entries
+function renderAllImpl(){
+  updateCost(); renderSecurityPanel(); renderSidebar(); renderEditor(); draw();
+}
+setRenderAll(renderAllImpl);
 
 // ================================================================
 // KEYBOARD SHORTCUTS

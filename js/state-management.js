@@ -133,7 +133,7 @@ try{
 // ================================================================
 // UNDO / REDO HISTORY
 // ================================================================
-const MAX_HISTORY = 50;
+const MAX_HISTORY = 5;
 const _undoStack = [];
 const _redoStack = [];
 let _isUndoRedoAction = false;
@@ -141,10 +141,22 @@ let _isUndoRedoAction = false;
 // Properties that are transient and should NOT be tracked in history
 const TRANSIENT_KEYS = ['dragging','dragStart','offsetStart','dragNodeId','dragGroup','selectedId','offset','scale','mouseStart','dragNodeStart'];
 
+/** Stable JSON serialization (sorted keys) to avoid false positives from key-order changes */
+function _stableStringify(obj) {
+  if (obj === null || obj === undefined) return JSON.stringify(obj);
+  if (Array.isArray(obj)) return '[' + obj.map(v => _stableStringify(v)).join(',') + ']';
+  if (typeof obj === 'object') {
+    const keys = Object.keys(obj).sort();
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + _stableStringify(obj[k])).join(',') + '}';
+  }
+  return JSON.stringify(obj);
+}
+
 function _getSerializableState() {
   const snap = {};
-  for (const key of Object.keys(state)) {
-    if (!TRANSIENT_KEYS.includes(key)) snap[key] = JSON.parse(JSON.stringify(state[key]));
+  const keys = Object.keys(state).filter(k => !TRANSIENT_KEYS.includes(k)).sort();
+  for (const key of keys) {
+    snap[key] = JSON.parse(JSON.stringify(state[key]));
   }
   return snap;
 }
@@ -158,15 +170,20 @@ function _restoreSnapshot(snap) {
   else document.body.classList.add('theme-drawio');
 }
 
-let _lastSavedSnapshot = null;
+// Initialize _lastSavedSnapshot immediately with the loaded state
+let _lastSavedSnapshot = _getSerializableState();
+
+// Render-only function (no save) - injected by main.js
+let _renderAll = null;
+export function setRenderAll(fn) { _renderAll = fn; }
+function renderAll() { if (_renderAll) _renderAll(); }
 
 /** Called after saveState to record the new state in history */
 function _recordStateForUndo() {
   if (_isUndoRedoAction) return;
   const snap = _getSerializableState();
   // If this is identical to the last saved snapshot, skip
-  const snapStr = JSON.stringify(snap);
-  if (_lastSavedSnapshot && JSON.stringify(_lastSavedSnapshot) === snapStr) return;
+  if (_lastSavedSnapshot && _stableStringify(_lastSavedSnapshot) === _stableStringify(snap)) return;
   // Push the PREVIOUS state to undo stack (so we can go back to it)
   if (_lastSavedSnapshot !== null) {
     _undoStack.push(_lastSavedSnapshot);
@@ -187,7 +204,8 @@ export function undo() {
     _restoreSnapshot(prev);
     _lastSavedSnapshot = prev;
     localStorage.setItem(KEY, JSON.stringify(state));
-    fullUpdate();
+    // Use render-only path to avoid saveState interference
+    renderAll();
   } finally {
     _isUndoRedoAction = false;
   }
@@ -204,7 +222,8 @@ export function redo() {
     _restoreSnapshot(next);
     _lastSavedSnapshot = next;
     localStorage.setItem(KEY, JSON.stringify(state));
-    fullUpdate();
+    // Use render-only path to avoid saveState interference
+    renderAll();
   } finally {
     _isUndoRedoAction = false;
   }
