@@ -59,7 +59,7 @@
 - Επεξεργασία ονομάτων και ιδιοτήτων απευθείας μέσα από το UI
 - Επιλογή στοιχείων και γρήγορη ενημέρωση properties από τον δεξί editor
 
-### 2. Υποστήριξη 29 Azure resource types
+### 2. Υποστήριξη πολλών Azure resource types
 
 Οι πόροι είναι οργανωμένοι σε κατηγορίες:
 
@@ -243,19 +243,19 @@
 Άνοιξε το αρχείο:
 
 ```bash
-open ./index.html
+open index.html
 ```
 
 ή σε Linux:
 
 ```bash
-xdg-open ./index.html
+xdg-open index.html
 ```
 
 ### Επιλογή 2: Τοπικό static server
 
 ```bash
-cd azureTopology
+cd <project-directory>
 python -m http.server 8000
 ```
 
