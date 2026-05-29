@@ -1338,7 +1338,7 @@ export function confirmInventoryImport(){
     const type = (r.type || '').toLowerCase();
 
     if (!subMap.has(subId)) {
-      subMap.set(subId, { name: r.subscriptionDisplayName || `Subscription-${subId.substring(0,8)}`, id: _uid() });
+      subMap.set(subId, { name: r.subscriptionDisplayName || `Subscription-${subId.slice(0,8)}`, id: _uid() });
     }
     if (!rgMap.has(rgName)) {
       rgMap.set(rgName, { name: rgName, id: _uid(), subId: subMap.get(subId).id, location: location, tags: {} });
