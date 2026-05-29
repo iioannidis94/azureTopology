@@ -240,7 +240,7 @@ function generateAKSNetworkingTemplate() {
         peerings: [hubId], peeringConfigs: {},
         subnets: [
           { id: uid(), name: 'aks-nodes-subnet', cidr: '10.1.0.0/22', resources: [
-            { id: uid(), name: 'production-aks', type: 'aks', config: { nodes: '5', version: '1.29', nodeSize: 'Standard_D4s_v3', networkPlugin: 'azure', podCidr: '10.244.0.0/16', serviceCidr: '10.0.0.0/16', dnsServiceIp: '10.0.0.10', privateCluster: 'true', tier: 'Standard' } }
+            { id: uid(), name: 'production-aks', type: 'aks', config: { nodes: '5', version: '1.29', nodeSize: 'Standard_D4s_v3', networkPlugin: 'azure', podCidr: '10.244.0.0/16', serviceCidr: '10.100.0.0/16', dnsServiceIp: '10.100.0.10', privateCluster: 'true', tier: 'Standard' } }
           ]},
           { id: uid(), name: 'aks-internal-lb', cidr: '10.1.4.0/24', resources: [
             { id: uid(), name: 'internal-lb', type: 'lb', config: { sku: 'Standard', type: 'Internal', frontendIp: 'Dynamic' } },
