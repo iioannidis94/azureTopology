@@ -40,7 +40,30 @@
   .sidebar-bottom-section{margin-top:auto;position:sticky;bottom:0;background:var(--card-bg);border-top:1px solid var(--border);padding-top:8px;z-index:2;}
   
   .tree-section-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--azure-blue);padding:0 0 8px 0;border-bottom:1px solid var(--border);margin-bottom:12px;font-weight:700;}
-  
+
+
+/* edw ksekinaei*/
+#sidebar-left.collapsed,
+#sidebar-right.collapsed,
+.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.app-center {
+  flex-grow: 1;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+/* edw teleiwnei*/
+
+
   /* COST ESTIMATOR */
   .cost-estimator {background: linear-gradient(135deg, rgba(0,120,212,0.1), transparent); border: 1px solid var(--azure-blue); border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: center;}
   .cost-estimator.collapsed{display:none;}
