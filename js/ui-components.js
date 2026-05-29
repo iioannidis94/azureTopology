@@ -1,4 +1,4 @@
-import { state, esc, uid, fullUpdate, saveState, getVnetsInRg, getRgResources, RES_TYPES, RES_CATEGORIES, AZURE_ICON_BASE, VNET_COLORS, SUB_COLORS, isValidCidr, checkCidrOverlap, nextAvailableVnetCidr, nextAvailableSubnetCidr, nextAvailableSubnetCidrFromParsed, parseCidr } from './state-management.js';
+import { state, esc, uid, fullUpdate, saveState, getVnetsInRg, getRgResources, RES_TYPES, RES_CATEGORIES, AZURE_ICON_BASE, VNET_COLORS, SUB_COLORS, isValidCidr, checkCidrOverlap, nextAvailableVnetCidr, nextAvailableSubnetCidr, nextAvailableSubnetCidrFromParsed, parseCidr, AZURE_PRIVATE_DNS_ZONES, getRecommendedDnsZones } from './state-management.js';
 import { selectNode } from './canvas-engine.js';
 
 // ================================================================
@@ -521,8 +521,41 @@ export function renderEditor(){
           <span style="display:none">${rt.icon}</span> 
           ${rt.label}
         </div>
-      <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._updateRgResource('${obj.id}','name',this.value)"></div>
-      <div class="editor-row"><span class="editor-label">Zone</span><input class="input-field" value="${esc(obj.config.zone||'')}" onchange="window._updateResConfig('${obj.id}','zone',this.value)"></div>`;
+      <div class="editor-row"><span class="editor-label">Name</span><input class="input-field" value="${esc(obj.name)}" onchange="window._updateRgResource('${obj.id}','name',this.value)"></div>`;
+    
+    // Zone selection - searchable dropdown for Private DNS zones
+    if(obj.type === 'dns') {
+      const recommended = getRecommendedDnsZones();
+      const existingZones = (state.rgResources||[]).filter(r=>r.type==='dns' && r.config.zone).map(r=>r.config.zone);
+      const unresolvedRecs = recommended.filter(z => !existingZones.includes(z));
+      h+=`<div class="editor-row" style="flex-direction:column;align-items:stretch;">
+        <span class="editor-label" style="margin-bottom:4px;">Zone</span>
+        <div class="dns-zone-picker" style="position:relative;">
+          <input class="input-field dns-zone-search" id="dns-zone-search-${obj.id}" value="${esc(obj.config.zone||'')}" 
+            placeholder="Search or type zone..." 
+            onfocus="window._showDnsZoneDropdown('${obj.id}')"
+            oninput="window._filterDnsZones('${obj.id}', this.value)"
+            onchange="window._updateResConfig('${obj.id}','zone',this.value)">
+          <div class="dns-zone-dropdown" id="dns-zone-dd-${obj.id}" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;background:var(--card-bg);border:1px solid var(--border);border-radius:4px;z-index:1000;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+          </div>
+        </div>
+      </div>`;
+      // Show recommendations
+      if(unresolvedRecs.length > 0) {
+        h+=`<div class="editor-row" style="flex-direction:column;align-items:stretch;margin-top:6px;">
+          <span class="editor-label" style="font-size:9px;color:var(--azure-blue);margin-bottom:4px;">💡 Recommended (based on Private Endpoints)</span>`;
+        unresolvedRecs.slice(0,3).forEach(zone => {
+          h+=`<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+            <button style="flex:1;text-align:left;padding:4px 6px;border-radius:3px;cursor:pointer;font-size:9px;border:1px solid var(--azure-blue);background:transparent;color:var(--azure-blue);font-family:JetBrains Mono;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" 
+              title="${esc(zone)}"
+              onclick="window._selectDnsZone('${obj.id}','${zone}')">${zone}</button>
+          </div>`;
+        });
+        h+=`</div>`;
+      }
+    } else {
+      h+=`<div class="editor-row"><span class="editor-label">Zone</span><input class="input-field" value="${esc(obj.config.zone||'')}" onchange="window._updateResConfig('${obj.id}','zone',this.value)"></div>`;
+    }
     
     // DNS Records
     if(obj.config.records) {
@@ -551,6 +584,11 @@ export function renderEditor(){
         </div>`;
       });
       h+=`<button style="width:100%;padding:6px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--azure-blue);background:transparent;color:var(--azure-blue);font-family:JetBrains Mono;margin-top:4px;" onclick="window._addVnetLink('${obj.id}')">🔗 Link VNet</button>`;
+    }
+    
+    // Add Another DNS Zone button (for Private DNS zones)
+    if(obj.type === 'dns') {
+      h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--azure-blue);background:transparent;color:var(--azure-blue);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--azure-blue)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--azure-blue)'" onclick="window._addAnotherDnsZone('${obj.rgId}')">🌐 Add Another DNS Zone</button>`;
     }
     
     h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteRgResource('${obj.id}')">🗑 Delete Resource</button>`;
@@ -823,6 +861,89 @@ export function deleteVnetLink(resId, idx) {
   if(!r || !r.config || !r.config.vnetLinks) return;
   r.config.vnetLinks.splice(idx, 1);
   saveState(); renderEditor();
+}
+
+// ================================================================
+// DNS ZONE PICKER FUNCTIONS
+// ================================================================
+let _dnsDropdownCloseHandler = null;
+
+export function showDnsZoneDropdown(resId) {
+  const dd = document.getElementById(`dns-zone-dd-${resId}`);
+  if(!dd) return;
+  dd.style.display = 'block';
+  const input = document.getElementById(`dns-zone-search-${resId}`);
+  const filterVal = input ? input.value : '';
+  populateDnsZoneDropdown(resId, filterVal);
+  // Close on outside click - remove previous handler first
+  if(_dnsDropdownCloseHandler) {
+    document.removeEventListener('click', _dnsDropdownCloseHandler);
+  }
+  _dnsDropdownCloseHandler = function(e) {
+    if(!e.target.closest('.dns-zone-picker')) {
+      dd.style.display = 'none';
+      document.removeEventListener('click', _dnsDropdownCloseHandler);
+      _dnsDropdownCloseHandler = null;
+    }
+  };
+  setTimeout(() => {
+    document.addEventListener('click', _dnsDropdownCloseHandler);
+  }, 0);
+}
+
+export function filterDnsZones(resId, query) {
+  const dd = document.getElementById(`dns-zone-dd-${resId}`);
+  if(!dd) return;
+  dd.style.display = 'block';
+  populateDnsZoneDropdown(resId, query);
+}
+
+function populateDnsZoneDropdown(resId, query) {
+  const dd = document.getElementById(`dns-zone-dd-${resId}`);
+  if(!dd) return;
+  const q = (query||'').toLowerCase();
+  const recommended = getRecommendedDnsZones();
+  const filteredRec = recommended.filter(z => z.toLowerCase().includes(q));
+  const filteredAll = AZURE_PRIVATE_DNS_ZONES.filter(z => z.toLowerCase().includes(q) && !recommended.includes(z));
+  
+  let html = '';
+  if(filteredRec.length > 0) {
+    html += `<div style="padding:4px 8px;font-size:9px;color:var(--azure-blue);font-weight:bold;border-bottom:1px solid var(--border);">💡 Recommended</div>`;
+    filteredRec.forEach(zone => {
+      html += `<div class="dns-zone-option" style="padding:5px 8px;font-size:10px;cursor:pointer;font-family:JetBrains Mono;border-bottom:1px solid var(--border);transition:background 0.1s;" 
+        onmouseover="this.style.background='var(--bg3)'" 
+        onmouseout="this.style.background=''" 
+        onclick="window._selectDnsZone('${resId}','${zone}')">${zone}</div>`;
+    });
+  }
+  if(filteredAll.length > 0) {
+    html += `<div style="padding:4px 8px;font-size:9px;color:var(--muted);font-weight:bold;border-bottom:1px solid var(--border);">All Zones</div>`;
+    filteredAll.slice(0, 20).forEach(zone => {
+      html += `<div class="dns-zone-option" style="padding:5px 8px;font-size:10px;cursor:pointer;font-family:JetBrains Mono;border-bottom:1px solid var(--border);transition:background 0.1s;" 
+        onmouseover="this.style.background='var(--bg3)'" 
+        onmouseout="this.style.background=''" 
+        onclick="window._selectDnsZone('${resId}','${zone}')">${zone}</div>`;
+    });
+    if(filteredAll.length > 20) {
+      html += `<div style="padding:4px 8px;font-size:9px;color:var(--muted);text-align:center;">...type to filter more</div>`;
+    }
+  }
+  if(!html) {
+    html = `<div style="padding:8px;font-size:10px;color:var(--muted);text-align:center;">No matching zones</div>`;
+  }
+  dd.innerHTML = html;
+}
+
+export function selectDnsZone(resId, zone) {
+  const r = (state.rgResources||[]).find(r => r.id === resId);
+  if(r && r.config) {
+    r.config.zone = zone;
+    saveState(); renderEditor();
+  }
+}
+
+export function addAnotherDnsZone(rgId) {
+  addRgResource(rgId, 'dns');
 }
 
 // ================================================================

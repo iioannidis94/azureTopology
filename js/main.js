@@ -1,6 +1,6 @@
 import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, resetDiagram, resetPositions } from './state-management.js';
 import { draw, resize, selectNode } from './canvas-engine.js';
-import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink } from './ui-components.js';
+import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText } from './export-logic.js';
 
 // ================================================================
@@ -55,6 +55,10 @@ window._deleteDnsRecord = deleteDnsRecord;
 window._updateDnsRecord = updateDnsRecord;
 window._addVnetLink = addVnetLink;
 window._deleteVnetLink = deleteVnetLink;
+window._showDnsZoneDropdown = showDnsZoneDropdown;
+window._filterDnsZones = filterDnsZones;
+window._selectDnsZone = selectDnsZone;
+window._addAnotherDnsZone = addAnotherDnsZone;
 window._exportPng = exportPng;
 window._openPsModal = openPsModal;
 window._openBicepModal = openBicepModal;
