@@ -48,19 +48,19 @@
       <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:20px;line-height:1.9;">← Click a resource, subnet or VNet<br>to edit its properties</div>
     </div>
     
+    <div style="display:flex; gap:8px; padding:6px 10px;">
+       <button class="export-btn reset" onclick="window._resetPositions()" style="flex:1" title="Clear Drag&Drop Changes">🧹 Positions</button>
+       <button class="export-btn reset" onclick="window._resetDiagram()" style="flex:1" title="Delete everything">🔄 Reset</button>
+    </div>
+
     <div class="tree-section-title" onclick="window._toggleExportPanel()">// Import / Export <span id="export-panel-toggle" style="font-size:8px;color:var(--muted);">▶</span></div>
     <div class="export-area collapsed" id="export-panel">
-      <button class="export-btn secondary" onclick="window._openTemplateGallery()">📋 Template Gallery</button>
       <button class="export-btn secondary" onclick="window._exportPng()">⬇ Export as PNG</button>
       <button class="export-btn secondary" onclick="window._exportJson()">📤 Export as JSON</button>
       <button class="export-btn secondary" onclick="window._openJsonImportModal()">📥 Import JSON</button>
       <button class="export-btn secondary" onclick="window._openAzureInventoryModal()">☁️ Import Azure Inventory</button>
       <button class="export-btn secondary" onclick="window._openPsModal()">⚡ Deploy via PowerShell</button>
       <button class="export-btn secondary" onclick="window._openBicepModal()">📄 Generate Bicep</button>
-      <div style="display:flex; gap:8px;">
-         <button class="export-btn reset" onclick="window._resetPositions()" style="flex:1" title="Clear Drag&Drop Changes">🧹 Positions</button>
-         <button class="export-btn reset" onclick="window._resetDiagram()" style="flex:1" title="Delete everything">🔄 Reset</button>
-      </div>
     </div>
   </div>
 </div>
