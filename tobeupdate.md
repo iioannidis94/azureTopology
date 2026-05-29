@@ -20,7 +20,18 @@
 - [ ] File picker dialog + download trigger
 - [ ] Δυνατότητα sharing configurations μεταξύ χρηστών
 
-### 1.3 Mobile Experience Fix
+### 1.3 Azure Resource Inventory Import
+- [ ] Import JSON από `az resource list -o json` ή `az graph query`
+- [ ] Mapping Azure resource types → εσωτερικά types (π.χ. `Microsoft.Compute/virtualMachines` → `vm`, `Microsoft.Network/virtualNetworks` → VNet)
+- [ ] Auto-detect δομή: Subscription → Resource Groups → VNets → Subnets → Resources
+- [ ] Ανακατασκευή VNet/Subnet hierarchy από resource IDs (π.χ. `/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/...`)
+- [ ] Preview panel πριν το import (πόσα RGs, VNets, resources βρέθηκαν)
+- [ ] Υποστήριξη πολλαπλών resource groups σε ένα import
+- [ ] Αντιστοίχιση configurations (VM size, SKU, tier κλπ.) από τα resource properties
+- [ ] Graceful handling για resource types που δεν υποστηρίζονται (εμφάνιση warning, skip)
+- [ ] Δυνατότητα merge με υπάρχον diagram ή clean import
+
+### 1.4 Mobile Experience Fix
 - [ ] Touch events (pinch-to-zoom, single-finger pan)
 - [ ] Long-press + drag για move element
 - [ ] Fix dropdowns σε mobile (κλείσιμο με tap outside)
@@ -123,7 +134,7 @@
 
 ```
 Φάση 1 (Εβδομάδες 1-4):
-  → Undo/Redo → JSON Import/Export → Mobile Fix
+  → Undo/Redo → JSON Import/Export → Resource Inventory Import → Mobile Fix
 
 Φάση 2 (Εβδομάδες 5-10):
   → Terraform Export → Keyboard Shortcuts → Templates → Minimap
