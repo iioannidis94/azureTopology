@@ -2,6 +2,7 @@ import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, setRenderA
 import { draw, resize, selectNode } from './canvas-engine.js';
 import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
 import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText, exportJson, openJsonImportModal, handleJsonFile, confirmJsonImport, previewPastedJson, openAzureInventoryModal, handleInventoryFile, previewInventory, confirmInventoryImport, toggleExportPanel } from './export-logic.js';
+import { openTemplateGallery, closeTemplateGallery, applyTemplate } from './template-gallery.js';
 
 // ================================================================
 // WIRE UP fullUpdate
@@ -117,6 +118,9 @@ window._resetDiagram = resetDiagram;
 window._resetPositions = resetPositions;
 window._toggleSecurityPanel = toggleSecurityPanel;
 window._toggleCostPanel = toggleCostPanel;
+window._openTemplateGallery = openTemplateGallery;
+window._closeTemplateGallery = closeTemplateGallery;
+window._applyTemplate = applyTemplate;
 
 // ================================================================
 // INIT & LOAD REAL ICONS

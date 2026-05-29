@@ -205,6 +205,20 @@
   .json-import-preview{background:var(--bg3);border:1px solid var(--azure-blue);border-radius:8px;padding:12px;font-size:11px;color:var(--accent);line-height:1.7;white-space:pre-wrap;}
   .inventory-ps-cmd{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:'JetBrains Mono';font-size:11px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-all;margin:0;}
 
+  /* Template Gallery */
+  .template-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;overflow-y:auto;max-height:60vh;padding:4px;}
+  .template-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s ease;overflow:hidden;display:flex;flex-direction:column;}
+  .template-card:hover{border-color:var(--azure-blue);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,120,212,0.2);}
+  .template-thumbnail{padding:12px 12px 0;display:flex;align-items:center;justify-content:center;}
+  .template-thumbnail svg{width:100%;height:auto;border-radius:6px;}
+  .template-info{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;}
+  .template-name{font-family:'Syne';font-weight:700;font-size:13px;color:var(--text);display:flex;align-items:center;gap:6px;}
+  .template-icon{font-size:16px;}
+  .template-category{font-family:'JetBrains Mono';font-size:9px;color:var(--azure-blue);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+  .template-desc{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);line-height:1.5;}
+  .template-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+  .template-tag{font-family:'JetBrains Mono';font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(0,120,212,0.1);color:var(--azure-blue);border:1px solid rgba(0,120,212,0.2);}
+
   #rename-overlay{display:none;position:fixed;z-index:500;}
   #rename-input{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;border:2px solid #0078D4;border-radius:6px;background:#fff;color:#111;outline:none;min-width:140px;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
   
