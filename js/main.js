@@ -1,7 +1,7 @@
 import { state, saveState, updateCost, loadAzureIcons, setFullUpdate, setRenderAll, resetDiagram, resetPositions, undo, redo } from './state-management.js';
 import { draw, resize, selectNode, getRenderNodes } from './canvas-engine.js';
 import { renderSecurityPanel, renderSidebar, renderEditor, toggleTheme, toggleLayout, fitToScreen, toggleOnPrem, updateOnPremName, updateOnPremCidr, toggleMgEnabled, addMg, deleteMg, renameMg, assignSubToMg, assignMgParent, addSubToMg, toggleMobileMenu, showMobilePanel, addSub, deleteSub, renameSub, addRg, deleteRg, renameRg, setRgLocation, updateSubProp, updateRgProp, addTag, updateTag, renameTag, deleteTag, addSpoke, addVnetToRg, deleteSpoke, updateVnet, togglePeering, updatePeeringConfig, selectPeering, addSubnet, deleteSubnet, updateSubnet, updateVnetProp, updateSubnetProp, toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig, toggleSecurityPanel, toggleCostPanel, addRgResource, deleteRgResource, updateRgResource, addDnsRecord, deleteDnsRecord, updateDnsRecord, addVnetLink, deleteVnetLink, toggleVnetLink, selectVnetLink, updateVnetLinkConfig, showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone } from './ui-components.js';
-import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText, exportJson, openJsonImportModal, handleJsonFile, confirmJsonImport, previewPastedJson, openAzureInventoryModal, handleInventoryFile, previewInventory, confirmInventoryImport, toggleExportPanel } from './export-logic.js';
+import { exportPng, openPsModal, openBicepModal, closeModal, copyText, downloadText, exportJson, openJsonImportModal, handleJsonFile, confirmJsonImport, previewPastedJson, openAzureInventoryModal, handleInventoryFile, previewInventory, confirmInventoryImport, toggleExportPanel, setInventoryScope } from './export-logic.js';
 import { openTemplateGallery, closeTemplateGallery, applyTemplate } from './template-gallery.js';
 
 // ================================================================
@@ -218,6 +218,7 @@ window._openAzureInventoryModal = openAzureInventoryModal;
 window._handleInventoryFile = handleInventoryFile;
 window._previewInventory = previewInventory;
 window._confirmInventoryImport = confirmInventoryImport;
+window._setInventoryScope = setInventoryScope;
 window._toggleExportPanel = toggleExportPanel;
 window._openPsModal = openPsModal;
 window._openBicepModal = openBicepModal;
@@ -232,6 +233,23 @@ window._openTemplateGallery = openTemplateGallery;
 window._closeTemplateGallery = closeTemplateGallery;
 window._applyTemplate = applyTemplate;
 window._openShortcutsModal = openShortcutsModal;
+
+// ================================================================
+// SIDEBAR COLLAPSE/EXPAND
+// ================================================================
+window._toggleSidebar = function(side) {
+  const sidebar = document.getElementById(side === 'left' ? 'sidebar-left' : 'sidebar-right');
+  const btn = document.getElementById(side === 'left' ? 'toggle-left' : 'toggle-right');
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  if (side === 'left') {
+    btn.textContent = isCollapsed ? '▶' : '◀';
+    btn.title = isCollapsed ? 'Show Left Panel' : 'Hide Left Panel';
+  } else {
+    btn.textContent = isCollapsed ? '◀' : '▶';
+    btn.title = isCollapsed ? 'Show Right Panel' : 'Hide Right Panel';
+  }
+  setTimeout(resize, 350);
+};
 
 // ================================================================
 // INIT & LOAD REAL ICONS
