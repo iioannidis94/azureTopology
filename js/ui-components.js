@@ -1010,14 +1010,18 @@ export function addResource(vnetId, snId, resType){
   const vnet=[state.hub,...state.spokes].find(v=>v.id===vnetId);
   const sn = vnet?.subnets.find(s=>s.id===snId);
   const rT=RES_TYPES[resType];
-  if(sn && rT) {
-    // Clear custom positions for existing resources in this subnet so they re-layout together
-    if(state.customPos){
-      sn.resources.forEach(r => { delete state.customPos[r.id]; });
-    }
-    const nr={id:uid(),type:resType,name:`${sn.name.split('-')[0]}-${resType}`,config:{...rT.config}};
-    sn.resources.push(nr); document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); selectNode(nr.id);
+  if(!sn || !rT) return;
+  // Redirect RG-level resources (DNS zones etc) to addRgResource so they get full capabilities
+  if(rT.rgLevel) {
+    const rgId = vnet.rgId || (state.resourceGroups.length > 0 ? state.resourceGroups[0].id : null);
+    if(rgId) { addRgResource(rgId, resType); return; }
   }
+  // Clear custom positions for existing resources in this subnet so they re-layout together
+  if(state.customPos){
+    sn.resources.forEach(r => { delete state.customPos[r.id]; });
+  }
+  const nr={id:uid(),type:resType,name:`${sn.name.split('-')[0]}-${resType}`,config:{...rT.config}};
+  sn.resources.push(nr); document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); selectNode(nr.id);
 }
 export function deleteResource(resId){
   [state.hub,...state.spokes].forEach(v => v.subnets.forEach(sn => {
