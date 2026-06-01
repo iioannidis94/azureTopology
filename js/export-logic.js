@@ -1,6 +1,23 @@
 import { state, getVnetsInRg, RES_TYPES, KEY, saveState, fullUpdate } from './state-management.js';
 
 // ================================================================
+// SHARED HELPERS
+// ================================================================
+/**
+ * Produces a safe identifier for PowerShell variables and Bicep symbols.
+ * Replaces non-alphanumeric/underscore characters, and prefixes a leading digit
+ * with an underscore so the result is always a valid identifier.
+ */
+function _iacSafe(name) {
+  const safe = (name || '').replace(/[^a-zA-Z0-9_]/g, '_');
+  return /^\d/.test(safe) ? '_' + safe : safe || '_resource';
+}
+
+// App Service Plan SKU → Tier/WorkerSize lookup tables (module-level constants, used in generatePowerShellResource)
+const _ASP_TIER_MAP = { F1:'Free', D1:'Shared', B1:'Basic', B2:'Basic', B3:'Basic', S1:'Standard', S2:'Standard', S3:'Standard', P1v2:'PremiumV2', P2v2:'PremiumV2', P3v2:'PremiumV2', P0v3:'PremiumV3', P1v3:'PremiumV3', P2v3:'PremiumV3', P3v3:'PremiumV3', P1mv3:'PremiumV3', P2mv3:'PremiumV3', P3mv3:'PremiumV3', P4mv3:'PremiumV3', P5mv3:'PremiumV3', Y1:'Dynamic' };
+const _ASP_SIZE_MAP = { F1:'Small', D1:'Small', B1:'Small', B2:'Medium', B3:'Large', S1:'Small', S2:'Medium', S3:'Large', P1v2:'Small', P2v2:'Medium', P3v2:'Large', P0v3:'Small', P1v3:'Small', P2v3:'Medium', P3v3:'Large', P1mv3:'Small', P2mv3:'Medium', P3mv3:'Large', P4mv3:'Large', P5mv3:'Large', Y1:'Small' };
+
+// ================================================================
 // EXPORTS (PNG, PowerShell, Bicep)
 // ================================================================
 export function exportPng(){
@@ -34,11 +51,8 @@ function generatePowerShellResource(res, rg, varN, sn) {
         lines.push(`$vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Linux -ComputerName "${res.name}" -Credential $cred`);
       }
       lines.push(`$vmConfig = Set-AzVMOSDisk -VM $vmConfig -DiskSizeInGB ${c.osDiskSizeGB||128} -CreateOption FromImage -StorageAccountType "${c.osDiskType||'Premium_LRS'}"`);
-      if (c.acceleratedNetworking === 'true') {
-        lines.push(`$nic = New-AzNetworkInterface -Name "${res.name}-nic" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SubnetId ${varN}.Subnets[0].Id -EnableAcceleratedNetworking`);
-      } else {
-        lines.push(`$nic = New-AzNetworkInterface -Name "${res.name}-nic" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SubnetId ${varN}.Subnets[0].Id`);
-      }
+      const nicAccelNet = c.acceleratedNetworking === 'true' ? ' -EnableAcceleratedNetworking' : '';
+      lines.push(`$nic = New-AzNetworkInterface -Name "${res.name}-nic" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SubnetId (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}).Id${nicAccelNet}`);
       if (c.publicIp === 'true') {
         lines.push(`$pip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard`);
       }
@@ -73,14 +87,20 @@ function generatePowerShellResource(res, rg, varN, sn) {
       break;
     }
     case 'fa': {
-      lines.push(`New-AzFunctionApp -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -Runtime "${c.runtime||'node'}" -RuntimeVersion "${c.runtimeVersion||'20'}" -FunctionsVersion 4 -OSType "${c.osType||'Linux'}" -StorageAccountName "<storage-account>"`);
+      lines.push(`New-AzFunctionApp -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -Runtime "${c.runtime||'node'}" -RuntimeVersion "${c.runtimeVersion||'20'}" -FunctionsVersion 4 -OSType "${c.osType||'Linux'}" -StorageAccountName "${c.storageAccountName||'<storage-account-name>'}"`);
       if (c.plan !== 'Consumption' && c.alwaysOn === 'true') {
         lines.push(`# AlwaysOn enabled for ${c.plan} plan`);
       }
       break;
     }
     case 'aca': {
-      lines.push(`New-AzContainerApp -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -Image "${c.image||'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'}" -Cpu ${c.cpu||'0.5'} -Memory "${c.memory||'1.0Gi'}" -MinReplicas ${c.minReplicas||1} -MaxReplicas ${c.replicas||10} -TargetPort ${c.targetPort||80} -IngressType "${c.ingress||'external'}"`);
+      const acaEnvRef = c.environmentName
+        ? `(Get-AzContainerAppManagedEnv -ResourceGroupName "${rg.name}" -EnvName "${c.environmentName}").Id`
+        : '"<container-apps-environment-id>"';
+      lines.push(`# Container Apps Environment required. Provide environmentName in config or replace the placeholder.`);
+      lines.push(`# NOTE: The environment is assumed to be in the same resource group ("${rg.name}"). Update -ResourceGroupName if it differs.`);
+      lines.push(`$acaEnvId = ${acaEnvRef}`);
+      lines.push(`New-AzContainerApp -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -ManagedEnvironmentId $acaEnvId -Image "${c.image||'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'}" -Cpu ${c.cpu||'0.5'} -Memory "${c.memory||'1.0Gi'}" -MinReplicas ${c.minReplicas||1} -MaxReplicas ${c.replicas||10} -TargetPort ${c.targetPort||80} -IngressType "${c.ingress||'external'}"`);
       break;
     }
     case 'fw': {
@@ -96,7 +116,7 @@ function generatePowerShellResource(res, rg, varN, sn) {
       const nvaPlanName = nvaVendor === 'fortinet' ? 'fortinet_fg-vm' : `${nvaVendor}_nva`;
       lines.push(`# NVA: ${res.name} (Vendor: ${c.vendor||'Fortinet'}, Mode: ${c.mode||'Active/Passive'}, Version: ${c.version||'7.4'}, License: ${c.licenseType||'PAYG'})`);
       lines.push(`# Deploy via Azure Marketplace — use New-AzMarketplaceTerms and New-AzVM with plan`);
-      lines.push(`$nvaConfig = New-AzVMConfig -VMName "${res.name}" -VMSize "Standard_F4s_v2"`);
+      lines.push(`$nvaConfig = New-AzVMConfig -VMName "${res.name}" -VMSize "${c.size||'Standard_F4s_v2'}"`);
       lines.push(`$nvaConfig = Set-AzVMPlan -VM $nvaConfig -Publisher "${nvaVendor}" -Product "${nvaProduct}" -Name "${nvaPlanName}"`);
       lines.push(`# License Type: ${c.licenseType||'PAYG'} | Version: ${c.version||'7.4'}`);
       lines.push(`New-AzVM -ResourceGroupName "${rg.name}" -Location "${rg.location}" -VM $nvaConfig`);
@@ -197,9 +217,10 @@ function generatePowerShellResource(res, rg, varN, sn) {
     case 'sql': {
       const sqlTier = c.tier || 'GeneralPurpose';
       const sqlSkuPrefix = sqlTier === 'BusinessCritical' ? 'BC_Gen5' : 'GP_Gen5';
-      lines.push(`New-AzSqlServer -ServerName "${res.name}-server" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SqlAdministratorCredentials $cred`);
-      lines.push(`New-AzSqlDatabase -DatabaseName "${res.name}" -ServerName "${res.name}-server" -ResourceGroupName "${rg.name}" -Edition "${sqlTier}" -VCore ${c.vcores||4} -ComputeGeneration "Gen5" -MaxSizeBytes ${(parseInt(c.maxSizeGB)||32)*1073741824} -Collation "${c.collation||'SQL_Latin1_General_CP1_CI_AS'}" -BackupStorageRedundancy "${c.zoneRedundant==='true'?'Zone':'Local'}" -ZoneRedundant:$${c.zoneRedundant==='true'?'true':'false'}`);
-      if(c.backupRetentionDays && c.backupRetentionDays !== '7') lines.push(`Set-AzSqlDatabaseBackupShortTermRetentionPolicy -ServerName "${res.name}-server" -DatabaseName "${res.name}" -ResourceGroupName "${rg.name}" -RetentionDays ${c.backupRetentionDays}`);
+      const sqlServerName = c.serverName || `${res.name}-server`;
+      lines.push(`New-AzSqlServer -ServerName "${sqlServerName}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SqlAdministratorCredentials $cred`);
+      lines.push(`New-AzSqlDatabase -DatabaseName "${res.name}" -ServerName "${sqlServerName}" -ResourceGroupName "${rg.name}" -Edition "${sqlTier}" -VCore ${c.vcores||4} -ComputeGeneration "Gen5" -MaxSizeBytes ${(parseInt(c.maxSizeGB)||32)*1073741824} -Collation "${c.collation||'SQL_Latin1_General_CP1_CI_AS'}" -BackupStorageRedundancy "${c.zoneRedundant==='true'?'Zone':'Local'}" -ZoneRedundant:$${c.zoneRedundant==='true'?'true':'false'}`);
+      if(c.backupRetentionDays && c.backupRetentionDays !== '7') lines.push(`Set-AzSqlDatabaseBackupShortTermRetentionPolicy -ServerName "${sqlServerName}" -DatabaseName "${res.name}" -ResourceGroupName "${rg.name}" -RetentionDays ${c.backupRetentionDays}`);
       break;
     }
     case 'cosmos': {
@@ -242,8 +263,12 @@ function generatePowerShellResource(res, rg, varN, sn) {
       break;
     }
     case 'app': {
-      lines.push(`New-AzAppServicePlan -Name "${res.name}-plan" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Tier "PremiumV3" -WorkerSize "Small" -Linux`);
-      let appCmd = `New-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AppServicePlan "${res.name}-plan"`;
+      const aspName = c.appServicePlanName || `${res.name}-plan`;
+      const aspSku = c.appServicePlanSku || c.sku || 'P1v3';
+      const aspTier = _ASP_TIER_MAP[aspSku] || 'PremiumV3';
+      const aspWorkerSize = _ASP_SIZE_MAP[aspSku] || 'Small';
+      lines.push(`New-AzAppServicePlan -Name "${aspName}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Tier "${aspTier}" -WorkerSize "${aspWorkerSize}"`);
+      let appCmd = `New-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AppServicePlan "${aspName}"`;
       lines.push(appCmd);
       if(c.httpsOnly !== 'false') lines.push(`Set-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -HttpsOnly $true`);
       if(c.runtime) lines.push(`# Runtime: ${c.runtime} ${c.runtimeVersion||''}`);
@@ -350,10 +375,10 @@ export function generatePowerShell(){
       if(rg.lock && rg.lock !== 'None') lines.push(`New-AzResourceLock -LockName "${rg.name}-lock" -LockLevel "${rg.lock}" -ResourceGroupName "${rg.name}" -Force`);
       lines.push('');
       getVnetsInRg(rg.id).forEach(vnet=>{
-        const varN=`$vnet_${vnet.name.replace(/[^a-zA-Z0-9]/g,'_')}`;
+        const varN=`$vnet_${_iacSafe(vnet.name)}`;
         
         lines.push(`$subnets = @()`);
-        vnet.subnets.forEach(sn => {
+        (vnet.subnets || []).forEach(sn => {
           let snCmd = `$subnets += New-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -AddressPrefix "${sn.cidr}"`;
           if(sn.serviceEndpoints) {
             const eps = sn.serviceEndpoints.split(',').map(e=>e.trim()).filter(Boolean);
@@ -375,7 +400,7 @@ export function generatePowerShell(){
         lines.push(vnetCmd);
 
         // NSG and Route Table associations
-        vnet.subnets.forEach(sn => {
+        (vnet.subnets || []).forEach(sn => {
           if(sn.nsgId) lines.push(`Set-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN} -AddressPrefix "${sn.cidr}" -NetworkSecurityGroupId (Get-AzNetworkSecurityGroup -Name "${sn.nsgId}" -ResourceGroupName "${rg.name}").Id | Set-AzVirtualNetwork`);
           if(sn.routeTableId) lines.push(`Set-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN} -AddressPrefix "${sn.cidr}" -RouteTableId (Get-AzRouteTable -Name "${sn.routeTableId}" -ResourceGroupName "${rg.name}").Id | Set-AzVirtualNetwork`);
           if(sn.natGatewayId) lines.push(`Set-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN} -AddressPrefix "${sn.cidr}" -NatGatewayId (Get-AzNatGateway -Name "${sn.natGatewayId}" -ResourceGroupName "${rg.name}").Id | Set-AzVirtualNetwork`);
@@ -385,13 +410,13 @@ export function generatePowerShell(){
             vnet.peerings.forEach(pId => {
                 const target = allVnets.find(v => v.id === pId);
                 if (target) {
-                    lines.push(`Add-AzVirtualNetworkPeering -Name "${vnet.name}-to-${target.name}" -VirtualNetwork ${varN} -RemoteVirtualNetworkId $vnet_${target.name.replace(/[^a-zA-Z0-9]/g,'_')}.Id -ErrorAction SilentlyContinue`);
+                    lines.push(`Add-AzVirtualNetworkPeering -Name "${vnet.name}-to-${target.name}" -VirtualNetwork ${varN} -RemoteVirtualNetworkId $vnet_${_iacSafe(target.name)}.Id -ErrorAction SilentlyContinue`);
                 }
             });
         }
 
-        vnet.subnets.forEach(sn => {
-          sn.resources.forEach(res => {
+        (vnet.subnets || []).forEach(sn => {
+          (sn.resources || []).forEach(res => {
             const t=RES_TYPES[res.type]||{label:'Resource'};
             lines.push(`# Deploying ${t.label}: ${res.name} (Subnet: ${sn.name})`);
             lines.push(...generatePowerShellResource(res, rg, varN, sn));
@@ -455,9 +480,11 @@ export function generatePowerShell(){
 function generateBicepResource(res, rg, vnet, sn) {
   const lines = [];
   const c = res.config || {};
-  const safeName = res.name.replace(/[^a-zA-Z0-9]/g,'_');
-  const rgRef = rg.id.replace(/-/g,'_');
-
+  const safeName = _iacSafe(res.name);
+  const rgRef = _iacSafe(rg.id);
+  const vnetSafeName = _iacSafe(vnet.name);
+  // Bicep reference to the subnet resource ID via the AVM VNet module output
+  const subnetRef = `vnet_${vnetSafeName}.outputs.subnetResourceIds['${sn.name}']`;
   switch (res.type) {
     case 'vm': {
       lines.push(`module ${safeName} 'br/public:avm/res/compute/virtual-machine:0.5.0' = {`);
@@ -518,6 +545,8 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    runtimeVersion: '${c.runtimeVersion||'20'}'`);
       lines.push(`    osType: '${c.osType||'Linux'}'`);
       lines.push(`    alwaysOn: ${c.alwaysOn === 'true'}`);
+      if (c.storageAccountName) lines.push(`    storageAccountResourceId: resourceId('Microsoft.Storage/storageAccounts', '${c.storageAccountName}') // same subscription + RG; cross-RG: resourceId(rgName, type, name); cross-subscription: resourceId(sub, rgName, type, name)`);
+      else lines.push(`    // storageAccountResourceId: '<storage-account-resource-id>' // required for Function Apps`);
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -528,6 +557,8 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
+      if (c.environmentName) lines.push(`    environmentResourceId: resourceId('Microsoft.App/managedEnvironments', '${c.environmentName}') // same subscription + RG; cross-RG: resourceId(rgName, type, name); cross-subscription: resourceId(sub, rgName, type, name)`);
+      else lines.push(`    // environmentResourceId: '<container-apps-environment-resource-id>' // required`);
       lines.push(`    containers: [{ image: '${c.image||'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'}', resources: { cpu: ${c.cpu||'0.5'}, memory: '${c.memory||'1.0Gi'}' } }]`);
       lines.push(`    scale: { minReplicas: ${c.minReplicas||1}, maxReplicas: ${c.replicas||10} }`);
       lines.push(`    ingress: { external: ${c.ingress === 'external'}, targetPort: ${c.targetPort||80} }`);
@@ -566,7 +597,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    vmSize: 'Standard_F4s_v2'`);
+      lines.push(`    vmSize: '${c.size||'Standard_F4s_v2'}'`);
       lines.push(`    plan: { publisher: '${nvaVendor}', product: '${nvaProduct}', name: '${nvaPlanName}' }`);
       lines.push(`    // Mode: ${c.mode||'Active/Passive'} | License: ${c.licenseType||'PAYG'}`);
       lines.push(`  }`);
@@ -581,7 +612,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    name: '${res.name}'`);
       lines.push(`    sku: { name: '${c.sku||'WAF_v2'}', tier: '${c.tier||c.sku||'WAF_v2'}', capacity: ${c.capacity||2} }`);
       lines.push(`    sslPolicy: { policyType: 'Predefined', policyName: '${c.sslPolicy||'AppGwSslPolicy20220101'}' }`);
-      lines.push(`    gatewayIPConfigurations: [{ subnetId: '${sn.name}' }]`);
+      lines.push(`    gatewayIPConfigurations: [{ subnetId: ${subnetRef} }]`);
       lines.push(`    frontendIPConfigurations: [{ publicIPAddressId: '${res.name}-pip' }]`);
       lines.push(`    frontendPorts: [{ port: 80 }]`);
       lines.push(`    backendAddressPools: [{ name: 'defaultBackendPool' }]`);
@@ -601,7 +632,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       if (lbIsPublic) {
         lines.push(`    frontendIPConfigurations: [{ name: '${res.name}-frontend', publicIPAddressId: '${res.name}-pip' }]`);
       } else {
-        lines.push(`    frontendIPConfigurations: [{ name: '${res.name}-frontend', subnetId: '${sn.name}' }]`);
+        lines.push(`    frontendIPConfigurations: [{ name: '${res.name}-frontend', subnetId: ${subnetRef} }]`);
       }
       const probeparts = (c.healthProbe||'TCP/80').split('/');
       lines.push(`    backendAddressPools: [{ name: '${res.name}-backend' }]`);
@@ -686,7 +717,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    subnetResourceId: '${sn.name}'`);
+      lines.push(`    subnetResourceId: ${subnetRef}`);
       lines.push(`    privateLinkServiceConnections: [{ name: '${peConnectionName}', privateLinkServiceId: '<target-resource-id>', groupIds: ['${peGroupId}'] }]`);
       if (c.privateDnsZoneId) {
         lines.push(`    privateDnsZoneGroup: { privateDnsZoneGroupConfigs: [{ privateDnsZoneResourceId: '${c.privateDnsZoneId}' }] }`);
@@ -721,11 +752,12 @@ function generateBicepResource(res, rg, vnet, sn) {
     case 'sql': {
       const sqlTier = c.tier || 'GeneralPurpose';
       const sqlSkuName = sqlTier === 'BusinessCritical' ? 'BC_Gen5' : 'GP_Gen5';
+      const sqlServerName = c.serverName || `${res.name}-server`;
       lines.push(`module ${safeName}_server 'br/public:avm/res/sql/server:0.4.0' = {`);
-      lines.push(`  name: '${res.name}-server'`);
+      lines.push(`  name: '${sqlServerName}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
-      lines.push(`    name: '${res.name}-server'`);
+      lines.push(`    name: '${sqlServerName}'`);
       lines.push(`    administratorLogin: 'sqladmin'`);
       lines.push(`    administratorLoginPassword: '<password>'`);
       lines.push(`    databases: [{ name: '${res.name}', sku: { name: '${sqlSkuName}', tier: '${sqlTier}', capacity: ${c.vcores||4} }, maxSizeBytes: ${(parseInt(c.maxSizeGB)||32)*1073741824}, collation: '${c.collation||'SQL_Latin1_General_CP1_CI_AS'}', zoneRedundant: ${c.zoneRedundant==='true'} }]`);
@@ -820,13 +852,20 @@ function generateBicepResource(res, rg, vnet, sn) {
       break;
     }
     case 'app': {
+      const aspNameBicep = c.appServicePlanName || `${res.name}-plan`;
+      const aspSkuBicep = c.appServicePlanSku || c.sku || 'P1v3';
+      lines.push(`module ${safeName}_plan 'br/public:avm/res/web/server-farm:0.2.0' = {`);
+      lines.push(`  name: '${aspNameBicep}'`);
+      lines.push(`  scope: ${rgRef}`);
+      lines.push(`  params: { name: '${aspNameBicep}', sku: { name: '${aspSkuBicep}' } }`);
+      lines.push(`}\n`);
       lines.push(`module ${safeName} 'br/public:avm/res/web/site:0.6.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
       lines.push(`    kind: 'app,linux'`);
-      lines.push(`    serverFarmResourceId: '${res.name}-plan'`);
+      lines.push(`    serverFarmResourceId: ${safeName}_plan.outputs.resourceId`);
       lines.push(`    siteConfig: { alwaysOn: ${c.alwaysOn === 'true'}, httpsOnly: ${c.httpsOnly !== 'false'}, minTlsVersion: '${c.minTlsVersion||'1.2'}' }`);
       if(c.runtime) lines.push(`    // Runtime: ${c.runtime} ${c.runtimeVersion||''}`);
       if(c.managedIdentity && c.managedIdentity !== 'None') lines.push(`    managedIdentities: { systemAssigned: true }`);
@@ -946,7 +985,7 @@ export function generateBicep(){
     const topMgs = state.managementGroups.filter(mg => !mg.parentId);
     const childMgs = state.managementGroups.filter(mg => mg.parentId);
     topMgs.forEach(mg => {
-      const safeName = mg.name.replace(/[^a-zA-Z0-9]/g,'_');
+      const safeName = _iacSafe(mg.name);
       lines.push(`resource mg_${safeName} 'Microsoft.Management/managementGroups@2021-04-01' = {`);
       lines.push(`  name: '${mg.name}'`);
       lines.push(`  properties: {`);
@@ -955,9 +994,9 @@ export function generateBicep(){
       lines.push(`}\n`);
     });
     childMgs.forEach(mg => {
-      const safeName = mg.name.replace(/[^a-zA-Z0-9]/g,'_');
+      const safeName = _iacSafe(mg.name);
       const parent = state.managementGroups.find(p => p.id === mg.parentId);
-      const parentRef = parent ? `mg_${parent.name.replace(/[^a-zA-Z0-9]/g,'_')}.id` : '';
+      const parentRef = parent ? `mg_${_iacSafe(parent.name)}.id` : '';
       lines.push(`resource mg_${safeName} 'Microsoft.Management/managementGroups@2021-04-01' = {`);
       lines.push(`  name: '${mg.name}'`);
       lines.push(`  properties: {`);
@@ -973,10 +1012,10 @@ export function generateBicep(){
       if (sub.mgId) {
         const mg = state.managementGroups.find(m => m.id === sub.mgId);
         if (mg) {
-          const safeName = sub.name.replace(/[^a-zA-Z0-9]/g,'_');
+          const safeName = _iacSafe(sub.name);
           const subIdRef = sub.subscriptionId || 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
           lines.push(`resource sub_${safeName} 'Microsoft.Management/managementGroups/subscriptions@2021-04-01' = {`);
-          lines.push(`  parent: mg_${mg.name.replace(/[^a-zA-Z0-9]/g,'_')}`);
+          lines.push(`  parent: mg_${_iacSafe(mg.name)}`);
           lines.push(`  name: '${subIdRef}'`);
           lines.push(`}\n`);
         }
@@ -991,20 +1030,21 @@ export function generateBicep(){
     lines.push(`// --- Subscription: ${sub.name} ---`);
     const subRgs=state.resourceGroups.filter(r=>r.subId===sub.id);
     subRgs.forEach(rg=>{
-      let rgBicep = `resource ${rg.id.replace(/-/g,'_')} 'Microsoft.Resources/resourceGroups@2021-04-01' = {\n  name: '${rg.name}'\n  location: '${rg.location}'`;
+      const rgSafe = _iacSafe(rg.id);
+      let rgBicep = `resource ${rgSafe} 'Microsoft.Resources/resourceGroups@2021-04-01' = {\n  name: '${rg.name}'\n  location: '${rg.location}'`;
       if(rg.tags && Object.keys(rg.tags).length > 0) {
         rgBicep += `\n  tags: {${Object.entries(rg.tags).map(([k,v])=>`\n    '${k}': '${v}'`).join('')}\n  }`;
       }
       rgBicep += `\n}\n`;
       lines.push(rgBicep);
       if(rg.lock && rg.lock !== 'None') {
-        lines.push(`resource ${rg.id.replace(/-/g,'_')}_lock 'Microsoft.Authorization/locks@2020-05-01' = {\n  name: '${rg.name}-lock'\n  scope: ${rg.id.replace(/-/g,'_')}\n  properties: {\n    level: '${rg.lock}'\n  }\n}\n`);
+        lines.push(`resource ${rgSafe}_lock 'Microsoft.Authorization/locks@2020-05-01' = {\n  name: '${rg.name}-lock'\n  scope: ${rgSafe}\n  properties: {\n    level: '${rg.lock}'\n  }\n}\n`);
       }
       getVnetsInRg(rg.id).forEach(vnet=>{
-        const vnetSafeName = vnet.name.replace(/[^a-zA-Z0-9]/g,'_');
+        const vnetSafeName = _iacSafe(vnet.name);
         lines.push(`module vnet_${vnetSafeName} 'br/public:avm/res/network/virtual-network:0.2.0' = {`);
         lines.push(`  name: '${vnet.name}'`);
-        lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
+        lines.push(`  scope: ${rgSafe}`);
         lines.push(`  params: {`);
         lines.push(`    name: '${vnet.name}'`);
         lines.push(`    addressPrefixes: ['${vnet.cidr}']`);
@@ -1016,7 +1056,7 @@ export function generateBicep(){
         if(vnet.encryption === 'true') lines.push(`    encryption: { enabled: true }`);
         if(vnet.flowTimeout) lines.push(`    flowTimeoutInMinutes: ${vnet.flowTimeout}`);
         lines.push(`    subnets: [`);
-        vnet.subnets.forEach(sn => {
+        (vnet.subnets || []).forEach(sn => {
           let snProps = `{ name: '${sn.name}', addressPrefix: '${sn.cidr}'`;
           if(sn.nsgId) snProps += `, networkSecurityGroupId: '${sn.nsgId}'`;
           if(sn.routeTableId) snProps += `, routeTableId: '${sn.routeTableId}'`;
@@ -1035,8 +1075,8 @@ export function generateBicep(){
         lines.push(`  }`);
         lines.push(`}\n`);
         
-        vnet.subnets.forEach(sn => {
-          sn.resources.forEach(res => {
+        (vnet.subnets || []).forEach(sn => {
+          (sn.resources || []).forEach(res => {
             lines.push(...generateBicepResource(res, rg, vnet, sn));
           });
         });
@@ -1047,10 +1087,10 @@ export function generateBicep(){
       const rgResources = (state.rgResources||[]).filter(r => r.rgId === rg.id);
       rgResources.forEach(res => {
         if(res.type === 'publicDns') {
-          const safeName = res.config.zone.replace(/[^a-zA-Z0-9]/g,'_');
+          const safeName = _iacSafe(res.config.zone);
           lines.push(`module dnsZone_${safeName} 'br/public:avm/res/network/dns-zone:0.3.0' = {`);
           lines.push(`  name: '${res.config.zone}'`);
-          lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
+          lines.push(`  scope: ${rgSafe}`);
           lines.push(`  params: { name: '${res.config.zone}' }`);
           lines.push(`}\n`);
           (res.config.records||[]).forEach(rec => {
@@ -1058,17 +1098,19 @@ export function generateBicep(){
           });
         } else if(res.type === 'dns') {
           const zoneName = res.config.fullZoneName || res.config.zone;
-          const safeName = zoneName.replace(/[^a-zA-Z0-9]/g,'_');
+          const safeName = _iacSafe(zoneName);
           lines.push(`module privateDnsZone_${safeName} 'br/public:avm/res/network/private-dns-zone:0.3.0' = {`);
           lines.push(`  name: '${zoneName}'`);
-          lines.push(`  scope: ${rg.id.replace(/-/g,'_')}`);
+          lines.push(`  scope: ${rgSafe}`);
           lines.push(`  params: {`);
           lines.push(`    name: '${zoneName}'`);
           if(res.config.vnetLinks && res.config.vnetLinks.length > 0) {
+            // NOTE: vnet_X modules must be declared before this DNS zone module in the Bicep file (they are emitted
+            // earlier in the hub/spoke loop above, so ordering is correct for single-file deployments).
             lines.push(`    virtualNetworkLinks: [`);
             res.config.vnetLinks.forEach(link => {
               const enableReg = link.registrationEnabled || res.config.autoRegistration === 'true';
-              lines.push(`      { virtualNetworkResourceId: ${link.vnetName.replace(/[^a-zA-Z0-9]/g,'_')}.id, registrationEnabled: ${enableReg} }`);
+              lines.push(`      { virtualNetworkResourceId: vnet_${_iacSafe(link.vnetName)}.outputs.resourceId, registrationEnabled: ${enableReg} }`);
             });
             lines.push(`    ]`);
           }
@@ -1218,8 +1260,16 @@ export function confirmJsonImport(){
   // Ensure required arrays exist
   if (!state.rgResources) state.rgResources = [];
   if (!state.spokes) state.spokes = [];
+  if (!state.hub.subnets) state.hub.subnets = [];
+  if (!state.hub.peerings) state.hub.peerings = [];
   if (!state.hub.peeringConfigs) state.hub.peeringConfigs = {};
-  state.spokes.forEach(s => { if (!s.peeringConfigs) s.peeringConfigs = {}; });
+  state.hub.subnets.forEach(sn => { if (!sn.resources) sn.resources = []; });
+  state.spokes.forEach(s => {
+    if (!s.subnets) s.subnets = [];
+    if (!s.peerings) s.peerings = [];
+    if (!s.peeringConfigs) s.peeringConfigs = {};
+    s.subnets.forEach(sn => { if (!sn.resources) sn.resources = []; });
+  });
 
   // Apply theme
   if (state.theme === 'dark') document.body.classList.remove('theme-drawio');
@@ -1252,20 +1302,24 @@ function _mergeJsonData(data) {
   // Merge hub subnets and their resources
   if (data.hub && data.hub.subnets) {
     const importedHub = JSON.parse(JSON.stringify(data.hub));
+    if (!state.hub.subnets) state.hub.subnets = [];
     importedHub.subnets.forEach(importedSn => {
       const existingSn = state.hub.subnets.find(s => s.name === importedSn.name);
       if (existingSn) {
         // Merge resources into existing subnet (avoid duplicates by name+type)
+        if (!existingSn.resources) existingSn.resources = [];
         (importedSn.resources || []).forEach(res => {
           const dup = existingSn.resources.find(r => r.name === res.name && r.type === res.type);
           if (!dup) existingSn.resources.push(res);
         });
       } else {
+        if (!importedSn.resources) importedSn.resources = [];
         state.hub.subnets.push(importedSn);
       }
     });
     // Merge hub peerings
     if (importedHub.peerings) {
+      if (!state.hub.peerings) state.hub.peerings = [];
       importedHub.peerings.forEach(p => {
         const isDup = state.hub.peerings.some(ep => 
           (typeof ep === 'string' && ep === p) || 
@@ -1284,18 +1338,26 @@ function _mergeJsonData(data) {
     const existingSpoke = state.spokes.find(s => s.name === spoke.name);
     if (existingSpoke) {
       // Merge subnets within the existing spoke
+      if (!existingSpoke.subnets) existingSpoke.subnets = [];
       (spoke.subnets || []).forEach(importedSn => {
         const existingSn = existingSpoke.subnets.find(s => s.name === importedSn.name);
         if (existingSn) {
+          if (!existingSn.resources) existingSn.resources = [];
           (importedSn.resources || []).forEach(res => {
             const dup = existingSn.resources.find(r => r.name === res.name && r.type === res.type);
             if (!dup) existingSn.resources.push(res);
           });
         } else {
+          if (!importedSn.resources) importedSn.resources = [];
           existingSpoke.subnets.push(importedSn);
         }
       });
     } else {
+      // Ensure the new spoke has required arrays before pushing
+      if (!spoke.subnets) spoke.subnets = [];
+      if (!spoke.peerings) spoke.peerings = [];
+      if (!spoke.peeringConfigs) spoke.peeringConfigs = {};
+      spoke.subnets.forEach(sn => { if (!sn.resources) sn.resources = []; });
       state.spokes.push(spoke);
     }
   });
