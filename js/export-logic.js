@@ -47,11 +47,8 @@ function generatePowerShellResource(res, rg, varN, sn) {
         lines.push(`$vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Linux -ComputerName "${res.name}" -Credential $cred`);
       }
       lines.push(`$vmConfig = Set-AzVMOSDisk -VM $vmConfig -DiskSizeInGB ${c.osDiskSizeGB||128} -CreateOption FromImage -StorageAccountType "${c.osDiskType||'Premium_LRS'}"`);
-      if (c.acceleratedNetworking === 'true') {
-        lines.push(`$nic = New-AzNetworkInterface -Name "${res.name}-nic" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SubnetId (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}).Id -EnableAcceleratedNetworking`);
-      } else {
-        lines.push(`$nic = New-AzNetworkInterface -Name "${res.name}-nic" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SubnetId (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}).Id`);
-      }
+      const nicAccelNet = c.acceleratedNetworking === 'true' ? ' -EnableAcceleratedNetworking' : '';
+      lines.push(`$nic = New-AzNetworkInterface -Name "${res.name}-nic" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SubnetId (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}).Id${nicAccelNet}`);
       if (c.publicIp === 'true') {
         lines.push(`$pip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard`);
       }
@@ -97,6 +94,7 @@ function generatePowerShellResource(res, rg, varN, sn) {
         ? `(Get-AzContainerAppManagedEnv -ResourceGroupName "${rg.name}" -EnvName "${c.environmentName}").Id`
         : '"<container-apps-environment-id>"';
       lines.push(`# Container Apps Environment required. Provide environmentName in config or replace the placeholder.`);
+      lines.push(`# NOTE: The environment is assumed to be in the same resource group ("${rg.name}"). Update -ResourceGroupName if it differs.`);
       lines.push(`$acaEnvId = ${acaEnvRef}`);
       lines.push(`New-AzContainerApp -ResourceGroupName "${rg.name}" -Name "${res.name}" -Location "${rg.location}" -ManagedEnvironmentId $acaEnvId -Image "${c.image||'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'}" -Cpu ${c.cpu||'0.5'} -Memory "${c.memory||'1.0Gi'}" -MinReplicas ${c.minReplicas||1} -MaxReplicas ${c.replicas||10} -TargetPort ${c.targetPort||80} -IngressType "${c.ingress||'external'}"`);
       break;
@@ -263,8 +261,12 @@ function generatePowerShellResource(res, rg, varN, sn) {
     case 'app': {
       const aspName = c.appServicePlanName || `${res.name}-plan`;
       const aspSku = c.appServicePlanSku || c.sku || 'P1v3';
-      const aspTier = aspSku.startsWith('P') ? 'PremiumV3' : aspSku.startsWith('S') ? 'Standard' : aspSku.startsWith('B') ? 'Basic' : 'Free';
-      lines.push(`New-AzAppServicePlan -Name "${aspName}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Tier "${aspTier}" -WorkerSize "Small"`);
+      // Explicit SKU → Tier and WorkerSize lookup (App Service Plan naming conventions)
+      const _aspTierMap = { F1:'Free', D1:'Shared', B1:'Basic', B2:'Basic', B3:'Basic', S1:'Standard', S2:'Standard', S3:'Standard', P1v2:'PremiumV2', P2v2:'PremiumV2', P3v2:'PremiumV2', P0v3:'PremiumV3', P1v3:'PremiumV3', P2v3:'PremiumV3', P3v3:'PremiumV3', P1mv3:'PremiumV3', P2mv3:'PremiumV3', P3mv3:'PremiumV3', P4mv3:'PremiumV3', P5mv3:'PremiumV3', Y1:'Dynamic' };
+      const _aspSizeMap = { F1:'Small', D1:'Small', B1:'Small', B2:'Medium', B3:'Large', S1:'Small', S2:'Medium', S3:'Large', P1v2:'Small', P2v2:'Medium', P3v2:'Large', P0v3:'Small', P1v3:'Small', P2v3:'Medium', P3v3:'Large', P1mv3:'Small', P2mv3:'Medium', P3mv3:'Large', P4mv3:'Large', P5mv3:'Large', Y1:'Small' };
+      const aspTier = _aspTierMap[aspSku] || 'PremiumV3';
+      const aspWorkerSize = _aspSizeMap[aspSku] || 'Small';
+      lines.push(`New-AzAppServicePlan -Name "${aspName}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Tier "${aspTier}" -WorkerSize "${aspWorkerSize}"`);
       let appCmd = `New-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AppServicePlan "${aspName}"`;
       lines.push(appCmd);
       if(c.httpsOnly !== 'false') lines.push(`Set-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -HttpsOnly $true`);
@@ -542,7 +544,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    runtimeVersion: '${c.runtimeVersion||'20'}'`);
       lines.push(`    osType: '${c.osType||'Linux'}'`);
       lines.push(`    alwaysOn: ${c.alwaysOn === 'true'}`);
-      if (c.storageAccountName) lines.push(`    storageAccountResourceId: resourceId('Microsoft.Storage/storageAccounts', '${c.storageAccountName}')`);
+      if (c.storageAccountName) lines.push(`    storageAccountResourceId: resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', '${c.storageAccountName}') // assumes same subscription; update if cross-subscription`);
       else lines.push(`    // storageAccountResourceId: '<storage-account-resource-id>' // required for Function Apps`);
       lines.push(`  }`);
       lines.push(`}\n`);
@@ -554,7 +556,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      if (c.environmentName) lines.push(`    environmentResourceId: resourceId('Microsoft.App/managedEnvironments', '${c.environmentName}')`);
+      if (c.environmentName) lines.push(`    environmentResourceId: resourceId(resourceGroup().name, 'Microsoft.App/managedEnvironments', '${c.environmentName}') // assumes same subscription; update if cross-subscription`);
       else lines.push(`    // environmentResourceId: '<container-apps-environment-resource-id>' // required`);
       lines.push(`    containers: [{ image: '${c.image||'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'}', resources: { cpu: ${c.cpu||'0.5'}, memory: '${c.memory||'1.0Gi'}' } }]`);
       lines.push(`    scale: { minReplicas: ${c.minReplicas||1}, maxReplicas: ${c.replicas||10} }`);
@@ -1102,6 +1104,8 @@ export function generateBicep(){
           lines.push(`  params: {`);
           lines.push(`    name: '${zoneName}'`);
           if(res.config.vnetLinks && res.config.vnetLinks.length > 0) {
+            // NOTE: vnet_X modules must be declared before this DNS zone module in the Bicep file (they are emitted
+            // earlier in the hub/spoke loop above, so ordering is correct for single-file deployments).
             lines.push(`    virtualNetworkLinks: [`);
             res.config.vnetLinks.forEach(link => {
               const enableReg = link.registrationEnabled || res.config.autoRegistration === 'true';
