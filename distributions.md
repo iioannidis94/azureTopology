@@ -6,16 +6,20 @@ Full review and modular split plan for the Azure Architecture Builder JS codebas
 
 ## 📊 Current State — File Size Overview
 
-| File | Lines | Size | Status |
-|------|-------|------|--------|
-| `js/export-logic.js` | 1 930 | 97 KB | 🔴 Critical — needs immediate split |
-| `js/ui-components.js` | 1 289 | 81 KB | 🔴 Critical — needs immediate split |
-| `js/canvas-engine.js` | 978 | 41 KB | 🟡 High — split recommended |
-| `js/state-management.js` | 617 | 30 KB | 🟡 Medium — split when convenient |
-| `js/template-gallery.js` | 468 | 26 KB | 🟢 Acceptable — low priority |
-| `js/main.js` | 264 | 10 KB | ✅ OK — entry point wiring only |
-
-**Total: ~5 500 lines across 6 files**
+| File | Lines | Status |
+|------|-------|--------|
+| `js/export-logic.js` | 7 | ✅ Done — barrel re-export only |
+| `js/exports/export-bicep.js` | 659 | ✅ Done |
+| `js/exports/export-inventory.js` | 586 | ✅ Done |
+| `js/exports/export-json.js` | 253 | ✅ Done |
+| `js/exports/export-png.js` | 15 | ✅ Done |
+| `js/exports/export-powershell.js` | 446 | ✅ Done |
+| `js/exports/export-utils.js` | 38 | ✅ Done |
+| `js/ui-components.js` | 1 289 | 🔴 Critical — needs immediate split |
+| `js/canvas-engine.js` | 978 | 🟡 High — split recommended |
+| `js/state-management.js` | 617 | 🟡 Medium — split when convenient |
+| `js/template-gallery.js` | 468 | 🟢 Acceptable — low priority |
+| `js/main.js` | 269 | ✅ OK — entry point wiring only |
 
 ---
 
@@ -25,34 +29,34 @@ Full review and modular split plan for the Azure Architecture Builder JS codebas
 js/
 ├── main.js                     (entry point — unchanged structure)
 │
-├── state/
+├── state/                      [Step 4 — pending]
 │   ├── resource-types.js       (RES_TYPES, icons, pricing slugs)
 │   ├── state-core.js           (state object, save/load, reset, undo/redo)
 │   ├── state-cost.js           (calculateDynamicCost, updateCost)
 │   └── state-cidr.js           (parseCidr, cidrToString, autoSubnet, nextAvailable*)
 │
-├── canvas/
+├── canvas/                     [Step 3 — pending]
 │   ├── canvas-layout.js        (getRenderNodes, getSubBounds, getRgBounds, getMgBounds)
 │   ├── canvas-render.js        (draw, drawSubnet, drawNode, resize, safeRR)
 │   ├── canvas-interaction.js   (mouse events, drag/drop, inline rename, pan/zoom)
 │   └── canvas-minimap.js       (drawMinimap, toggleMinimap, minimap click/drag)
 │
-├── ui/
+├── ui/                         [Step 2 — pending]
 │   ├── ui-security.js          (analyzeSecurityPosture, renderSecurityPanel, toggle*)
 │   ├── ui-sidebar.js           (renderSidebar, renderRgBlocksHtml, management groups)
 │   ├── ui-editor.js            (renderEditor, full properties editor logic)
 │   ├── ui-topology.js          (addSub/deleteSub, addRg/deleteRg, VNet/subnet/resource CRUD, DNS, tags)
 │   └── ui-mobile.js            (toggleMobileMenu, showMobilePanel, setActiveTab)
 │
-├── exports/
-│   ├── export-utils.js         (closeModal, copyText, downloadText, toggleExportPanel, _uid)
+├── exports/                    ✅ DONE — Step 1 complete
+│   ├── export-utils.js         (closeModal, copyText, downloadText, toggleExportPanel, _uid, _iacSafe)
 │   ├── export-png.js           (exportPng)
 │   ├── export-powershell.js    (generatePowerShellResource, generatePowerShell, openPsModal)
 │   ├── export-bicep.js         (generateBicepResource, generateBicep, openBicepModal)
 │   ├── export-json.js          (exportJson, openJsonImportModal, handleJsonFile, confirmJsonImport, merge logic)
 │   └── export-inventory.js     (openAzureInventoryModal, handleInventoryFile, previewInventory, confirmInventoryImport, all _extract* helpers)
 │
-└── templates/
+└── templates/                  [Step 5 — low priority, pending]
     ├── template-data.js        (TEMPLATES array, all generate*Template() functions)
     └── template-gallery.js     (openTemplateGallery, closeTemplateGallery, applyTemplate, renderTemplateThumbnail)
 ```
@@ -61,179 +65,18 @@ js/
 
 ---
 
-## 🔴 Step 1 — Split `export-logic.js` (1 930 lines)
+## ✅ Step 1 — Split `export-logic.js` — DONE
 
-### Internal sections
-| Lines | Content |
-|-------|---------|
-| 1–19 | PNG export (`exportPng`) |
-| 20–451 | PowerShell generation (`generatePowerShellResource`, `generatePowerShell`) |
-| 452–1 091 | Bicep generation (`generateBicepResource`, `generateBicep`) |
-| 1 092–1 097 | Modal/clipboard helpers (`openPsModal`, `openBicepModal`, `closeModal`, `copyText`, `downloadText`) |
-| 1 098–1 329 | JSON import/export (`exportJson`, `openJsonImportModal`, `handleJsonFile`, `confirmJsonImport`, `_mergeJsonData`, `previewPastedJson`) |
-| 1 330–1 918 | Azure Inventory import (`openAzureInventoryModal`, `handleInventoryFile`, `previewInventory`, `confirmInventoryImport`, all `_extract*` + `_build*` helpers) |
-| 1 919–1 930 | `toggleExportPanel`, `_uid` |
+`js/export-logic.js` (1 930 lines) has been split into 6 focused modules under `js/exports/`. The original file is now a 7-line barrel that re-exports everything for backward compatibility. `js/main.js` imports directly from the new modules.
 
-### Target files
-- `js/exports/export-utils.js` — `closeModal`, `copyText`, `downloadText`, `toggleExportPanel`, `_uid`
-- `js/exports/export-png.js` — `exportPng`
-- `js/exports/export-powershell.js` — PowerShell generation + `openPsModal`
-- `js/exports/export-bicep.js` — Bicep generation + `openBicepModal`
-- `js/exports/export-json.js` — JSON import/export
-- `js/exports/export-inventory.js` — Azure Inventory import
-
-### 🤖 AI Prompt — Step 1a: Create `export-utils.js`
-
-```
-You are refactoring the file js/export-logic.js of the Azure Architecture Builder project (zero-dependency static app using ES modules).
-
-Task: Extract the shared utility functions into a new file js/exports/export-utils.js.
-
-Functions to move (they currently appear near lines 1092-1097 and 1915-1930 of export-logic.js):
-  - closeModal(id)
-  - copyText(id)
-  - downloadText(id, fn)
-  - toggleExportPanel()
-  - _uid() [internal helper used by export-json.js and export-inventory.js — keep exported]
-
-1. Create js/exports/export-utils.js with these five functions.
-   - Import `state` from '../state/state-core.js' if toggleExportPanel reads state.
-   - Export all five functions.
-2. In js/export-logic.js, remove these five functions and add:
-   import { closeModal, copyText, downloadText, toggleExportPanel, _uid } from './exports/export-utils.js';
-3. Do NOT change any other logic. Run `node -c js/exports/export-utils.js` and `node -c js/export-logic.js` to verify syntax.
-```
-
-### 🤖 AI Prompt — Step 1b: Create `export-png.js`
-
-```
-You are refactoring js/export-logic.js of the Azure Architecture Builder.
-
-Task: Extract the PNG export into js/exports/export-png.js.
-
-Function to move: exportPng() (lines 6–19 approx.)
-
-1. Create js/exports/export-png.js.
-   - Add the necessary imports at the top: `import { state } from '../state/state-core.js';`
-   - The function references `document.getElementById('diagram-canvas')` — no extra import needed.
-   - Export `exportPng`.
-2. Remove exportPng from js/export-logic.js and import it:
-   import { exportPng } from './exports/export-png.js';
-3. Re-export exportPng from export-logic.js so main.js keeps working:
-   export { exportPng } from './exports/export-png.js';
-4. Verify syntax with `node -c` on both files.
-```
-
-### 🤖 AI Prompt — Step 1c: Create `export-powershell.js`
-
-```
-You are refactoring js/export-logic.js of the Azure Architecture Builder.
-
-Task: Extract PowerShell generation into js/exports/export-powershell.js.
-
-Functions to move (approx. lines 23–1092):
-  - generatePowerShellResource(res, rg, varN, sn)   [internal helper]
-  - generatePowerShell()                             [main generator]
-  - openPsModal()
-
-These functions reference: state (from state-management), RES_TYPES (from state-management).
-
-1. Create js/exports/export-powershell.js with the correct imports:
-   import { state, RES_TYPES } from '../state/state-core.js';
-   import { closeModal, copyText, downloadText } from './export-utils.js';
-2. Export openPsModal and generatePowerShell. Keep generatePowerShellResource unexported (internal).
-3. Remove these functions from export-logic.js and add the import.
-4. Re-export openPsModal from export-logic.js.
-5. Verify syntax with `node -c`.
-```
-
-### 🤖 AI Prompt — Step 1d: Create `export-bicep.js`
-
-```
-You are refactoring js/export-logic.js of the Azure Architecture Builder.
-
-Task: Extract Bicep generation into js/exports/export-bicep.js.
-
-Functions to move (approx. lines 455–1091):
-  - generateBicepResource(res, rg, vnet, sn)   [internal helper]
-  - generateBicep()                              [main generator]
-  - openBicepModal()
-
-Same imports as export-powershell.js:
-  import { state, RES_TYPES } from '../state/state-core.js';
-  import { closeModal, copyText, downloadText } from './export-utils.js';
-
-1. Create js/exports/export-bicep.js.
-2. Export openBicepModal and generateBicep.
-3. Remove from export-logic.js, add import, re-export openBicepModal.
-4. Verify syntax with `node -c`.
-```
-
-### 🤖 AI Prompt — Step 1e: Create `export-json.js`
-
-```
-You are refactoring js/export-logic.js of the Azure Architecture Builder.
-
-Task: Extract JSON import/export into js/exports/export-json.js.
-
-Functions to move (approx. lines 1098–1329):
-  - exportJson()
-  - openJsonImportModal()
-  - handleJsonFile()
-  - _previewJson(raw)          [internal]
-  - _countResources(data)      [internal]
-  - confirmJsonImport()
-  - _mergeJsonData(data)       [internal]
-  - previewPastedJson()
-
-Imports needed:
-  import { state, saveState, KEY, RES_TYPES } from '../state/state-core.js';
-  import { fullUpdate } from '../state/state-core.js';
-  import { _uid } from './export-utils.js';
-
-1. Create js/exports/export-json.js.
-2. Export: exportJson, openJsonImportModal, handleJsonFile, confirmJsonImport, previewPastedJson.
-3. Remove from export-logic.js, add import, re-export the public functions.
-4. Verify syntax with `node -c`.
-```
-
-### 🤖 AI Prompt — Step 1f: Create `export-inventory.js`
-
-```
-You are refactoring js/export-logic.js of the Azure Architecture Builder.
-
-Task: Extract Azure Inventory import into js/exports/export-inventory.js.
-
-Functions to move (approx. lines 1330–1918):
-  - openAzureInventoryModal()
-  - setInventoryScope(scope)
-  - handleInventoryFile()
-  - previewInventory()
-  - _previewInventoryData(raw)          [internal]
-  - _extractResourceArray(parsed)       [internal]
-  - _extractMgData(parsed)              [internal]
-  - _extractSubscriptionData(parsed)    [internal]
-  - _analyzeInventory(resources)        [internal]
-  - _extractRgFromId(id)               [internal]
-  - _extractSubFromId(id)              [internal]
-  - _extractVnetSubnetFromId(id)       [internal]
-  - confirmInventoryImport()
-  - _buildMgHierarchy(mgData, subscriptions) [internal]
-  - _buildConfig(resource, type)       [internal]
-  - _findSubnetRef(props)              [internal]
-
-Imports needed:
-  import { state, saveState, RES_TYPES, SUB_COLORS, RG_COLORS, VNET_COLORS } from '../state/state-core.js';
-  import { fullUpdate } from '../state/state-core.js';
-  import { _uid } from './export-utils.js';
-
-1. Create js/exports/export-inventory.js.
-2. Export: openAzureInventoryModal, setInventoryScope, handleInventoryFile, previewInventory, confirmInventoryImport.
-3. Remove from export-logic.js, add import, re-export the public functions.
-4. After this step, export-logic.js should be essentially empty (just re-exports). Rename it or collapse it into a barrel file.
-5. Update js/main.js to import from the new individual files directly, removing the export-logic.js import.
-6. Verify syntax with `node -c` on all changed files.
-```
+| New file | Content |
+|----------|---------|
+| `js/exports/export-utils.js` | `_iacSafe`, `closeModal`, `copyText`, `downloadText`, `toggleExportPanel`, `_uid`, modal backdrop listener |
+| `js/exports/export-png.js` | `exportPng` |
+| `js/exports/export-powershell.js` | `generatePowerShellResource`, `generatePowerShell`, `openPsModal` |
+| `js/exports/export-bicep.js` | `generateBicepResource`, `generateBicep`, `openBicepModal` |
+| `js/exports/export-json.js` | `exportJson`, `openJsonImportModal`, `handleJsonFile`, `confirmJsonImport`, `previewPastedJson` + internals |
+| `js/exports/export-inventory.js` | All Azure Inventory import functions + helpers |
 
 ---
 
@@ -664,12 +507,12 @@ Task: Separate template data from gallery UI.
 
 Follow this order to minimize breakage at each step. After each step, open the app in a browser and verify it works before moving to the next.
 
-1. **Step 1a** — `export-utils.js` (smallest, most isolated — builds confidence)
-2. **Step 1b** — `export-png.js`
-3. **Step 1c** — `export-powershell.js`
-4. **Step 1d** — `export-bicep.js`
-5. **Step 1e** — `export-json.js`
-6. **Step 1f** — `export-inventory.js` + collapse `export-logic.js`
+1. ~~**Step 1a** — `export-utils.js`~~ ✅
+2. ~~**Step 1b** — `export-png.js`~~ ✅
+3. ~~**Step 1c** — `export-powershell.js`~~ ✅
+4. ~~**Step 1d** — `export-bicep.js`~~ ✅
+5. ~~**Step 1e** — `export-json.js`~~ ✅
+6. ~~**Step 1f** — `export-inventory.js` + collapse `export-logic.js`~~ ✅
 7. **Step 2a** — `ui-security.js`
 8. **Step 2b** — `ui-sidebar.js`
 9. **Step 2c** — `ui-editor.js`
