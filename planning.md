@@ -40,7 +40,7 @@ This document consolidates `nextsteps.md` and `distributions.md` into a **unifie
 
 ### Phase 4 — State-Management Split (100% Complete)
 
-- ✅ **state-management.js** split into 4 modules (`state/` directory):
+- ✅ **state-management.js** split into 5 modules (`state/` directory):
   - `js/state/resource-types.js` — resource type definitions, icons, pricing constants
   - `js/state/state-core.js` — core state object, undo/redo, save, utility functions
   - `js/state/state-cidr.js` — CIDR validation & dynamic subnetting utilities

@@ -8,9 +8,9 @@ export function getAllDiagramResources(){
   return [...vnetRes, ...(state.rgResources || [])];
 }
 
+// Alias kept for backward compatibility — same as getAllDiagramResources
 export function getAllDiagramResourcesIncludingRg() {
-  const vnetRes = [state.hub, ...state.spokes].flatMap(vnet => vnet.subnets.flatMap(sn => sn.resources));
-  return [...vnetRes, ...(state.rgResources || [])];
+  return getAllDiagramResources();
 }
 
 export function getRgResources(rgId) {
