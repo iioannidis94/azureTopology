@@ -15,7 +15,12 @@ Full review and modular split plan for the Azure Architecture Builder JS codebas
 | `js/exports/export-png.js` | 15 | ✅ Done |
 | `js/exports/export-powershell.js` | 446 | ✅ Done |
 | `js/exports/export-utils.js` | 38 | ✅ Done |
-| `js/ui-components.js` | 1 289 | 🔴 Critical — needs immediate split |
+| `js/ui-components.js` | 7 | ✅ Done — barrel re-export only |
+| `js/ui/ui-security.js` | ~180 | ✅ Done |
+| `js/ui/ui-sidebar.js` | ~200 | ✅ Done |
+| `js/ui/ui-editor.js` | ~310 | ✅ Done |
+| `js/ui/ui-topology.js` | ~290 | ✅ Done |
+| `js/ui/ui-mobile.js` | ~40 | ✅ Done |
 | `js/canvas-engine.js` | 978 | 🟡 High — split recommended |
 | `js/state-management.js` | 617 | 🟡 Medium — split when convenient |
 | `js/template-gallery.js` | 468 | 🟢 Acceptable — low priority |
@@ -41,7 +46,7 @@ js/
 │   ├── canvas-interaction.js   (mouse events, drag/drop, inline rename, pan/zoom)
 │   └── canvas-minimap.js       (drawMinimap, toggleMinimap, minimap click/drag)
 │
-├── ui/                         [Step 2 — pending]
+├── ui/                         ✅ DONE — Step 2 complete
 │   ├── ui-security.js          (analyzeSecurityPosture, renderSecurityPanel, toggle*)
 │   ├── ui-sidebar.js           (renderSidebar, renderRgBlocksHtml, management groups)
 │   ├── ui-editor.js            (renderEditor, full properties editor logic)
@@ -80,151 +85,17 @@ js/
 
 ---
 
-## 🔴 Step 2 — Split `ui-components.js` (1 289 lines)
+## ✅ Step 2 — Split `ui-components.js` — DONE
 
-### Internal sections
-| Lines | Content |
-|-------|---------|
-| 1–210 | Security posture analysis + panel rendering |
-| 211–245 | Theme, fit-to-screen, on-prem toggle, management group CRUD |
-| 246–460 | `renderSidebar` + `renderRgBlocksHtml` |
-| 461–829 | `renderEditor` (properties panel — massive single function) |
-| 830–1 161 | Subscription/RG/VNet/Subnet/Resource/DNS CRUD operations |
-| 1 162–1 243 | DNS zone dropdown helpers |
-| 1 244–1 289 | Mobile menu |
+`js/ui-components.js` (1 289 lines) has been split into 5 focused modules under `js/ui/`. The original file is now a 7-line barrel that re-exports everything for backward compatibility. `js/main.js` continues to import from `./ui-components.js`.
 
-### Target files
-- `js/ui/ui-security.js` — security analysis + panel
-- `js/ui/ui-sidebar.js` — sidebar rendering + management group operations + theme/fit helpers
-- `js/ui/ui-editor.js` — properties editor
-- `js/ui/ui-topology.js` — all topology CRUD (subs, RGs, VNets, subnets, resources, DNS, tags)
-- `js/ui/ui-mobile.js` — mobile menu
-
-### 🤖 AI Prompt — Step 2a: Create `ui-security.js`
-
-```
-You are refactoring js/ui-components.js of the Azure Architecture Builder.
-
-Task: Extract security posture logic into js/ui/ui-security.js.
-
-Functions to move (approx. lines 1–210):
-  - analyzeSecurityPosture()   [internal — returns findings array]
-  - renderSecurityPanel()      [exported]
-  - toggleSecurityPanel()      [exported]
-  - toggleCostPanel()          [exported]
-
-Imports needed:
-  import { state, RES_TYPES } from '../state/state-core.js';
-
-1. Create js/ui/ui-security.js with these functions.
-2. Export renderSecurityPanel, toggleSecurityPanel, toggleCostPanel.
-3. Remove these from ui-components.js and import them.
-4. Re-export the three public functions from ui-components.js.
-5. Verify syntax with `node -c`.
-```
-
-### 🤖 AI Prompt — Step 2b: Create `ui-sidebar.js`
-
-```
-You are refactoring js/ui-components.js of the Azure Architecture Builder.
-
-Task: Extract sidebar rendering and management group operations into js/ui/ui-sidebar.js.
-
-Functions to move (approx. lines 211–460):
-  - toggleTheme()
-  - fitToScreen()
-  - toggleOnPrem() / updateOnPremName() / updateOnPremCidr()
-  - toggleMgEnabled() / addMg() / deleteMg() / renameMg() / assignSubToMg() / assignMgParent() / addSubToMg()
-  - renderRgBlocksHtml(rgs)    [internal helper]
-  - renderSidebar()
-
-Imports needed:
-  import { state, saveState } from '../state/state-core.js';
-  import { fullUpdate } from '../state/state-core.js';
-
-Also imports `uid` which is a local helper — check whether it needs to come from export-utils.js `_uid` or is defined locally in ui-components.js.
-
-1. Create js/ui/ui-sidebar.js.
-2. Export all the public functions listed above.
-3. Remove from ui-components.js, add import, re-export.
-4. Verify syntax with `node -c`.
-```
-
-### 🤖 AI Prompt — Step 2c: Create `ui-editor.js`
-
-```
-You are refactoring js/ui-components.js of the Azure Architecture Builder.
-
-Task: Extract the Properties Editor into js/ui/ui-editor.js.
-
-Functions to move (approx. lines 461–829):
-  - renderEditor()   [single large exported function — do NOT break its internal logic]
-
-Imports needed:
-  import { state, RES_TYPES } from '../state/state-core.js';
-  import { saveState, getAllDiagramResources } from '../state/state-core.js';
-
-1. Create js/ui/ui-editor.js.
-2. Export renderEditor.
-3. Remove from ui-components.js, add import, re-export.
-4. Verify syntax with `node -c`.
-```
-
-### 🤖 AI Prompt — Step 2d: Create `ui-topology.js`
-
-```
-You are refactoring js/ui-components.js of the Azure Architecture Builder.
-
-Task: Extract topology CRUD operations into js/ui/ui-topology.js.
-
-Functions to move (approx. lines 830–1 289):
-  addSub, deleteSub, renameSub,
-  addRg, deleteRg, renameRg, setRgLocation,
-  updateSubProp, updateRgProp,
-  addTag, updateTag, renameTag, deleteTag,
-  addSpoke, addVnetToRg, deleteSpoke,
-  updateVnet, updateVnetProp, updateSubnetProp,
-  togglePeering, updatePeeringConfig, selectPeering,
-  addSubnet, deleteSubnet, updateSubnet,
-  toggleDropdown, filterResources, addResource, deleteResource, updateResource, updateResConfig,
-  addRgResource, deleteRgResource, updateRgResource,
-  addDnsRecord, deleteDnsRecord, updateDnsRecord,
-  addVnetLink, deleteVnetLink, toggleVnetLink, selectVnetLink, updateVnetLinkConfig,
-  showDnsZoneDropdown, filterDnsZones, selectDnsZone, addAnotherDnsZone,
-  toggleMobileMenu, showMobilePanel   [or move these to ui-mobile.js]
-
-Imports needed:
-  import { state, saveState, RES_TYPES } from '../state/state-core.js';
-  import { fullUpdate } from '../state/state-core.js';
-  import { autoSubnet, nextAvailableVnetCidr, nextAvailableSubnetCidr } from '../state/state-cidr.js';
-
-1. Create js/ui/ui-topology.js.
-2. Export all public functions.
-3. Remove from ui-components.js, add import, re-export all.
-4. Move toggleMobileMenu and showMobilePanel to js/ui/ui-mobile.js if desired.
-5. Verify syntax with `node -c`.
-```
-
-### 🤖 AI Prompt — Step 2e: Update `main.js` imports after ui split
-
-```
-You are updating the entry point of the Azure Architecture Builder after splitting ui-components.js into multiple files.
-
-The following new files now exist:
-  js/ui/ui-security.js
-  js/ui/ui-sidebar.js
-  js/ui/ui-editor.js
-  js/ui/ui-topology.js
-  js/ui/ui-mobile.js (if created)
-
-Task:
-1. Open js/main.js.
-2. Replace the single long import from './ui-components.js' with separate imports from each new file.
-   Keep the same imported names; only change the module path.
-3. If ui-components.js is now a barrel file (re-exports only), it can remain for backward compat or be removed.
-4. Verify syntax of main.js with `node -c js/main.js`.
-5. Open the app in a browser and confirm all panels render correctly.
-```
+| New file | Content |
+|----------|---------|
+| `js/ui/ui-security.js` | `analyzeSecurityPosture`, `renderSecurityPanel`, `toggleSecurityPanel`, `toggleCostPanel` |
+| `js/ui/ui-sidebar.js` | `toggleTheme`, `fitToScreen`, `toggleOnPrem`, `updateOnPremName`, `updateOnPremCidr`, `toggleMgEnabled`, `addMg`, `deleteMg`, `renameMg`, `assignSubToMg`, `assignMgParent`, `addSubToMg`, `renderRgBlocksHtml`, `renderSidebar` |
+| `js/ui/ui-editor.js` | `renderEditor` (full properties panel) |
+| `js/ui/ui-topology.js` | All topology CRUD functions, DNS zone picker helpers |
+| `js/ui/ui-mobile.js` | `toggleMobileMenu`, `showMobilePanel`, `setActiveTab`, event listeners |
 
 ---
 
