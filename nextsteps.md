@@ -75,11 +75,11 @@ Unified roadmap of next steps, organized by priority phases.
 - [x] ? → help panel with shortcuts
 
 ### 6. Minimap / Overview Panel
-- [ ] Minimap component in the canvas corner
-- [ ] Real-time preview of the entire diagram
-- [ ] Viewport indicator rectangle
-- [ ] Click-to-navigate
-- [ ] Toggle show/hide
+- [x] Minimap component in the canvas corner
+- [x] Real-time preview of the entire diagram
+- [x] Viewport indicator rectangle
+- [x] Click-to-navigate
+- [x] Toggle show/hide
 
 ### 7. ARM Template Import
 - [ ] Parse ARM template JSON (resources[], type, properties, dependsOn)
