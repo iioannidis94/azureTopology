@@ -30,6 +30,11 @@ Unified roadmap of next steps, organized by priority phases.
 - Official Azure SVG icons
 - Inline canvas rename (double-click)
 - Pan & Zoom navigation
+- Full View toggle (collapse/expand both sidebars for more canvas space)
+- Management Groups (hierarchy, parent assignment, sub assignment)
+- RG-level resources (DNS Private/Public Zones, resources attached directly to RGs)
+- Merge on JSON Import (import without losing existing diagram)
+- Merge on Azure Inventory Import
 
 ---
 
@@ -52,6 +57,7 @@ Unified roadmap of next steps, organized by priority phases.
 ### 3. Merge with Existing Diagram on Import
 - [x] Merge capability (instead of clean import only) in Azure Resource Import
 - [x] Merge option in JSON Import as well
+- [x] Preview panel showing what will be imported before confirming
 
 ---
 
@@ -64,7 +70,7 @@ Unified roadmap of next steps, organized by priority phases.
 - [x] Web App + Database template
 - [x] AKS networking template
 - [x] Landing Zone (CAF) template
-- [x] Preview thumbnails
+- [x] Preview thumbnails (SVG canvas rendering per template)
 
 ### 5. Keyboard Shortcuts
 - [x] Delete/Backspace → delete element
@@ -73,6 +79,7 @@ Unified roadmap of next steps, organized by priority phases.
 - [x] +/- → zoom in/out
 - [x] Ctrl+0 → fit to screen
 - [x] ? → help panel with shortcuts
+- [x] Ctrl+Z / Ctrl+Y → undo/redo
 
 ### 6. Minimap / Overview Panel
 - [x] Minimap component in the canvas corner
@@ -80,6 +87,7 @@ Unified roadmap of next steps, organized by priority phases.
 - [x] Viewport indicator rectangle
 - [x] Click-to-navigate
 - [x] Toggle show/hide
+- [x] Touch/drag support on minimap
 
 ### 7. ARM Template Import
 - [ ] Parse ARM template JSON (resources[], type, properties, dependsOn)
@@ -182,3 +190,79 @@ Unified roadmap of next steps, organized by priority phases.
 - **Drag & Drop imports:** All imports must support drag-and-drop
 - **Preview before import:** Display what will be imported before execution
 - **Auto-detect format:** Automatic format recognition without user selection
+
+---
+
+## 🏗️ Phase 5 — Codebase Productivity & DX (New Recommendations)
+
+> These items directly improve developer experience and long-term maintainability.
+
+### 22. JS File Modularization ← **See `distributions.md` for full plan**
+- [ ] Split `export-logic.js` (1 930 lines) into 6 focused files under `js/exports/`
+- [ ] Split `ui-components.js` (1 289 lines) into 5 focused files under `js/ui/`
+- [ ] Split `canvas-engine.js` (978 lines) into 4 focused files under `js/canvas/`
+- [ ] Split `state-management.js` (617 lines) into 4 focused files under `js/state/`
+- [ ] Split `template-gallery.js` into data and UI layers under `js/templates/`
+- Use the step-by-step AI prompts in `distributions.md` to execute each split safely
+
+### 23. Introduce a Lightweight Build Tool (Vite)
+- [ ] Add `vite` as dev-only dependency (`npm create vite@latest`)
+- [ ] Keep zero runtime dependencies — Vite is dev-only
+- [ ] Enable `npm run dev` (HMR dev server) and `npm run build` (bundled output)
+- [ ] Add `npm run preview` for local production preview
+- [ ] This unblocks: TypeScript migration, proper linting, tree-shaking, source maps
+- [ ] No change to the app's zero-dependency runtime promise
+
+### 24. TypeScript Migration (Incremental)
+- [ ] Start with `.js` files + JSDoc type annotations (`@param`, `@returns`, `@typedef`)
+- [ ] Enable `"checkJs": true` in a `jsconfig.json` (zero install needed)
+- [ ] Migrate `state-management.js` types first (most referenced)
+- [ ] Gradually rename `.js` → `.ts` after Vite is adopted
+- [ ] Priority: `state-core.ts` → `canvas-layout.ts` → `ui-topology.ts`
+
+### 25. Service Worker / PWA Support
+- [ ] Register a Service Worker for offline use (cache JS, CSS, icons)
+- [ ] Add `manifest.json` (app name, icons, theme color)
+- [ ] Users can install the app as a PWA on desktop/mobile
+- [ ] Cache Azure SVG icons from CDN on first load
+
+### 26. Custom / User-Defined Resource Types
+- [ ] Allow users to define a custom resource type (name, icon URL, cost estimate)
+- [ ] Stored in `state.customResourceTypes` array
+- [ ] Appears in the "Add Resource" dropdown alongside built-in types
+- [ ] Exported/imported as part of the JSON schema
+
+### 27. Diagram Diff / Delta Preview on Import
+- [ ] When importing JSON or Inventory, show a diff view (added/removed/changed nodes)
+- [ ] Color-coded: green = new, yellow = modified, red = removed
+- [ ] User can deselect individual changes before confirming
+
+### 28. Shareable URL (LZ-String Compression)
+- [ ] Encode state into a compressed URL query string (use `lz-string` library as the one allowed dependency)
+- [ ] "Share" button → copies URL to clipboard
+- [ ] On page load, check URL for encoded state and decode it
+- [ ] Fallback for large diagrams: paste JSON modal
+
+### 29. In-Canvas Resource Search
+- [ ] `Ctrl+F` opens a search bar overlay on the canvas
+- [ ] Type resource/VNet/subnet name → matching nodes are highlighted
+- [ ] Press Enter to pan/zoom to the first match
+- [ ] Escape closes search
+
+### 30. Export to draw.io XML
+- [ ] Generate draw.io-compatible XML from the current diagram
+- [ ] Map nodes to draw.io Azure stencil shapes
+- [ ] Download `.drawio` file
+- [ ] This enables integration with existing enterprise diagramming workflows
+
+### 31. Connection / Peering Labels
+- [ ] Editable label on each peering connection (double-click)
+- [ ] Optional: bandwidth or latency annotation
+- [ ] Labels rendered on PNG export
+- [ ] Stored in the peering config object
+
+### 32. localStorage → IndexedDB Migration
+- [ ] Current `localStorage` limit is ~5 MB per origin (diagrams can approach this)
+- [ ] Migrate to IndexedDB for storing diagram state (unlimited)
+- [ ] Keep a localStorage key as a pointer/version marker for backward compat
+- [ ] Enables storing multiple named diagrams (diagram history / slots)
