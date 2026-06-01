@@ -21,7 +21,11 @@ Full review and modular split plan for the Azure Architecture Builder JS codebas
 | `js/ui/ui-editor.js` | ~310 | ✅ Done |
 | `js/ui/ui-topology.js` | ~290 | ✅ Done |
 | `js/ui/ui-mobile.js` | ~40 | ✅ Done |
-| `js/canvas-engine.js` | 978 | 🟡 High — split recommended |
+| `js/canvas-engine.js` | 4 | ✅ Done — barrel re-export only |
+| `js/canvas/canvas-layout.js` | ~230 | ✅ Done |
+| `js/canvas/canvas-render.js` | ~200 | ✅ Done |
+| `js/canvas/canvas-interaction.js` | ~195 | ✅ Done |
+| `js/canvas/canvas-minimap.js` | ~120 | ✅ Done |
 | `js/state-management.js` | 617 | 🟡 Medium — split when convenient |
 | `js/template-gallery.js` | 468 | 🟢 Acceptable — low priority |
 | `js/main.js` | 269 | ✅ OK — entry point wiring only |
@@ -40,7 +44,7 @@ js/
 │   ├── state-cost.js           (calculateDynamicCost, updateCost)
 │   └── state-cidr.js           (parseCidr, cidrToString, autoSubnet, nextAvailable*)
 │
-├── canvas/                     [Step 3 — pending]
+├── canvas/                     ✅ DONE — Step 3 complete
 │   ├── canvas-layout.js        (getRenderNodes, getSubBounds, getRgBounds, getMgBounds)
 │   ├── canvas-render.js        (draw, drawSubnet, drawNode, resize, safeRR)
 │   ├── canvas-interaction.js   (mouse events, drag/drop, inline rename, pan/zoom)
@@ -99,7 +103,7 @@ js/
 
 ---
 
-## 🟡 Step 3 — Split `canvas-engine.js` (978 lines)
+## ✅ Step 3 — Split `canvas-engine.js` (978 lines) — DONE
 
 ### Internal sections
 | Lines | Content |
@@ -384,15 +388,15 @@ Follow this order to minimize breakage at each step. After each step, open the a
 4. ~~**Step 1d** — `export-bicep.js`~~ ✅
 5. ~~**Step 1e** — `export-json.js`~~ ✅
 6. ~~**Step 1f** — `export-inventory.js` + collapse `export-logic.js`~~ ✅
-7. **Step 2a** — `ui-security.js`
-8. **Step 2b** — `ui-sidebar.js`
-9. **Step 2c** — `ui-editor.js`
-10. **Step 2d** — `ui-topology.js`
-11. **Step 2e** — Update `main.js` imports for UI
-12. **Step 3a** — `canvas-layout.js`
-13. **Step 3b** — `canvas-render.js`
-14. **Step 3c** — `canvas-interaction.js`
-15. **Step 3d** — `canvas-minimap.js`
+7. ~~**Step 2a** — `ui-security.js`~~ ✅
+8. ~~**Step 2b** — `ui-sidebar.js`~~ ✅
+9. ~~**Step 2c** — `ui-editor.js`~~ ✅
+10. ~~**Step 2d** — `ui-topology.js`~~ ✅
+11. ~~**Step 2e** — Update `main.js` imports for UI~~ ✅
+12. ~~**Step 3a** — `canvas-layout.js`~~ ✅
+13. ~~**Step 3b** — `canvas-render.js`~~ ✅
+14. ~~**Step 3c** — `canvas-interaction.js`~~ ✅
+15. ~~**Step 3d** — `canvas-minimap.js`~~ ✅
 16. **Step 4a** — `resource-types.js`
 17. **Step 4b** — `state-cidr.js`
 18. **Step 4c** — `state-cost.js`
