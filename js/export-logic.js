@@ -545,7 +545,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    runtimeVersion: '${c.runtimeVersion||'20'}'`);
       lines.push(`    osType: '${c.osType||'Linux'}'`);
       lines.push(`    alwaysOn: ${c.alwaysOn === 'true'}`);
-      if (c.storageAccountName) lines.push(`    storageAccountResourceId: resourceId('Microsoft.Storage/storageAccounts', '${c.storageAccountName}') // same subscription + RG assumed; for cross-RG use resourceId(rgName, type, name)`);
+      if (c.storageAccountName) lines.push(`    storageAccountResourceId: resourceId('Microsoft.Storage/storageAccounts', '${c.storageAccountName}') // same subscription + RG; cross-RG: resourceId(rgName, type, name); cross-subscription: resourceId(sub, rgName, type, name)`);
       else lines.push(`    // storageAccountResourceId: '<storage-account-resource-id>' // required for Function Apps`);
       lines.push(`  }`);
       lines.push(`}\n`);
@@ -557,7 +557,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      if (c.environmentName) lines.push(`    environmentResourceId: resourceId('Microsoft.App/managedEnvironments', '${c.environmentName}') // same subscription + RG assumed; for cross-RG use resourceId(rgName, type, name)`);
+      if (c.environmentName) lines.push(`    environmentResourceId: resourceId('Microsoft.App/managedEnvironments', '${c.environmentName}') // same subscription + RG; cross-RG: resourceId(rgName, type, name); cross-subscription: resourceId(sub, rgName, type, name)`);
       else lines.push(`    // environmentResourceId: '<container-apps-environment-resource-id>' // required`);
       lines.push(`    containers: [{ image: '${c.image||'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'}', resources: { cpu: ${c.cpu||'0.5'}, memory: '${c.memory||'1.0Gi'}' } }]`);
       lines.push(`    scale: { minReplicas: ${c.minReplicas||1}, maxReplicas: ${c.replicas||10} }`);
