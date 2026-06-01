@@ -584,7 +584,3 @@ function _findSubnetRef(props) {
   if (props.subnetId) return props.subnetId;
   return null;
 }
-
-function _uid() {
-  return 'inv_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-}
