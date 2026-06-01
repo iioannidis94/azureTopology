@@ -936,7 +936,7 @@ export function toggleMinimap() {
   const btn = document.getElementById('minimap-toggle');
   if (mm) mm.style.display = _minimapVisible ? 'block' : 'none';
   if (btn) btn.title = _minimapVisible ? 'Hide Minimap' : 'Show Minimap';
-  if (btn) btn.textContent = _minimapVisible ? '🗺' : '🗺';
+  if (btn) btn.textContent = _minimapVisible ? '🗺' : '⊞';
 }
 
 // Minimap click / drag → navigate main canvas
