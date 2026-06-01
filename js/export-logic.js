@@ -13,6 +13,10 @@ function _iacSafe(name) {
   return /^\d/.test(safe) ? '_' + safe : safe || '_resource';
 }
 
+// App Service Plan SKU → Tier/WorkerSize lookup tables (module-level constants, used in generatePowerShellResource)
+const _ASP_TIER_MAP = { F1:'Free', D1:'Shared', B1:'Basic', B2:'Basic', B3:'Basic', S1:'Standard', S2:'Standard', S3:'Standard', P1v2:'PremiumV2', P2v2:'PremiumV2', P3v2:'PremiumV2', P0v3:'PremiumV3', P1v3:'PremiumV3', P2v3:'PremiumV3', P3v3:'PremiumV3', P1mv3:'PremiumV3', P2mv3:'PremiumV3', P3mv3:'PremiumV3', P4mv3:'PremiumV3', P5mv3:'PremiumV3', Y1:'Dynamic' };
+const _ASP_SIZE_MAP = { F1:'Small', D1:'Small', B1:'Small', B2:'Medium', B3:'Large', S1:'Small', S2:'Medium', S3:'Large', P1v2:'Small', P2v2:'Medium', P3v2:'Large', P0v3:'Small', P1v3:'Small', P2v3:'Medium', P3v3:'Large', P1mv3:'Small', P2mv3:'Medium', P3mv3:'Large', P4mv3:'Large', P5mv3:'Large', Y1:'Small' };
+
 // ================================================================
 // EXPORTS (PNG, PowerShell, Bicep)
 // ================================================================
@@ -261,11 +265,8 @@ function generatePowerShellResource(res, rg, varN, sn) {
     case 'app': {
       const aspName = c.appServicePlanName || `${res.name}-plan`;
       const aspSku = c.appServicePlanSku || c.sku || 'P1v3';
-      // Explicit SKU → Tier and WorkerSize lookup (App Service Plan naming conventions)
-      const _aspTierMap = { F1:'Free', D1:'Shared', B1:'Basic', B2:'Basic', B3:'Basic', S1:'Standard', S2:'Standard', S3:'Standard', P1v2:'PremiumV2', P2v2:'PremiumV2', P3v2:'PremiumV2', P0v3:'PremiumV3', P1v3:'PremiumV3', P2v3:'PremiumV3', P3v3:'PremiumV3', P1mv3:'PremiumV3', P2mv3:'PremiumV3', P3mv3:'PremiumV3', P4mv3:'PremiumV3', P5mv3:'PremiumV3', Y1:'Dynamic' };
-      const _aspSizeMap = { F1:'Small', D1:'Small', B1:'Small', B2:'Medium', B3:'Large', S1:'Small', S2:'Medium', S3:'Large', P1v2:'Small', P2v2:'Medium', P3v2:'Large', P0v3:'Small', P1v3:'Small', P2v3:'Medium', P3v3:'Large', P1mv3:'Small', P2mv3:'Medium', P3mv3:'Large', P4mv3:'Large', P5mv3:'Large', Y1:'Small' };
-      const aspTier = _aspTierMap[aspSku] || 'PremiumV3';
-      const aspWorkerSize = _aspSizeMap[aspSku] || 'Small';
+      const aspTier = _ASP_TIER_MAP[aspSku] || 'PremiumV3';
+      const aspWorkerSize = _ASP_SIZE_MAP[aspSku] || 'Small';
       lines.push(`New-AzAppServicePlan -Name "${aspName}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Tier "${aspTier}" -WorkerSize "${aspWorkerSize}"`);
       let appCmd = `New-AzWebApp -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AppServicePlan "${aspName}"`;
       lines.push(appCmd);
@@ -544,7 +545,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    runtimeVersion: '${c.runtimeVersion||'20'}'`);
       lines.push(`    osType: '${c.osType||'Linux'}'`);
       lines.push(`    alwaysOn: ${c.alwaysOn === 'true'}`);
-      if (c.storageAccountName) lines.push(`    storageAccountResourceId: resourceId(resourceGroup().name, 'Microsoft.Storage/storageAccounts', '${c.storageAccountName}') // assumes same subscription; update if cross-subscription`);
+      if (c.storageAccountName) lines.push(`    storageAccountResourceId: resourceId('Microsoft.Storage/storageAccounts', '${c.storageAccountName}') // same subscription + RG assumed; for cross-RG use resourceId(rgName, type, name)`);
       else lines.push(`    // storageAccountResourceId: '<storage-account-resource-id>' // required for Function Apps`);
       lines.push(`  }`);
       lines.push(`}\n`);
@@ -556,7 +557,7 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      if (c.environmentName) lines.push(`    environmentResourceId: resourceId(resourceGroup().name, 'Microsoft.App/managedEnvironments', '${c.environmentName}') // assumes same subscription; update if cross-subscription`);
+      if (c.environmentName) lines.push(`    environmentResourceId: resourceId('Microsoft.App/managedEnvironments', '${c.environmentName}') // same subscription + RG assumed; for cross-RG use resourceId(rgName, type, name)`);
       else lines.push(`    // environmentResourceId: '<container-apps-environment-resource-id>' // required`);
       lines.push(`    containers: [{ image: '${c.image||'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'}', resources: { cpu: ${c.cpu||'0.5'}, memory: '${c.memory||'1.0Gi'}' } }]`);
       lines.push(`    scale: { minReplicas: ${c.minReplicas||1}, maxReplicas: ${c.replicas||10} }`);
