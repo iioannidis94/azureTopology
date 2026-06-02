@@ -1,5 +1,7 @@
 import { state, RES_TYPES, getVnetsInRg } from '../state-management.js';
 import { _iacSafe } from './export-utils.js';
+import { generateVmNicsBicep, generateVmDisksBicep } from '../config/config-vm.js';
+import { generatePeNicsBicep } from '../config/config-pe.js';
 
 function generateBicepResource(res, rg, vnet, sn) {
   const lines = [];
@@ -18,9 +20,15 @@ function generateBicepResource(res, rg, vnet, sn) {
       lines.push(`    name: '${res.name}'`);
       lines.push(`    vmSize: '${c.size||'Standard_D2s_v3'}'`);
       lines.push(`    osType: '${(c.os||'').toLowerCase().includes('windows') ? 'Windows' : 'Linux'}'`);
-      lines.push(`    osDisk: { diskSizeGB: ${c.osDiskSizeGB||128}, managedDisk: { storageAccountType: '${c.osDiskType||'Premium_LRS'}' } }`);
+      
+      // Disks
+      lines.push(...generateVmDisksBicep(res));
+      
       lines.push(`    zone: ${c.availabilityZone && c.availabilityZone !== 'None' ? c.availabilityZone : '0'}`);
-      lines.push(`    nicConfigurations: [{ enableAcceleratedNetworking: ${c.acceleratedNetworking||'true'} }]`);
+      
+      // NICs
+      lines.push(...generateVmNicsBicep(res));
+      
       lines.push(`  }`);
       lines.push(`}\n`);
       break;
@@ -234,21 +242,13 @@ function generateBicepResource(res, rg, vnet, sn) {
       break;
     }
     case 'pe': {
-      const peGroupId = c.groupId || c.subResource || c.target || 'blob';
-      const peConnectionName = c.connectionName || `${res.name}-connection`;
-      const targetInfo = c.targetResourceName ? ` (${c.targetResourceName})` : '';
-      lines.push(`// Private Endpoint: ${res.name}${targetInfo}`);
-      lines.push(`// NOTE: Replace '<target-resource-id>' with actual resource ID. Target should be: ${c.targetResourceId ? 'Selected' : 'NOT SELECTED'}`);
+      const c = res.config || {};
       lines.push(`module ${safeName} 'br/public:avm/res/network/private-endpoint:0.4.0' = {`);
       lines.push(`  name: '${res.name}'`);
       lines.push(`  scope: ${rgRef}`);
       lines.push(`  params: {`);
       lines.push(`    name: '${res.name}'`);
-      lines.push(`    subnetResourceId: ${subnetRef}`);
-      lines.push(`    privateLinkServiceConnections: [{ name: '${peConnectionName}', privateLinkServiceId: '<target-resource-id>', groupIds: ['${peGroupId}'] }]`);
-      if (c.privateDnsZoneId) {
-        lines.push(`    privateDnsZoneGroup: { privateDnsZoneGroupConfigs: [{ privateDnsZoneResourceId: '${c.privateDnsZoneId}' }] }`);
-      }
+      lines.push(...generatePeNicsBicep(res, subnetRef));
       lines.push(`  }`);
       lines.push(`}\n`);
       break;

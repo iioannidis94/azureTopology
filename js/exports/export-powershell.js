@@ -1,5 +1,7 @@
 import { state, RES_TYPES, getVnetsInRg } from '../state-management.js';
 import { _iacSafe } from './export-utils.js';
+import { generateVmNicsPowerShell, generateVmDisksPowerShell } from '../config/config-vm.js';
+import { generatePeNicsPowerShell } from '../config/config-pe.js';
 
 // App Service Plan SKU → Tier/WorkerSize lookup tables
 const _ASP_TIER_MAP = { F1:'Free', D1:'Shared', B1:'Basic', B2:'Basic', B3:'Basic', S1:'Standard', S2:'Standard', S3:'Standard', P1v2:'PremiumV2', P2v2:'PremiumV2', P3v2:'PremiumV2', P0v3:'PremiumV3', P1v3:'PremiumV3', P2v3:'PremiumV3', P3v3:'PremiumV3', P1mv3:'PremiumV3', P2mv3:'PremiumV3', P3mv3:'PremiumV3', P4mv3:'PremiumV3', P5mv3:'PremiumV3', Y1:'Dynamic' };
@@ -18,12 +20,13 @@ function generatePowerShellResource(res, rg, varN, sn) {
       } else {
         lines.push(`$vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Linux -ComputerName "${res.name}" -Credential $cred`);
       }
-      lines.push(`$vmConfig = Set-AzVMOSDisk -VM $vmConfig -DiskSizeInGB ${c.osDiskSizeGB||128} -CreateOption FromImage -StorageAccountType "${c.osDiskType||'Premium_LRS'}"`);
-      const nicAccelNet = c.acceleratedNetworking === 'true' ? ' -EnableAcceleratedNetworking' : '';
-      lines.push(`$nic = New-AzNetworkInterface -Name "${res.name}-nic" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -SubnetId (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}).Id${nicAccelNet}`);
-      if (c.publicIp === 'true') {
-        lines.push(`$pip = New-AzPublicIpAddress -Name "${res.name}-pip" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -AllocationMethod Static -Sku Standard`);
-      }
+      
+      // Disks
+      lines.push(...generateVmDisksPowerShell(res));
+      
+      // NICs
+      lines.push(...generateVmNicsPowerShell(res, rg, varN, sn));
+      
       if (c.availabilityZone && c.availabilityZone !== 'None') {
         lines.push(`New-AzVM -ResourceGroupName "${rg.name}" -Location "${rg.location}" -VM $vmConfig -Zone "${c.availabilityZone}"`);
       } else {
@@ -156,17 +159,7 @@ function generatePowerShellResource(res, rg, varN, sn) {
       break;
     }
     case 'pe': {
-      const peConnectionName = c.connectionName || `${res.name}-connection`;
-      const peGroupId = c.groupId || c.subResource || c.target || 'blob';
-      const targetInfo = c.targetResourceName ? `(${c.targetResourceName})` : '';
-      lines.push(`# Private Endpoint: ${res.name} ${targetInfo}`);
-      lines.push(`# NOTE: Replace "<target-resource-id>" with actual resource ID. Target should be: ${c.targetResourceId ? 'Selected' : 'NOT SELECTED'}`);
-      lines.push(`$privateEndpointConnection = New-AzPrivateLinkServiceConnection -Name "${peConnectionName}" -PrivateLinkServiceId "<target-resource-id>" -GroupId "${peGroupId}"`);
-      lines.push(`New-AzPrivateEndpoint -Name "${res.name}" -ResourceGroupName "${rg.name}" -Location "${rg.location}" -Subnet (Get-AzVirtualNetworkSubnetConfig -Name "${sn.name}" -VirtualNetwork ${varN}) -PrivateLinkServiceConnection $privateEndpointConnection`);
-      if (c.privateDnsZoneId) {
-        lines.push(`$privateDnsZoneConfig = New-AzPrivateDnsZoneConfig -Name "default" -PrivateDnsZoneId "${c.privateDnsZoneId}"`);
-        lines.push(`New-AzPrivateDnsZoneGroup -Name "${res.name}-dns-group" -ResourceGroupName "${rg.name}" -PrivateEndpointName "${res.name}" -PrivateDnsZoneConfig $privateDnsZoneConfig`);
-      }
+      lines.push(...generatePeNicsPowerShell(res, rg, varN, sn));
       break;
     }
     case 'nsg': {
