@@ -1,5 +1,7 @@
 import { state, saveState, RES_TYPES, fullUpdate } from '../state-management.js';
 import { closeModal, _uid } from './export-utils.js';
+import { buildVmConfig } from '../config/config-vm.js';
+import { buildPeConfig } from '../config/config-pe.js';
 
 // AZURE RESOURCE INVENTORY IMPORT
 // ================================================================
@@ -617,41 +619,7 @@ function _buildConfig(resource, type) {
 
   switch(type) {
     case 'vm':
-      if (props.hardwareProfile?.vmSize) config.size = props.hardwareProfile.vmSize;
-      if (props.storageProfile?.osDisk) {
-        if (props.storageProfile.osDisk.diskSizeGB) config.osDiskSizeGB = String(props.storageProfile.osDisk.diskSizeGB);
-        if (props.storageProfile.osDisk.managedDisk?.storageAccountType) config.osDiskType = props.storageProfile.osDisk.managedDisk.storageAccountType;
-      }
-      if (props.storageProfile?.dataDisks) {
-        config.dataDisks = String(props.storageProfile.dataDisks.length || 0);
-        if (props.storageProfile.dataDisks[0]) {
-          if (props.storageProfile.dataDisks[0].diskSizeGB) config.dataDiskSizeGB = String(props.storageProfile.dataDisks[0].diskSizeGB);
-          if (props.storageProfile.dataDisks[0].managedDisk?.storageAccountType) config.dataDiskType = props.storageProfile.dataDisks[0].managedDisk.storageAccountType;
-        }
-      }
-      if (props.osProfile) {
-        config.os = props.osProfile.windowsConfiguration ? 'Windows Server 2022' : 'Ubuntu 22.04';
-        if (props.osProfile.linuxConfiguration?.ssh) config.authType = 'SSH Key';
-        else if (props.osProfile.adminPassword) config.authType = 'Password';
-      }
-      if (props.networkProfile?.networkInterfaces?.[0]) {
-        const nic = props.networkProfile.networkInterfaces[0];
-        if (nic.properties?.enableAcceleratedNetworking !== undefined) {
-          config.acceleratedNetworking = String(nic.properties.enableAcceleratedNetworking);
-        }
-      }
-      if (props.diagnosticsProfile?.bootDiagnostics?.enabled !== undefined) {
-        config.bootDiagnostics = String(props.diagnosticsProfile.bootDiagnostics.enabled);
-      }
-      if (props.identity?.type) config.managedIdentity = props.identity.type;
-      if (props.securityProfile?.securityType) config.securityType = props.securityProfile.securityType;
-      if (props.securityProfile?.uefiSettings?.vTpmEnabled !== undefined) {
-        config.vTpmEnabled = String(props.securityProfile.uefiSettings.vTpmEnabled);
-      }
-      if (props.securityProfile?.uefiSettings?.secureBootEnabled !== undefined) {
-        config.secureBootEnabled = String(props.securityProfile.uefiSettings.secureBootEnabled);
-      }
-      break;
+      return buildVmConfig(props, config);
     
     case 'vmss':
       if (sku.name) config.size = sku.name;
@@ -771,27 +739,7 @@ function _buildConfig(resource, type) {
       break;
     
     case 'pe':
-      if (props.privateLinkServiceConnections?.[0]) {
-        const connection = props.privateLinkServiceConnections[0];
-        if (connection.properties?.privateLinkServiceId) {
-          config.targetResourceId = connection.properties.privateLinkServiceId;
-          // Extract service type from resource ID
-          const match = connection.properties.privateLinkServiceId.match(/providers\/([^/]+)\/([^/]+)/);
-          if (match && match[2]) {
-            const serviceType = match[2].toLowerCase();
-            if (serviceType.includes('storage')) config.target = 'Storage';
-            else if (serviceType.includes('sql')) config.target = 'SQL';
-            else if (serviceType.includes('cosmos')) config.target = 'Cosmos';
-            else if (serviceType.includes('keyvault')) config.target = 'KeyVault';
-          }
-        }
-        if (connection.properties?.groupIds?.[0]) {
-          config.groupId = connection.properties.groupIds[0];
-          config.subResource = connection.properties.groupIds[0];
-        }
-        if (connection.name) config.connectionName = connection.name;
-      }
-      break;
+      return buildPeConfig(props, config);
     
     case 'nsg':
       if (props.securityRules && Array.isArray(props.securityRules)) {
