@@ -594,58 +594,82 @@ function _buildMgHierarchy(mgData, subscriptions) {
   return mgs;
 }
 
+/**
+ * Helper: Get a copy of the default config for a resource type.
+ * Ensures all imported resources have the full default configuration structure.
+ */
+function _getDefaultConfig(type) {
+  if (RES_TYPES[type] && RES_TYPES[type].config) {
+    return JSON.parse(JSON.stringify(RES_TYPES[type].config));
+  }
+  return {};
+}
+
+/**
+ * Build config for imported resource by merging Azure properties with defaults.
+ * This ensures imported resources have identical configuration structure to manually created ones.
+ */
 function _buildConfig(resource, type) {
-  const config = {};
+  // Start with FULL default configuration
+  const config = _getDefaultConfig(type);
   const props = resource.properties || resource.Properties || {};
   const sku = resource.sku || resource.Sku || {};
 
   switch(type) {
     case 'vm':
-      if (props.hardwareProfile) config.size = props.hardwareProfile.vmSize || 'Standard_D2s_v3';
+      // Override defaults with extracted Azure values
+      if (props.hardwareProfile?.vmSize) config.size = props.hardwareProfile.vmSize;
       if (props.storageProfile?.osDisk) {
-        config.osDiskSizeGB = String(props.storageProfile.osDisk.diskSizeGB || 128);
-        config.osDiskType = props.storageProfile.osDisk.managedDisk?.storageAccountType || 'Premium_LRS';
+        if (props.storageProfile.osDisk.diskSizeGB) config.osDiskSizeGB = String(props.storageProfile.osDisk.diskSizeGB);
+        if (props.storageProfile.osDisk.managedDisk?.storageAccountType) config.osDiskType = props.storageProfile.osDisk.managedDisk.storageAccountType;
       }
       if (props.osProfile) {
         config.os = props.osProfile.windowsConfiguration ? 'Windows Server 2022' : 'Ubuntu 22.04';
       }
       break;
     case 'aks':
-      config.version = props.kubernetesVersion || '1.29';
+      if (props.kubernetesVersion) config.version = props.kubernetesVersion;
       if (props.agentPoolProfiles && props.agentPoolProfiles[0]) {
-        config.nodes = String(props.agentPoolProfiles[0].count || 3);
-        config.nodeSize = props.agentPoolProfiles[0].vmSize || 'Standard_D2s_v3';
+        if (props.agentPoolProfiles[0].count) config.nodes = String(props.agentPoolProfiles[0].count);
+        if (props.agentPoolProfiles[0].vmSize) config.nodeSize = props.agentPoolProfiles[0].vmSize;
       }
-      if (props.networkProfile) config.networkPlugin = props.networkProfile.networkPlugin || 'azure';
+      if (props.networkProfile?.networkPlugin) config.networkPlugin = props.networkProfile.networkPlugin;
       break;
     case 'sql':
-      config.tier = sku.tier || 'GeneralPurpose';
-      config.vcores = String(sku.capacity || 4);
+      if (sku.tier) config.tier = sku.tier;
+      if (sku.capacity) config.vcores = String(sku.capacity);
       break;
     case 'sa':
-      config.replication = (sku.name || 'Standard_ZRS').split('_')[1] || 'ZRS';
-      config.tier = (sku.name || 'Standard_ZRS').split('_')[0] || 'Standard';
-      config.kind = resource.kind || 'StorageV2';
+      if (sku.name) {
+        const parts = sku.name.split('_');
+        if (parts[0]) config.tier = parts[0];
+        if (parts[1]) config.replication = parts[1];
+      }
+      if (resource.kind) config.kind = resource.kind;
       break;
     case 'kv':
-      config.sku = sku.name || 'Premium';
+      if (sku.name) config.sku = sku.name;
       break;
     case 'fw':
-      config.sku = sku.tier || 'Premium';
+      if (sku.tier) config.sku = sku.tier;
       break;
     case 'app':
     case 'fa':
-      config.runtime = props.siteConfig?.linuxFxVersion || props.siteConfig?.windowsFxVersion || '';
+      const runtimeVersion = props.siteConfig?.linuxFxVersion || props.siteConfig?.windowsFxVersion;
+      if (runtimeVersion) config.runtime = runtimeVersion;
       break;
     case 'dns':
     case 'publicDns':
       // Extract DNS zone name from resource name (zone name is typically the resource name)
       const zoneName = resource.name || resource.Name || '';
-      config.zone = zoneName;
-      config.fullZoneName = zoneName;
-      config.autoRegistration = String(props.registrationEnabled === true).toLowerCase();
+      if (zoneName) {
+        config.zone = zoneName;
+        config.fullZoneName = zoneName;
+      }
+      if (props.registrationEnabled !== undefined) {
+        config.autoRegistration = String(props.registrationEnabled === true).toLowerCase();
+      }
       // Extract vnet links from Azure DNS zone properties
-      config.vnetLinks = [];
       if (props.virtualNetworkLinks && Array.isArray(props.virtualNetworkLinks)) {
         config.vnetLinks = props.virtualNetworkLinks.map(link => {
           const linkProps = link.properties || link.Properties || {};
@@ -661,10 +685,7 @@ function _buildConfig(resource, type) {
       }
       break;
     default:
-      // Use default config from RES_TYPES
-      if (RES_TYPES[type] && RES_TYPES[type].config) {
-        Object.assign(config, RES_TYPES[type].config);
-      }
+      // Already have full default config, no additional type-specific extraction needed
       break;
   }
   return config;
