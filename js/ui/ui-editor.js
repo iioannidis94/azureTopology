@@ -1,4 +1,5 @@
 import { state, esc, RES_TYPES, AZURE_ICON_BASE, saveState, fullUpdate, updateCost, getRecommendedDnsZones } from '../state-management.js';
+import { renderVmNics, renderVmOsDisk, renderVmDataDisks, renderPeNics } from './ui-editor-helpers.js';
 
 // ================================================================
 // HELPER: Render config fields with optional filter
@@ -287,31 +288,51 @@ export function renderEditor(){
     if(obj.type === 'vm'){
       // VM: Structured sections for full configuration
       const cfg = obj.config;
-      const vmSections = [
-        { title:'💻 Compute', keys:['size','os','availabilityZone'] },
-        { title:'💾 OS Disk', keys:['osDiskType','osDiskSizeGB'] },
-        { title:'📀 Data Disks', keys:['dataDisks','dataDiskSizeGB','dataDiskType'] },
-        { title:'🌐 Networking', keys:['acceleratedNetworking','publicIp'] },
-        { title:'🔐 Security', keys:['authType','securityType','vTpmEnabled','secureBootEnabled','managedIdentity'] },
-        { title:'⚙️ Management', keys:['bootDiagnostics','backupEnabled','patchMode'] },
-      ];
-      vmSections.forEach(section => {
-        const sectionKeys = section.keys.filter(k => k in cfg);
-        if(sectionKeys.length === 0) return;
-        h+=`<div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">${section.title}</span></div>`;
-        sectionKeys.forEach(k => {
-          const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())
-            .replace(/\bV Tpm\b/,'vTPM').replace(/\bIp\b/,'IP').replace(/\bOs\b/,'OS').replace(/\bVm\b/,'VM').replace(/\bG B\b/,'GB');
-          if(cfg[k]==='true'||cfg[k]==='false'){
-            h+=`<div class="editor-row"><span class="editor-label">${label}</span><select class="input-field" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"><option value="true"${cfg[k]==='true'?' selected':''}>Yes</option><option value="false"${cfg[k]==='false'?' selected':''}>No</option></select></div>`;
-          } else {
-            h+=`<div class="editor-row"><span class="editor-label">${label}</span><input class="input-field" value="${esc(cfg[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
-          }
-        });
+      
+      // Compute section
+      h+=`<div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">💻 Compute</span></div>`;
+      ['size','os','availabilityZone'].forEach(k => {
+        if (!(k in cfg)) return;
+        const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())
+          .replace(/\bVm\b/,'VM').replace(/\bOs\b/,'OS');
+        h+=`<div class="editor-row"><span class="editor-label">${label}</span><input class="input-field" value="${esc(cfg[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
       });
+      
+      // OS Disk and Data Disks
+      h += renderVmOsDisk(obj.id, cfg.osDisk);
+      h += renderVmDataDisks(obj.id, cfg.dataDisks || []);
+      
+      // NICs
+      h += renderVmNics(obj.id, cfg.nics || []);
+      
+      // Security section
+      h+=`<div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">🔐 Security</span></div>`;
+      ['authType','securityType','vTpmEnabled','secureBootEnabled','managedIdentity'].forEach(k => {
+        if (!(k in cfg)) return;
+        const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())
+          .replace(/\bV Tpm\b/,'vTPM').replace(/\bOs\b/,'OS');
+        if(cfg[k]==='true'||cfg[k]==='false'){
+          h+=`<div class="editor-row"><span class="editor-label">${label}</span><select class="input-field" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"><option value="true"${cfg[k]==='true'?' selected':''}>Yes</option><option value="false"${cfg[k]==='false'?' selected':''}>No</option></select></div>`;
+        } else {
+          h+=`<div class="editor-row"><span class="editor-label">${label}</span><input class="input-field" value="${esc(cfg[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
+        }
+      });
+      
+      // Management section
+      h+=`<div style="margin-top:10px;padding:4px 0;border-top:1px solid var(--border);"><span style="font-size:10px;font-weight:bold;color:var(--muted);font-family:JetBrains Mono;">⚙️ Management</span></div>`;
+      ['bootDiagnostics','backupEnabled','patchMode'].forEach(k => {
+        if (!(k in cfg)) return;
+        const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase());
+        if(cfg[k]==='true'||cfg[k]==='false'){
+          h+=`<div class="editor-row"><span class="editor-label">${label}</span><select class="input-field" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"><option value="true"${cfg[k]==='true'?' selected':''}>Yes</option><option value="false"${cfg[k]==='false'?' selected':''}>No</option></select></div>`;
+        } else {
+          h+=`<div class="editor-row"><span class="editor-label">${label}</span><input class="input-field" value="${esc(cfg[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
+        }
+      });
+      
       // Show any remaining keys not in sections
-      const allSectionKeys = vmSections.flatMap(s=>s.keys);
-      Object.keys(cfg).filter(k=>!allSectionKeys.includes(k)).forEach(k=>{
+      const allKnownKeys = ['size','os','availabilityZone','osDisk','dataDisks','nics','authType','securityType','vTpmEnabled','secureBootEnabled','managedIdentity','bootDiagnostics','backupEnabled','patchMode'];
+      Object.keys(cfg).filter(k=>!allKnownKeys.includes(k)).forEach(k=>{
         h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(cfg[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
       });
     } else if(obj.type !== 'pe') {
@@ -319,7 +340,10 @@ export function renderEditor(){
     } else if(obj.type === 'pe') {
       // For PE, render remaining config fields (target, groupId, etc.) skipping PE-specific fields
       // Note: Special PE UI (target selection, DNS recommendations) already rendered above
-      h += renderConfigFields(obj.id, obj.config, k => !['targetResourceId', 'targetResourceName'].includes(k));
+      h += renderConfigFields(obj.id, obj.config, k => !['targetResourceId', 'targetResourceName', 'nics'].includes(k));
+      
+      // Render PE NICs section
+      h += renderPeNics(obj.id, obj.config.nics || []);
     }
     h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteResource('${obj.id}')">🗑 Delete Resource</button>`;
   } else if (typeObj === 'rgResource') {
@@ -427,3 +451,105 @@ export function renderEditor(){
   h+=`</div>`;
   el.innerHTML=h;
 }
+
+// ================================================================
+// WINDOW FUNCTIONS FOR NESTED CONFIGURATION MANAGEMENT
+// ================================================================
+
+// NIC Management
+window._updateResConfigNic = function(resId, nicIdx, key, value) {
+  const res = window._findResourceById(resId);
+  if (!res || !res.config) return;
+  if (!res.config.nics) res.config.nics = [];
+  if (!res.config.nics[nicIdx]) {
+    res.config.nics[nicIdx] = { name: '', enableAcceleratedNetworking: 'true', enableIPForwarding: 'false', primary: nicIdx === 0 ? 'true' : 'false', privateIPAllocationMethod: 'Dynamic', privateIPAddress: '', publicIp: 'false' };
+  }
+  res.config.nics[nicIdx][key] = value;
+  saveState();
+  renderEditor();
+  fullUpdate();
+};
+
+window._addResConfigNic = function(resId) {
+  const res = window._findResourceById(resId);
+  if (!res || !res.config) return;
+  if (!res.config.nics) res.config.nics = [];
+  res.config.nics.push({
+    name: '',
+    enableAcceleratedNetworking: res.type === 'pe' ? 'false' : 'true',
+    enableIPForwarding: 'false',
+    primary: 'false',
+    privateIPAllocationMethod: 'Dynamic',
+    privateIPAddress: '',
+    publicIp: res.type === 'pe' ? undefined : 'false'
+  });
+  saveState();
+  renderEditor();
+  fullUpdate();
+};
+
+window._deleteResConfigNic = function(resId, nicIdx) {
+  const res = window._findResourceById(resId);
+  if (!res || !res.config || !res.config.nics) return;
+  res.config.nics.splice(nicIdx, 1);
+  saveState();
+  renderEditor();
+  fullUpdate();
+};
+
+// OS Disk Management
+window._updateResConfigOsDisk = function(resId, key, value) {
+  const res = window._findResourceById(resId);
+  if (!res || !res.config) return;
+  if (!res.config.osDisk) res.config.osDisk = { type: 'Premium_LRS', sizeGB: '128', caching: 'ReadWrite', createOption: 'FromImage' };
+  res.config.osDisk[key] = value;
+  saveState();
+  renderEditor();
+  fullUpdate();
+};
+
+// Data Disk Management
+window._updateResConfigDataDisk = function(resId, diskIdx, key, value) {
+  const res = window._findResourceById(resId);
+  if (!res || !res.config) return;
+  if (!res.config.dataDisks) res.config.dataDisks = [];
+  if (!res.config.dataDisks[diskIdx]) {
+    res.config.dataDisks[diskIdx] = { name: '', lun: String(diskIdx), sizeGB: '256', type: 'Premium_LRS', caching: 'None', createOption: 'Empty' };
+  }
+  res.config.dataDisks[diskIdx][key] = value;
+  saveState();
+  renderEditor();
+  fullUpdate();
+};
+
+window._addResConfigDataDisk = function(resId) {
+  const res = window._findResourceById(resId);
+  if (!res || !res.config) return;
+  if (!res.config.dataDisks) res.config.dataDisks = [];
+  const nextLun = res.config.dataDisks.length;
+  res.config.dataDisks.push({
+    name: '',
+    lun: String(nextLun),
+    sizeGB: '256',
+    type: 'Premium_LRS',
+    caching: 'None',
+    createOption: 'Empty'
+  });
+  saveState();
+  renderEditor();
+  fullUpdate();
+};
+
+window._deleteResConfigDataDisk = function(resId, diskIdx) {
+  const res = window._findResourceById(resId);
+  if (!res || !res.config || !res.config.dataDisks) return;
+  res.config.dataDisks.splice(diskIdx, 1);
+  // Re-index LUNs
+  res.config.dataDisks.forEach((disk, idx) => {
+    disk.lun = String(idx);
+  });
+  saveState();
+  renderEditor();
+  fullUpdate();
+};
+
