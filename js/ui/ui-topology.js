@@ -194,7 +194,8 @@ export function addResource(vnetId, snId, resType){
   if(state.customPos){
     sn.resources.forEach(r => { delete state.customPos[r.id]; });
   }
-  const nr={id:uid(),type:resType,name:`${sn.name.split('-')[0]}-${resType}`,config:{...rT.config}};
+  // Deep copy config to avoid shared references (especially for arrays/objects in config)
+  const nr={id:uid(),type:resType,name:`${sn.name.split('-')[0]}-${resType}`,config:JSON.parse(JSON.stringify(rT.config))};
   sn.resources.push(nr); document.querySelectorAll('.res-dropdown').forEach(d=>d.classList.remove('show')); selectNode(nr.id);
 }
 export function deleteResource(resId){
@@ -231,7 +232,8 @@ export function addRgResource(rgId, resType) {
   if(!rT) return;
   const rg = state.resourceGroups.find(r => r.id === rgId);
   const baseName = rg ? rg.name.replace('rg-','') : 'res';
-  const config = {...rT.config};
+  // Deep copy config to avoid shared references (especially for arrays/objects in config)
+  const config = JSON.parse(JSON.stringify(rT.config));
   // Add default records for DNS zones
   if(resType === 'dns') {
     config.records = [{name:'vm1', type:'A', value:'10.0.1.4', ttl:'3600'}];
