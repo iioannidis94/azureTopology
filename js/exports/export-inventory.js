@@ -222,17 +222,17 @@ function _extractPeeringsFromVnet(props, vnetMap) {
       const remoteVnetName = remoteVnetId.split('/').pop();
       
       if (remoteVnetName && vnetMap.has(remoteVnetName)) {
-        const peeringId = _uid();
-        peerings.push(peeringId);
+       const peeringId = _uid();
+       peerings.push(peeringId);
         
        peeringConfigs[peeringId] = {
-          remoteVnetId: vnetMap.get(remoteVnetName).id,
-          remoteVnetName: remoteVnetName,
-          allowForwardedTraffic: (peeringProps.allowForwardedTraffic === true) || (peeringProps.AllowForwardedTraffic === true),
-          allowGatewayTransit: (peeringProps.allowGatewayTransit === true) || (peeringProps.AllowGatewayTransit === true),
-          allowVirtualNetworkAccess: (peeringProps.allowVirtualNetworkAccess === true) || (peeringProps.AllowVirtualNetworkAccess === true),
-          useRemoteGateways: (peeringProps.useRemoteGateways === true) || (peeringProps.UseRemoteGateways === true)
-        };
+         remoteVnetId: vnetMap.get(remoteVnetName).id,
+         remoteVnetName: remoteVnetName,
+         allowForwardedTraffic: (peeringProps.allowForwardedTraffic === true) || (peeringProps.AllowForwardedTraffic === true),
+         allowGatewayTransit: (peeringProps.allowGatewayTransit === true) || (peeringProps.AllowGatewayTransit === true),
+         allowVirtualNetworkAccess: (peeringProps.allowVirtualNetworkAccess === true) || (peeringProps.AllowVirtualNetworkAccess === true),
+         useRemoteGateways: (peeringProps.useRemoteGateways === true) || (peeringProps.UseRemoteGateways === true)
+       };
       }
     });
   }
