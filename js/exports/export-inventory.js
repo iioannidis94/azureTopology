@@ -165,10 +165,12 @@ function _analyzeInventory(resources) {
   const seenUnsupported = new Set();
 
   resources.forEach(r => {
-    const type = (r.type || '').toLowerCase();
-    const rg = _extractRgFromId(r.id) || r.resourceGroup || r.ResourceGroupName || '';
+   const type = (r.type || r.ResourceType || '').toLowerCase();
+    const rId = r.id || r.Id || r.ResourceId || '';
+    
+    const rg = _extractRgFromId(rId) || r.resourceGroup || r.ResourceGroupName || '';
     if (rg) rgNames.add(rg);
-    const subId = _extractSubFromId(r.id) || r.subscriptionId || '';
+    const subId = _extractSubFromId(rId) || r.subscriptionId || r.SubscriptionId || '';
     if (subId) subIds.add(subId);
 
     if (type === 'microsoft.network/virtualnetworks') {
@@ -243,11 +245,13 @@ export function confirmInventoryImport(){
   const unmappedResources = []; // resources without subnet info go to a default subnet
 
   // First pass: identify subscriptions, RGs, VNets, subnets
+ // First pass: identify subscriptions, RGs, VNets, subnets
   resources.forEach(r => {
-    const subId = _extractSubFromId(r.id) || 'default-subscription';
-    const rgName = _extractRgFromId(r.id) || r.resourceGroup || r.ResourceGroupName || 'default-rg';
-    const location = r.location || 'eastus';
-    const type = (r.type || '').toLowerCase();
+    const rId = r.id || r.Id || r.ResourceId || '';
+    const subId = _extractSubFromId(rId) || r.subscriptionId || r.SubscriptionId || 'default-subscription';
+    const rgName = _extractRgFromId(rId) || r.resourceGroup || r.ResourceGroupName || 'default-rg';
+    const location = r.location || r.Location || 'eastus';
+    const type = (r.type || r.ResourceType || '').toLowerCase();
 
     if (!subMap.has(subId)) {
       subMap.set(subId, { name: r.subscriptionDisplayName || `Subscription-${subId.slice(0,8)}`, id: _uid() });
@@ -257,13 +261,15 @@ export function confirmInventoryImport(){
     }
 
     if (type === 'microsoft.network/virtualnetworks') {
-      const props = r.properties || {};
-      const addressSpace = props.addressSpace || {};
-      const cidr = (addressSpace.addressPrefixes || ['10.0.0.0/16'])[0];
-      const subnets = (props.subnets || []).map(sn => ({
+      const props = r.properties || r.Properties || {};
+      const addressSpace = props.addressSpace || props.AddressSpace || {};
+      const cidr = (addressSpace.addressPrefixes || addressSpace.AddressPrefixes || ['10.0.0.0/16'])[0];
+      
+      const rawSubnets = props.subnets || props.Subnets || [];
+      const subnets = rawSubnets.map(sn => ({
         id: _uid(),
-        name: sn.name || sn.properties?.name || 'default',
-        cidr: (sn.properties?.addressPrefix) || (sn.addressPrefix) || '10.0.1.0/24',
+        name: sn.name || sn.Name || sn.properties?.name || sn.Properties?.Name || 'default',
+        cidr: (sn.properties?.addressPrefix) || (sn.Properties?.AddressPrefix) || (sn.addressPrefix) || (sn.AddressPrefix) || '10.0.1.0/24',
         resources: []
       }));
       if (subnets.length === 0) {
@@ -282,22 +288,25 @@ export function confirmInventoryImport(){
   });
 
   // Second pass: map resources to types and assign to subnets
+ // Second pass: map resources to types and assign to subnets
   resources.forEach(r => {
-    const type = (r.type || '').toLowerCase();
+    const rId = r.id || r.Id || r.ResourceId || '';
+    const type = (r.type || r.ResourceType || '').toLowerCase();
+    
     if (type === 'microsoft.network/virtualnetworks') return;
     if (SKIP_TYPES.has(type)) return;
 
     const internalType = AZURE_TYPE_MAP[type];
     if (!internalType) return;
 
-    // Check if it's a Function App (special case for microsoft.web/sites)
+    // Check if it's a Function App
     let resolvedType = internalType;
     if (type === 'microsoft.web/sites') {
-      const kind = (r.kind || '').toLowerCase();
+      const kind = (r.kind || r.Kind || '').toLowerCase();
       if (kind.includes('functionapp')) resolvedType = 'fa';
     }
 
-    const rgName = _extractRgFromId(r.id) || r.resourceGroup || r.ResourceGroupName || 'default-rg';
+    const rgName = _extractRgFromId(rId) || r.resourceGroup || r.ResourceGroupName || 'default-rg';
     const rgObj = rgMap.get(rgName);
 
     // RG-level resources
@@ -312,7 +321,7 @@ export function confirmInventoryImport(){
 
     // Try to find subnet from resource properties
     let assignedSubnet = false;
-    const props = r.properties || {};
+    const props = r.properties || r.Properties || {};
     const subnetId = _findSubnetRef(props);
     if (subnetId) {
       const { vnet, subnet } = _extractVnetSubnetFromId(subnetId);
@@ -517,8 +526,8 @@ function _buildMgHierarchy(mgData, subscriptions) {
 
 function _buildConfig(resource, type) {
   const config = {};
-  const props = resource.properties || {};
-  const sku = resource.sku || {};
+  const props = resource.properties || resource.Properties || {};
+  const sku = resource.sku || resource.Sku || {};
 
   switch(type) {
     case 'vm':
