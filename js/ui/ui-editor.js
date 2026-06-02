@@ -317,7 +317,8 @@ export function renderEditor(){
     } else if(obj.type !== 'pe') {
       h += renderConfigFields(obj.id, obj.config);
     } else if(obj.type === 'pe') {
-      // For PE, skip PE-specific fields (targetResourceId, targetResourceName)
+      // For PE, render remaining config fields (target, groupId, etc.) skipping PE-specific fields
+      // Note: Special PE UI (target selection, DNS recommendations) already rendered above
       h += renderConfigFields(obj.id, obj.config, k => !['targetResourceId', 'targetResourceName'].includes(k));
     }
     h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteResource('${obj.id}')">🗑 Delete Resource</button>`;
