@@ -242,9 +242,7 @@ canvas.addEventListener('mouseleave',()=>{
   canvas.style.cursor='grab';
 });
 
-// Zoom throttling for performance optimization
-let wheelZoomTimeout = null;
-let touchZoomTimeout = null;
+// Zoom throttling for performance optimization using requestAnimationFrame
 let drawScheduled = false;
 
 function scheduleRender() {
@@ -257,23 +255,13 @@ function scheduleRender() {
   }
 }
 
-function throttledWheelZoom() {
-  if (wheelZoomTimeout) clearTimeout(wheelZoomTimeout);
-  wheelZoomTimeout = setTimeout(() => { scheduleRender(); wheelZoomTimeout = null; }, 16); // ~60fps
-}
-
-function throttledTouchZoom() {
-  if (touchZoomTimeout) clearTimeout(touchZoomTimeout);
-  touchZoomTimeout = setTimeout(() => { scheduleRender(); touchZoomTimeout = null; }, 16); // ~60fps
-}
-
 canvas.addEventListener('wheel',e=>{
   e.preventDefault();
   const oldScale = state.scale;
   state.scale=Math.max(.2,Math.min(3,state.scale*(e.deltaY<0?1.1:.9)));
   if (oldScale !== state.scale) {
     saveState();
-    throttledWheelZoom();
+    scheduleRender();
   }
 },{passive:false});
 
@@ -298,7 +286,7 @@ canvas.addEventListener('touchmove',e=>{
       state.scale = Math.max(.2, Math.min(3, state.scale * factor));
       if (oldScale !== state.scale) {
         saveState();
-        throttledTouchZoom();
+        scheduleRender();
       }
     }
     lastPinchDist = dist;

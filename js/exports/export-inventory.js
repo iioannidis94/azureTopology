@@ -647,12 +647,17 @@ function _buildConfig(resource, type) {
       // Extract vnet links from Azure DNS zone properties
       config.vnetLinks = [];
       if (props.virtualNetworkLinks && Array.isArray(props.virtualNetworkLinks)) {
-        config.vnetLinks = props.virtualNetworkLinks.map(link => ({
-          vnetId: null, // Will be resolved later
-          vnetName: link.name || link.Name || '',
-          registrationEnabled: (link.properties?.registrationEnabled || link.RegistrationEnabled || false) === true,
-          linkName: link.name || link.Name || ''
-        }));
+        config.vnetLinks = props.virtualNetworkLinks.map(link => {
+          const linkProps = link.properties || link.Properties || {};
+          const vnetId = linkProps.virtualNetwork?.id || linkProps.VirtualNetwork?.id || '';
+          const vnetName = vnetId.split('/').pop() || '';
+          return {
+            vnetId: null, // Will be resolved later
+            vnetName: vnetName,
+            registrationEnabled: (linkProps.registrationEnabled || linkProps.RegistrationEnabled || false) === true,
+            linkName: link.name || link.Name || ''
+          };
+        });
       }
       break;
     default:
