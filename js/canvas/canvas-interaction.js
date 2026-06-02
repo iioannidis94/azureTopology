@@ -1,8 +1,10 @@
 import { state, saveState, fullUpdate } from '../state-management.js';
 import { getRenderNodes, getSubBounds, getRgBounds } from './canvas-layout.js';
 import { draw, pointToSegmentDist } from './canvas-render.js';
+import { ViewportCuller } from './canvas-viewport.js';
 
 const canvas = document.getElementById('diagram-canvas');
+const culler = new ViewportCuller(canvas);
 
 // ================================================================
 // CANVAS INTERACTIONS (DRAG & DROP)
@@ -57,11 +59,22 @@ canvas.addEventListener('mousedown',e=>{
     // Check if clicking on a peering line
     let peeringHit = null;
     const map = {}; nodes.forEach(n => map[n.id] = n);
+    
+    // Calculate viewport for early termination
+    const viewport = culler.getViewportBounds(state.offset.x, state.offset.y, state.scale, state.scale);
+    
     const allVnetsForPeering = [state.hub, ...state.spokes];
     for (const vnet of allVnetsForPeering) {
+      const n = map[vnet.id];
+      if (!n) continue;
+      
+      // Early termination: if VNet is far from click, skip its peerings
+      if (!culler.isNodeVisible(n, viewport)) continue;
+      
       for (const peerId of (vnet.peerings || [])) {
-        const n = map[vnet.id], target = map[peerId];
-        if (!n || !target) continue;
+        const target = map[peerId];
+        if (!target) continue;
+        
         // Check distance from point to line segment
         const dist = pointToSegmentDist(px, py, n.x, n.y, target.x, target.y);
         if (dist < 12) { peeringHit = { id1: vnet.id, id2: peerId }; break; }
@@ -79,6 +92,10 @@ canvas.addEventListener('mousedown',e=>{
       if(res.type !== 'dns' || !res.config || !res.config.vnetLinks) continue;
       const dnsNode = map[res.id];
       if(!dnsNode) continue;
+      
+      // Early termination: if DNS zone is far from click, skip its links
+      if (!culler.isNodeVisible(dnsNode, viewport)) continue;
+      
       for (const link of res.config.vnetLinks) {
         const target = map[link.vnetId];
         if(!target) continue;
