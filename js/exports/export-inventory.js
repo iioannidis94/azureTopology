@@ -210,6 +210,37 @@ function _extractVnetSubnetFromId(id) {
   return { vnet: vnetMatch ? vnetMatch[1] : null, subnet: subnetMatch ? subnetMatch[1] : null };
 }
 
+function _extractPeeringsFromVnet(props, vnetMap) {
+  // Extract peerings from VNet properties and build peering configs
+  const peerings = [];
+  const peeringConfigs = {};
+  
+  if (props.virtualNetworkPeerings && Array.isArray(props.virtualNetworkPeerings)) {
+    props.virtualNetworkPeerings.forEach(peering => {
+      const peeringProps = peering.properties || peering.Properties || {};
+      const remoteVnetId = peeringProps.remoteVirtualNetwork?.id || peeringProps.RemoteVirtualNetwork?.id || '';
+      const remoteVnetName = remoteVnetId.split('/').pop();
+      
+      if (remoteVnetName && vnetMap.has(remoteVnetName)) {
+       const peeringId = _uid();
+       peerings.push(peeringId);
+        
+       peeringConfigs[peeringId] = {
+         remoteVnetId: vnetMap.get(remoteVnetName).id,
+         remoteVnetName: remoteVnetName,
+         allowForwardedTraffic: (peeringProps.allowForwardedTraffic === true) || (peeringProps.AllowForwardedTraffic === true),
+         allowGatewayTransit: (peeringProps.allowGatewayTransit === true) || (peeringProps.AllowGatewayTransit === true),
+         allowVirtualNetworkAccess: (peeringProps.allowVirtualNetworkAccess === true) || (peeringProps.AllowVirtualNetworkAccess === true),
+         useRemoteGateways: (peeringProps.useRemoteGateways === true) || (peeringProps.UseRemoteGateways === true)
+       };
+      }
+    });
+  }
+  
+  return { peerings, peeringConfigs };
+}
+
+
 export function confirmInventoryImport(){
   const errEl = document.getElementById('inventory-import-error');
   const raw = document.getElementById('inventory-paste-input').value.trim();
@@ -340,6 +371,24 @@ export function confirmInventoryImport(){
     }
   });
 
+  // Third pass: extract peerings from VNet properties now that all vnets are identified
+  resources.forEach(r => {
+    const type = (r.type || r.ResourceType || '').toLowerCase();
+    if (type !== 'microsoft.network/virtualnetworks') return;
+     
+    const vnetName = r.name || r.Name;
+    const vnetData = vnetMap.get(vnetName);
+    if (!vnetData) return;
+     
+    const props = r.properties || r.Properties || {};
+    const { peerings, peeringConfigs } = _extractPeeringsFromVnet(props, vnetMap);
+     
+    if (peerings.length > 0) {
+      vnetData.peerings = peerings;
+      vnetData.peeringConfigs = peeringConfigs;
+    }
+  });
+
   // Assign unmapped resources: find/create a default vnet in the same RG
   unmappedResources.forEach(({ res, rgName }) => {
     const rgObj = rgMap.get(rgName);
@@ -362,6 +411,16 @@ export function confirmInventoryImport(){
       vnetMap.set(targetVnet.name, targetVnet);
     }
     targetVnet.subnets[0].resources.push(res);
+  });
+
+  // Resolve vnet links in DNS zones: map vnet names to vnet IDs
+  rgResourceList.forEach(res => {
+    if ((res.type === 'dns' || res.type === 'publicDns') && res.config && res.config.vnetLinks) {
+      res.config.vnetLinks = res.config.vnetLinks.map(link => ({
+        ...link,
+        vnetId: vnetMap.has(link.vnetName) ? vnetMap.get(link.vnetName).id : link.vnetId
+      })).filter(link => link.vnetId); // Remove unresolved links
+    }
   });
 
   // Build final state
@@ -535,54 +594,97 @@ function _buildMgHierarchy(mgData, subscriptions) {
   return mgs;
 }
 
+/**
+ * Helper: Get a copy of the default config for a resource type.
+ * Ensures all imported resources have the full default configuration structure.
+ */
+function _getDefaultConfig(type) {
+  if (RES_TYPES[type] && RES_TYPES[type].config) {
+    return JSON.parse(JSON.stringify(RES_TYPES[type].config));
+  }
+  return {};
+}
+
+/**
+ * Build config for imported resource by merging Azure properties with defaults.
+ * This ensures imported resources have identical configuration structure to manually created ones.
+ */
 function _buildConfig(resource, type) {
-  const config = {};
+  // Start with FULL default configuration, then override with actual Azure values
+  const config = _getDefaultConfig(type);
   const props = resource.properties || resource.Properties || {};
   const sku = resource.sku || resource.Sku || {};
 
   switch(type) {
     case 'vm':
-      if (props.hardwareProfile) config.size = props.hardwareProfile.vmSize || 'Standard_D2s_v3';
+      if (props.hardwareProfile?.vmSize) config.size = props.hardwareProfile.vmSize;
       if (props.storageProfile?.osDisk) {
-        config.osDiskSizeGB = String(props.storageProfile.osDisk.diskSizeGB || 128);
-        config.osDiskType = props.storageProfile.osDisk.managedDisk?.storageAccountType || 'Premium_LRS';
+        if (props.storageProfile.osDisk.diskSizeGB) config.osDiskSizeGB = String(props.storageProfile.osDisk.diskSizeGB);
+        if (props.storageProfile.osDisk.managedDisk?.storageAccountType) config.osDiskType = props.storageProfile.osDisk.managedDisk.storageAccountType;
       }
       if (props.osProfile) {
         config.os = props.osProfile.windowsConfiguration ? 'Windows Server 2022' : 'Ubuntu 22.04';
       }
       break;
     case 'aks':
-      config.version = props.kubernetesVersion || '1.29';
+      if (props.kubernetesVersion) config.version = props.kubernetesVersion;
       if (props.agentPoolProfiles && props.agentPoolProfiles[0]) {
-        config.nodes = String(props.agentPoolProfiles[0].count || 3);
-        config.nodeSize = props.agentPoolProfiles[0].vmSize || 'Standard_D2s_v3';
+        if (props.agentPoolProfiles[0].count) config.nodes = String(props.agentPoolProfiles[0].count);
+        if (props.agentPoolProfiles[0].vmSize) config.nodeSize = props.agentPoolProfiles[0].vmSize;
       }
-      if (props.networkProfile) config.networkPlugin = props.networkProfile.networkPlugin || 'azure';
+      if (props.networkProfile?.networkPlugin) config.networkPlugin = props.networkProfile.networkPlugin;
       break;
     case 'sql':
-      config.tier = sku.tier || 'GeneralPurpose';
-      config.vcores = String(sku.capacity || 4);
+      if (sku.tier) config.tier = sku.tier;
+      if (sku.capacity) config.vcores = String(sku.capacity);
       break;
     case 'sa':
-      config.replication = (sku.name || 'Standard_ZRS').split('_')[1] || 'ZRS';
-      config.tier = (sku.name || 'Standard_ZRS').split('_')[0] || 'Standard';
-      config.kind = resource.kind || 'StorageV2';
+      if (sku.name) {
+        const parts = sku.name.split('_');
+        if (parts[0]) config.tier = parts[0];
+        if (parts[1]) config.replication = parts[1];
+      }
+      if (resource.kind) config.kind = resource.kind;
       break;
     case 'kv':
-      config.sku = sku.name || 'Premium';
+      if (sku.name) config.sku = sku.name;
       break;
     case 'fw':
-      config.sku = sku.tier || 'Premium';
+      if (sku.tier) config.sku = sku.tier;
       break;
     case 'app':
     case 'fa':
-      config.runtime = props.siteConfig?.linuxFxVersion || props.siteConfig?.windowsFxVersion || '';
+      const runtimeVersion = props.siteConfig?.linuxFxVersion || props.siteConfig?.windowsFxVersion;
+      if (runtimeVersion) config.runtime = runtimeVersion;
+      break;
+    case 'dns':
+    case 'publicDns':
+      // Extract DNS zone name from resource name (zone name is typically the resource name)
+      const zoneName = resource.name || resource.Name || '';
+      if (zoneName) {
+        config.zone = zoneName;
+        config.fullZoneName = zoneName;
+      }
+      if (props.registrationEnabled !== undefined) {
+        config.autoRegistration = String(props.registrationEnabled === true).toLowerCase();
+      }
+      // Extract vnet links from Azure DNS zone properties
+      if (props.virtualNetworkLinks && Array.isArray(props.virtualNetworkLinks)) {
+        config.vnetLinks = props.virtualNetworkLinks.map(link => {
+          const linkProps = link.properties || link.Properties || {};
+          const vnetId = linkProps.virtualNetwork?.id || linkProps.VirtualNetwork?.id || '';
+          const vnetName = vnetId.split('/').pop(); // Get last element of path (VNet name)
+          return {
+            vnetId: null, // Will be resolved later in vnet link resolution pass
+            vnetName: vnetName || '',
+            registrationEnabled: (linkProps.registrationEnabled || linkProps.RegistrationEnabled || false) === true,
+            linkName: link.name || link.Name || ''
+          };
+        });
+      }
       break;
     default:
-      // Use default config from RES_TYPES
-      if (RES_TYPES[type] && RES_TYPES[type].config) {
-        Object.assign(config, RES_TYPES[type].config);
-      }
+      // Already have full default config, no additional type-specific extraction needed
       break;
   }
   return config;

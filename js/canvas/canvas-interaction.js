@@ -241,7 +241,38 @@ canvas.addEventListener('mouseleave',()=>{
   if(state.dragging){state.dragging=false;saveState();}
   canvas.style.cursor='grab';
 });
-canvas.addEventListener('wheel',e=>{e.preventDefault();state.scale=Math.max(.2,Math.min(3,state.scale*(e.deltaY<0?1.1:.9)));saveState();draw();},{passive:false});
+
+// Zoom throttling for performance optimization using requestAnimationFrame
+let drawScheduled = false;
+let saveStateTimeout = null;
+
+function scheduleRender() {
+  if (!drawScheduled) {
+    drawScheduled = true;
+    requestAnimationFrame(() => {
+      draw();
+      drawScheduled = false;
+    });
+  }
+}
+
+function throttleSaveState() {
+  if (saveStateTimeout) clearTimeout(saveStateTimeout);
+  saveStateTimeout = setTimeout(() => {
+    saveState();
+    saveStateTimeout = null;
+  }, 100); // Debounce state saving: persist 100ms after zoom stops
+}
+
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const oldScale = state.scale;
+  state.scale=Math.max(.2,Math.min(3,state.scale*(e.deltaY<0?1.1:.9)));
+  if (oldScale !== state.scale) {
+    scheduleRender();
+    throttleSaveState();
+  }
+},{passive:false});
 
 // TOUCH EVENTS FOR MOBILE
 let lastPinchDist = 0;
@@ -259,9 +290,13 @@ canvas.addEventListener('touchmove',e=>{
     e.preventDefault();
     const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
     if(lastPinchDist > 0){
+      const oldScale = state.scale;
       const factor = dist / lastPinchDist;
       state.scale = Math.max(.2, Math.min(3, state.scale * factor));
-      draw();
+      if (oldScale !== state.scale) {
+        scheduleRender();
+        throttleSaveState();
+      }
     }
     lastPinchDist = dist;
     return;
