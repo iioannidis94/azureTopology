@@ -210,6 +210,37 @@ function _extractVnetSubnetFromId(id) {
   return { vnet: vnetMatch ? vnetMatch[1] : null, subnet: subnetMatch ? subnetMatch[1] : null };
 }
 
+function _extractPeeringsFromVnet(props, vnetMap) {
+  // Extract peerings from VNet properties and build peering configs
+  const peerings = [];
+  const peeringConfigs = {};
+  
+  if (props.virtualNetworkPeerings && Array.isArray(props.virtualNetworkPeerings)) {
+    props.virtualNetworkPeerings.forEach(peering => {
+      const peeringProps = peering.properties || peering.Properties || {};
+      const remoteVnetId = peeringProps.remoteVirtualNetwork?.id || peeringProps.RemoteVirtualNetwork?.id || '';
+      const remoteVnetName = remoteVnetId.split('/').pop();
+      
+      if (remoteVnetName && vnetMap.has(remoteVnetName)) {
+        const peeringId = _uid();
+        peerings.push(peeringId);
+        
+        peeringConfigs[peeringId] = {
+          remoteVnetId: vnetMap.get(remoteVnetName).id,
+          remoteVnetName: remoteVnetName,
+          allowForwardedTraffic: (peeringProps.allowForwardedTraffic === true) || (peeringProps.AllowForwardedTraffic === true),
+          allowGatewayTransit: (peeringProps.allowGatewayTransit === true) || (peeringProps.AllowGatewayTransit === true),
+          allowVirtualNetworkAccess: (peeringProps.allowVirtualNetworkAccess !== false) && (peeringProps.AllowVirtualNetworkAccess !== false),
+          useRemoteGateways: (peeringProps.useRemoteGateways === true) || (peeringProps.UseRemoteGateways === true)
+        };
+      }
+    });
+  }
+  
+  return { peerings, peeringConfigs };
+}
+
+
 export function confirmInventoryImport(){
   const errEl = document.getElementById('inventory-import-error');
   const raw = document.getElementById('inventory-paste-input').value.trim();
@@ -340,6 +371,24 @@ export function confirmInventoryImport(){
     }
   });
 
+  // Third pass: extract peerings from VNet properties now that all vnets are identified
+  resources.forEach(r => {
+    const type = (r.type || r.ResourceType || '').toLowerCase();
+    if (type !== 'microsoft.network/virtualnetworks') return;
+     
+    const vnetName = r.name || r.Name;
+    const vnetData = vnetMap.get(vnetName);
+    if (!vnetData) return;
+     
+    const props = r.properties || r.Properties || {};
+    const { peerings, peeringConfigs } = _extractPeeringsFromVnet(props, vnetMap);
+     
+    if (peerings.length > 0) {
+      vnetData.peerings = peerings;
+      vnetData.peeringConfigs = peeringConfigs;
+    }
+  });
+
   // Assign unmapped resources: find/create a default vnet in the same RG
   unmappedResources.forEach(({ res, rgName }) => {
     const rgObj = rgMap.get(rgName);
@@ -362,6 +411,16 @@ export function confirmInventoryImport(){
       vnetMap.set(targetVnet.name, targetVnet);
     }
     targetVnet.subnets[0].resources.push(res);
+  });
+
+  // Resolve vnet links in DNS zones: map vnet names to vnet IDs
+  rgResourceList.forEach(res => {
+    if ((res.type === 'dns' || res.type === 'publicDns') && res.config && res.config.vnetLinks) {
+      res.config.vnetLinks = res.config.vnetLinks.map(link => ({
+        ...link,
+        vnetId: vnetMap.has(link.vnetName) ? vnetMap.get(link.vnetName).id : link.vnetId
+      })).filter(link => link.vnetId); // Remove unresolved links
+    }
   });
 
   // Build final state
@@ -577,6 +636,24 @@ function _buildConfig(resource, type) {
     case 'app':
     case 'fa':
       config.runtime = props.siteConfig?.linuxFxVersion || props.siteConfig?.windowsFxVersion || '';
+      break;
+    case 'dns':
+    case 'publicDns':
+      // Extract DNS zone name from resource name (zone name is typically the resource name)
+      const zoneName = resource.name || resource.Name || 'privatelink.blob.core.windows.net';
+      config.zone = zoneName;
+      config.fullZoneName = zoneName;
+      config.autoRegistration = String((props.registrationEnabled || false) === true).toLowerCase();
+      // Extract vnet links from Azure DNS zone properties
+      config.vnetLinks = [];
+      if (props.virtualNetworkLinks && Array.isArray(props.virtualNetworkLinks)) {
+        config.vnetLinks = props.virtualNetworkLinks.map(link => ({
+          vnetId: _uid(), // Will be resolved later
+          vnetName: link.name || link.Name || '',
+          registrationEnabled: (link.properties?.registrationEnabled || link.RegistrationEnabled || false) === true,
+          linkName: link.name || link.Name || ''
+        }));
+      }
       break;
     default:
       // Use default config from RES_TYPES
