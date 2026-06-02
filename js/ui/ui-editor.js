@@ -1,6 +1,23 @@
 import { state, esc, RES_TYPES, AZURE_ICON_BASE, saveState, fullUpdate, updateCost, getRecommendedDnsZones } from '../state-management.js';
 
 // ================================================================
+// HELPER: Render config fields with optional filter
+// ================================================================
+function renderConfigFields(objId, config, filterFn = null) {
+  let html = '';
+  Object.keys(config).forEach(k => {
+    if (filterFn && !filterFn(k)) return; // Skip filtered keys
+    const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase());
+    if(config[k]==='true'||config[k]==='false'){
+      html+=`<div class="editor-row"><span class="editor-label">${label}</span><select class="input-field" onchange="window._updateResConfig('${objId}','${k}',this.value)"><option value="true"${config[k]==='true'?' selected':''}>Yes</option><option value="false"${config[k]==='false'?' selected':''}>No</option></select></div>`;
+    } else {
+      html+=`<div class="editor-row"><span class="editor-label">${label}</span><input class="input-field" value="${esc(config[k])}" onchange="window._updateResConfig('${objId}','${k}',this.value)"></div>`;
+    }
+  });
+  return html;
+}
+
+// ================================================================
 // RIGHT EDITOR
 // ================================================================
 export function renderEditor(){
@@ -298,25 +315,10 @@ export function renderEditor(){
         h+=`<div class="editor-row"><span class="editor-label">${k}</span><input class="input-field" value="${esc(cfg[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
       });
     } else if(obj.type !== 'pe') {
-      Object.keys(obj.config).forEach(k=>{
-        const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase());
-        if(obj.config[k]==='true'||obj.config[k]==='false'){
-          h+=`<div class="editor-row"><span class="editor-label">${label}</span><select class="input-field" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"><option value="true"${obj.config[k]==='true'?' selected':''}>Yes</option><option value="false"${obj.config[k]==='false'?' selected':''}>No</option></select></div>`;
-        } else {
-          h+=`<div class="editor-row"><span class="editor-label">${label}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
-        }
-      });
+      h += renderConfigFields(obj.id, obj.config);
     } else if(obj.type === 'pe') {
-      // For PE, show only non-special config keys
-      Object.keys(obj.config).forEach(k=>{
-        if(['targetResourceId', 'targetResourceName'].includes(k)) return; // Skip PE-specific fields
-        const label = k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase());
-        if(obj.config[k]==='true'||obj.config[k]==='false'){
-          h+=`<div class="editor-row"><span class="editor-label">${label}</span><select class="input-field" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"><option value="true"${obj.config[k]==='true'?' selected':''}>Yes</option><option value="false"${obj.config[k]==='false'?' selected':''}>No</option></select></div>`;
-        } else {
-          h+=`<div class="editor-row"><span class="editor-label">${label}</span><input class="input-field" value="${esc(obj.config[k])}" onchange="window._updateResConfig('${obj.id}','${k}',this.value)"></div>`;
-        }
-      });
+      // For PE, skip PE-specific fields (targetResourceId, targetResourceName)
+      h += renderConfigFields(obj.id, obj.config, k => !['targetResourceId', 'targetResourceName'].includes(k));
     }
     h+=`<button style="width:100%;padding:8px;border-radius:4px;cursor:pointer;font-size:10px;border:1px dashed var(--danger);background:transparent;color:var(--danger);font-family:JetBrains Mono;margin-top:10px;transition:0.2s;" onmouseover="this.style.background='var(--danger)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'" onclick="window._deleteResource('${obj.id}')">🗑 Delete Resource</button>`;
   } else if (typeObj === 'rgResource') {

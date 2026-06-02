@@ -169,7 +169,7 @@ function analyzeSecurityPosture() {
     
     // 11. PE without required DNS zones
     allPes.forEach(pe => {
-      if (pe.config.target && PE_TARGET_DNS_RECOMMENDATIONS) {
+      if (pe.config.target && pe.config.targetResourceId && PE_TARGET_DNS_RECOMMENDATIONS) {
         const recommendedZones = PE_TARGET_DNS_RECOMMENDATIONS[pe.config.target] || [];
         const existingZones = (state.rgResources || []).filter(r => r.type === 'dns' && r.config.zone).map(r => r.config.zone);
         const missingZones = recommendedZones.filter(z => !existingZones.includes(z));
