@@ -610,14 +610,13 @@ function _getDefaultConfig(type) {
  * This ensures imported resources have identical configuration structure to manually created ones.
  */
 function _buildConfig(resource, type) {
-  // Start with FULL default configuration
+  // Start with FULL default configuration, then override with actual Azure values
   const config = _getDefaultConfig(type);
   const props = resource.properties || resource.Properties || {};
   const sku = resource.sku || resource.Sku || {};
 
   switch(type) {
     case 'vm':
-      // Override defaults with extracted Azure values
       if (props.hardwareProfile?.vmSize) config.size = props.hardwareProfile.vmSize;
       if (props.storageProfile?.osDisk) {
         if (props.storageProfile.osDisk.diskSizeGB) config.osDiskSizeGB = String(props.storageProfile.osDisk.diskSizeGB);
