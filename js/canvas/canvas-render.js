@@ -112,7 +112,7 @@ export function draw(){
         const lineKey = [n.id, target.id].sort().join('|');
         if (drawnLines.has(lineKey)) return;
         
-        // Skip rendering distant peerings at far zoom
+        // Skip rendering distant peerings at far zoom - check visibility before expensive gradient calculations
         if (!showDetailPeerings && !culler.isLineVisible(n.x, n.y, target.x, target.y, viewport)) return;
         
         drawnLines.add(lineKey);

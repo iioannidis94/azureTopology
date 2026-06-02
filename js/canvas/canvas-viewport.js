@@ -5,6 +5,7 @@ export class ViewportCuller {
   constructor(canvas) {
     this.canvas = canvas;
     this.viewportPadding = 100; // Extra pixels around viewport to prefetch
+    this.MIN_NODES_FOR_CULLING = 50; // Only optimize when dataset is large enough
   }
 
   /**
@@ -72,7 +73,7 @@ export class ViewportCuller {
    * Filter nodes by viewport visibility
    */
   filterVisibleNodes(nodes, viewport) {
-    if (!viewport || nodes.length < 50) return nodes; // Skip filtering for small datasets
+    if (!viewport || nodes.length < this.MIN_NODES_FOR_CULLING) return nodes; // Skip filtering for small datasets
     return nodes.filter(n => this.isNodeVisible(n, viewport));
   }
 
@@ -99,6 +100,7 @@ export class ViewportCuller {
 export class PeeringCache {
   constructor() {
     this.cache = new Map();
+    this.maxCacheSize = 500; // Maximum number of cached peering paths
     this.maxZoomForDetail = 0.8; // Only show detail labels at this zoom level or higher
   }
 
@@ -120,7 +122,7 @@ export class PeeringCache {
       calculated: true
     };
 
-    if (this.cache.size < 500) { // Limit cache size
+    if (this.cache.size < this.maxCacheSize) {
       this.cache.set(cacheKey, path);
     }
 
@@ -147,7 +149,7 @@ export class PeeringCache {
   getStats() {
     return {
       size: this.cache.size,
-      maxSize: 500
+      maxSize: this.maxCacheSize
     };
   }
 }

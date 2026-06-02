@@ -13,6 +13,7 @@ export class PerformanceMonitor {
     };
     this.enabled = false;
     this.historySize = 60; // Keep 60 frames of history
+    this.MIN_ACCEPTABLE_FPS = 30; // Performance target for color coding
   }
 
   /**
@@ -185,7 +186,7 @@ export class PerformanceDisplay {
       <div style="color: #0F0;">
         <div><strong>Performance Monitor</strong></div>
         <hr style="border: 1px solid #0F0; margin: 5px 0;">
-        <div>FPS: <span style="color: ${metrics.fps < 30 ? '#F00' : '#0F0'}">${metrics.fps}</span></div>
+        <div>FPS: <span style="color: ${metrics.fps < this.monitor.MIN_ACCEPTABLE_FPS ? '#F00' : '#0F0'}">${metrics.fps}</span></div>
         <div>Draw: ${metrics.avgDrawTime.toFixed(1)}ms (max: ${metrics.maxDrawTime.toFixed(1)}ms)</div>
         <div>Layout: ${metrics.avgLayoutTime.toFixed(1)}ms (max: ${metrics.maxLayoutTime.toFixed(1)}ms)</div>
         <div>Memory: ${memoryMB}MB (peak: ${peakMemoryMB}MB)</div>

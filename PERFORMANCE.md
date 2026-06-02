@@ -210,6 +210,23 @@ console.log(monitor.getMetrics());
 - 5 merged inventories + 20 peerings: ~58 FPS
 - 10 merged inventories: ~55 FPS
 
+## Browser Compatibility
+
+### Viewport-Based Culling (Phase 1)
+✅ **Universal support** - Uses standard JavaScript APIs
+
+### Canvas Layer System (Phase 2)
+⚠️ **OffscreenCanvas feature detection required**
+- **Supported**: Chrome 69+, Firefox 79+, Edge 79+, Opera 56+
+- **Not supported**: Safari < 16.4, Internet Explorer
+- **Fallback**: System gracefully falls back to regular canvas if OffscreenCanvas unavailable
+- **Note**: Phase 2 is optional and ready for future use. Phase 1 (viewport culling) works on all browsers.
+
+### Performance Monitoring (Phase 3)
+⚠️ **Memory API requires Chrome/Edge** (Performance.memory)
+- Falls back gracefully if not available
+- Core functionality works on all browsers
+
 ## Future Improvements
 
 ### Phase 3+: Level-of-Detail System

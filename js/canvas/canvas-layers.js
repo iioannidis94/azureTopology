@@ -49,6 +49,7 @@ export class LayerManager {
     this.stateHash = null;
     this.lastDrawTime = 0;
     this.frameTime = 0;
+    this.MAX_DIRTY_RECTS = 10; // Maximum rectangles to track for optimal performance
   }
 
   /**
@@ -151,7 +152,7 @@ export class LayerManager {
 export class DirtyRectTracker {
   constructor() {
     this.rects = [];
-    this.maxRects = 10; // Limit to prevent too many small rects
+    this.maxRects = 10; // Limit to prevent too many small rects for optimal performance
     this.mergeThreshold = 200; // Merge rects if they overlap by this much
   }
 
