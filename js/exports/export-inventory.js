@@ -475,6 +475,14 @@ export function confirmInventoryImport(){
 
   saveState();
   closeModal('azure-inventory-modal');
+  
+  // Clear render caches after major state changes
+  try {
+    import('../canvas/canvas-render.js').then(m => m.clearPeeringCache?.());
+  } catch (e) {
+    // Silently fail if canvas-render not yet loaded
+  }
+  
   fullUpdate();
 }
 
