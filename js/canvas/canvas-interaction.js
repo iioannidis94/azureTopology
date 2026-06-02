@@ -261,7 +261,7 @@ function throttleSaveState() {
   saveStateTimeout = setTimeout(() => {
     saveState();
     saveStateTimeout = null;
-  }, 100); // Save state 100ms after last change
+  }, 100); // Debounce: save 100ms after last zoom event
 }
 
 canvas.addEventListener('wheel',e=>{

@@ -225,12 +225,12 @@ function _extractPeeringsFromVnet(props, vnetMap) {
         const peeringId = _uid();
         peerings.push(peeringId);
         
-        peeringConfigs[peeringId] = {
+       peeringConfigs[peeringId] = {
           remoteVnetId: vnetMap.get(remoteVnetName).id,
           remoteVnetName: remoteVnetName,
           allowForwardedTraffic: (peeringProps.allowForwardedTraffic === true) || (peeringProps.AllowForwardedTraffic === true),
           allowGatewayTransit: (peeringProps.allowGatewayTransit === true) || (peeringProps.AllowGatewayTransit === true),
-          allowVirtualNetworkAccess: (peeringProps.allowVirtualNetworkAccess !== false) && (peeringProps.AllowVirtualNetworkAccess !== false),
+          allowVirtualNetworkAccess: (peeringProps.allowVirtualNetworkAccess === true) || (peeringProps.AllowVirtualNetworkAccess === true),
           useRemoteGateways: (peeringProps.useRemoteGateways === true) || (peeringProps.UseRemoteGateways === true)
         };
       }
@@ -643,7 +643,7 @@ function _buildConfig(resource, type) {
       const zoneName = resource.name || resource.Name || '';
       config.zone = zoneName;
       config.fullZoneName = zoneName;
-      config.autoRegistration = String((props.registrationEnabled || false) === true).toLowerCase();
+      config.autoRegistration = String(props.registrationEnabled === true).toLowerCase();
       // Extract vnet links from Azure DNS zone properties
       config.vnetLinks = [];
       if (props.virtualNetworkLinks && Array.isArray(props.virtualNetworkLinks)) {
