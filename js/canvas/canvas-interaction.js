@@ -244,6 +244,7 @@ canvas.addEventListener('mouseleave',()=>{
 
 // Zoom throttling for performance optimization using requestAnimationFrame
 let drawScheduled = false;
+let saveStateTimeout = null;
 
 function scheduleRender() {
   if (!drawScheduled) {
@@ -255,13 +256,21 @@ function scheduleRender() {
   }
 }
 
+function throttleSaveState() {
+  if (saveStateTimeout) clearTimeout(saveStateTimeout);
+  saveStateTimeout = setTimeout(() => {
+    saveState();
+    saveStateTimeout = null;
+  }, 100); // Save state 100ms after last change
+}
+
 canvas.addEventListener('wheel',e=>{
   e.preventDefault();
   const oldScale = state.scale;
   state.scale=Math.max(.2,Math.min(3,state.scale*(e.deltaY<0?1.1:.9)));
   if (oldScale !== state.scale) {
-    saveState();
     scheduleRender();
+    throttleSaveState();
   }
 },{passive:false});
 
@@ -285,8 +294,8 @@ canvas.addEventListener('touchmove',e=>{
       const factor = dist / lastPinchDist;
       state.scale = Math.max(.2, Math.min(3, state.scale * factor));
       if (oldScale !== state.scale) {
-        saveState();
         scheduleRender();
+        throttleSaveState();
       }
     }
     lastPinchDist = dist;

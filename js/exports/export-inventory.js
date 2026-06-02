@@ -650,10 +650,10 @@ function _buildConfig(resource, type) {
         config.vnetLinks = props.virtualNetworkLinks.map(link => {
           const linkProps = link.properties || link.Properties || {};
           const vnetId = linkProps.virtualNetwork?.id || linkProps.VirtualNetwork?.id || '';
-          const vnetName = vnetId.split('/').pop() || '';
+          const vnetName = vnetId.split('/').pop(); // Get last element of path (VNet name)
           return {
-            vnetId: null, // Will be resolved later
-            vnetName: vnetName,
+            vnetId: null, // Will be resolved later in vnet link resolution pass
+            vnetName: vnetName || '',
             registrationEnabled: (linkProps.registrationEnabled || linkProps.RegistrationEnabled || false) === true,
             linkName: link.name || link.Name || ''
           };
