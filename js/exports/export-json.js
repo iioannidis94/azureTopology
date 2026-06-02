@@ -1,8 +1,58 @@
-import { state, saveState, fullUpdate } from '../state-management.js';
+import { state, saveState, fullUpdate, RES_TYPES } from '../state-management.js';
 import { closeModal } from './export-utils.js';
 
 const JSON_EXPORT_VERSION = 1;
 const TRANSIENT_KEYS = ['dragging','dragStart','offsetStart','dragNodeId','dragGroup','selectedId','offset','scale','mouseStart','dragNodeStart'];
+
+/**
+ * Ensure resource has complete configuration by merging with defaults.
+ * This fixes issues with old exports that may have incomplete configs.
+ */
+function _ensureCompleteConfig(resource) {
+  if (!resource || !resource.type) return resource;
+  
+  const defaultConfig = RES_TYPES[resource.type]?.config;
+  if (!defaultConfig) return resource;
+  
+  // Merge: default config first, then existing config (preserve existing values)
+  resource.config = { ...defaultConfig, ...(resource.config || {}) };
+  return resource;
+}
+
+/**
+ * Validate and normalize all resources in the imported data.
+ * Ensures all resources have complete configurations.
+ */
+function _normalizeImportedData(data) {
+  // Normalize hub subnet resources
+  if (data.hub && data.hub.subnets) {
+    data.hub.subnets.forEach(sn => {
+      if (sn.resources) {
+        sn.resources = sn.resources.map(r => _ensureCompleteConfig(r));
+      }
+    });
+  }
+  
+  // Normalize spoke subnet resources
+  if (data.spokes) {
+    data.spokes.forEach(spoke => {
+      if (spoke.subnets) {
+        spoke.subnets.forEach(sn => {
+          if (sn.resources) {
+            sn.resources = sn.resources.map(r => _ensureCompleteConfig(r));
+          }
+        });
+      }
+    });
+  }
+  
+  // Normalize RG-level resources
+  if (data.rgResources) {
+    data.rgResources = data.rgResources.map(r => _ensureCompleteConfig(r));
+  }
+  
+  return data;
+}
 
 
 export function exportJson(){
@@ -96,13 +146,16 @@ export function confirmJsonImport(){
   let parsed;
   try { parsed = JSON.parse(raw); } catch(e) { errEl.textContent = '⚠ Invalid JSON: ' + e.message; return; }
 
-  const data = parsed._format === 'AzureArchitectureBuilder' ? parsed.state : parsed;
+  let data = parsed._format === 'AzureArchitectureBuilder' ? parsed.state : parsed;
 
   // Validate minimum structure
   if (!data.subscriptions || !data.resourceGroups || !data.hub) {
     errEl.textContent = '⚠ Invalid diagram format: missing required fields (subscriptions, resourceGroups, hub).';
     return;
   }
+
+  // Normalize and validate resource configurations
+  data = _normalizeImportedData(data);
 
   const isMerge = document.getElementById('json-import-merge').checked;
 

@@ -353,7 +353,7 @@ export function confirmInventoryImport(){
     // Try to find subnet from resource properties
     let assignedSubnet = false;
     const props = r.properties || r.Properties || {};
-    const subnetId = _findSubnetRef(props);
+    const subnetId = _findSubnetRef(props, resources);
     if (subnetId) {
       const { vnet, subnet } = _extractVnetSubnetFromId(subnetId);
       if (vnet && subnet && vnetMap.has(vnet)) {
@@ -622,10 +622,48 @@ function _buildConfig(resource, type) {
         if (props.storageProfile.osDisk.diskSizeGB) config.osDiskSizeGB = String(props.storageProfile.osDisk.diskSizeGB);
         if (props.storageProfile.osDisk.managedDisk?.storageAccountType) config.osDiskType = props.storageProfile.osDisk.managedDisk.storageAccountType;
       }
+      if (props.storageProfile?.dataDisks) {
+        config.dataDisks = String(props.storageProfile.dataDisks.length || 0);
+        if (props.storageProfile.dataDisks[0]) {
+          if (props.storageProfile.dataDisks[0].diskSizeGB) config.dataDiskSizeGB = String(props.storageProfile.dataDisks[0].diskSizeGB);
+          if (props.storageProfile.dataDisks[0].managedDisk?.storageAccountType) config.dataDiskType = props.storageProfile.dataDisks[0].managedDisk.storageAccountType;
+        }
+      }
       if (props.osProfile) {
         config.os = props.osProfile.windowsConfiguration ? 'Windows Server 2022' : 'Ubuntu 22.04';
+        if (props.osProfile.linuxConfiguration?.ssh) config.authType = 'SSH Key';
+        else if (props.osProfile.adminPassword) config.authType = 'Password';
+      }
+      if (props.networkProfile?.networkInterfaces?.[0]) {
+        const nic = props.networkProfile.networkInterfaces[0];
+        if (nic.properties?.enableAcceleratedNetworking !== undefined) {
+          config.acceleratedNetworking = String(nic.properties.enableAcceleratedNetworking);
+        }
+      }
+      if (props.diagnosticsProfile?.bootDiagnostics?.enabled !== undefined) {
+        config.bootDiagnostics = String(props.diagnosticsProfile.bootDiagnostics.enabled);
+      }
+      if (props.identity?.type) config.managedIdentity = props.identity.type;
+      if (props.securityProfile?.securityType) config.securityType = props.securityProfile.securityType;
+      if (props.securityProfile?.uefiSettings?.vTpmEnabled !== undefined) {
+        config.vTpmEnabled = String(props.securityProfile.uefiSettings.vTpmEnabled);
+      }
+      if (props.securityProfile?.uefiSettings?.secureBootEnabled !== undefined) {
+        config.secureBootEnabled = String(props.securityProfile.uefiSettings.secureBootEnabled);
       }
       break;
+    
+    case 'vmss':
+      if (sku.name) config.size = sku.name;
+      if (sku.capacity) config.instances = String(sku.capacity);
+      if (props.platformFaultDomainCount) config.zones = String(props.platformFaultDomainCount);
+      if (props.upgradePolicy?.mode) config.upgradePolicy = props.upgradePolicy.mode;
+      if (props.virtualMachineProfile?.storageProfile?.imageReference) {
+        const imageRef = props.virtualMachineProfile.storageProfile.imageReference;
+        if (imageRef.offer && imageRef.sku) config.os = `${imageRef.offer} ${imageRef.sku}`;
+      }
+      break;
+    
     case 'aks':
       if (props.kubernetesVersion) config.version = props.kubernetesVersion;
       if (props.agentPoolProfiles && props.agentPoolProfiles[0]) {
@@ -633,11 +671,164 @@ function _buildConfig(resource, type) {
         if (props.agentPoolProfiles[0].vmSize) config.nodeSize = props.agentPoolProfiles[0].vmSize;
       }
       if (props.networkProfile?.networkPlugin) config.networkPlugin = props.networkProfile.networkPlugin;
+      if (props.networkProfile?.podCidr) config.podCidr = props.networkProfile.podCidr;
+      if (props.networkProfile?.serviceCidr) config.serviceCidr = props.networkProfile.serviceCidr;
+      if (props.networkProfile?.dnsServiceIP) config.dnsServiceIp = props.networkProfile.dnsServiceIP;
+      if (props.apiServerAccessProfile?.enablePrivateCluster !== undefined) {
+        config.privateCluster = String(props.apiServerAccessProfile.enablePrivateCluster);
+      }
+      if (sku.tier) config.tier = sku.tier;
       break;
+    
+    case 'fa':
+      if (props.siteConfig?.appSettings) {
+        const runtimeSetting = props.siteConfig.appSettings.find(s => s.name === 'FUNCTIONS_WORKER_RUNTIME');
+        if (runtimeSetting) config.runtime = runtimeSetting.value;
+      }
+      if (props.siteConfig?.linuxFxVersion) {
+        const parts = props.siteConfig.linuxFxVersion.split('|');
+        if (parts[1]) config.runtimeVersion = parts[1];
+      }
+      if (props.kind?.toLowerCase().includes('linux')) config.osType = 'Linux';
+      else if (props.kind?.toLowerCase().includes('windows')) config.osType = 'Windows';
+      if (props.siteConfig?.alwaysOn !== undefined) config.alwaysOn = String(props.siteConfig.alwaysOn);
+      break;
+    
+    case 'aca':
+      if (props.template?.scale) {
+        if (props.template.scale.maxReplicas) config.replicas = String(props.template.scale.maxReplicas);
+        if (props.template.scale.minReplicas) config.minReplicas = String(props.template.scale.minReplicas);
+      }
+      if (props.template?.containers?.[0]) {
+        const container = props.template.containers[0];
+        if (container.image) config.image = container.image;
+        if (container.resources?.cpu) config.cpu = String(container.resources.cpu);
+        if (container.resources?.memory) config.memory = container.resources.memory;
+      }
+      if (props.configuration?.ingress) {
+        config.ingress = props.configuration.ingress.external ? 'external' : 'internal';
+        if (props.configuration.ingress.targetPort) config.targetPort = String(props.configuration.ingress.targetPort);
+      }
+      break;
+    
+    case 'fw':
+      if (sku.tier) config.sku = sku.tier;
+      if (props.threatIntelMode) config.threatIntelMode = props.threatIntelMode;
+      if (props.sku?.tier) config.sku = props.sku.tier;
+      if (props.additionalProperties?.['Network.DNS.EnableProxy'] !== undefined) {
+        config.dnsProxy = String(props.additionalProperties['Network.DNS.EnableProxy']);
+      }
+      break;
+    
+    case 'nva':
+      // NVA is typically custom, extract what we can from tags or properties
+      if (props.publisher) config.vendor = props.publisher;
+      if (props.offer) config.mode = props.offer;
+      if (sku.name) config.size = sku.name;
+      break;
+    
+    case 'agw':
+      if (sku.tier) config.sku = sku.tier;
+      if (sku.capacity) config.capacity = String(sku.capacity);
+      if (props.tier) config.tier = props.tier;
+      if (props.sslPolicy?.policyName) config.sslPolicy = props.sslPolicy.policyName;
+      break;
+    
+    case 'lb':
+      if (sku.name) config.sku = sku.name;
+      if (props.frontendIPConfigurations?.[0]) {
+        const frontend = props.frontendIPConfigurations[0];
+        config.type = frontend.properties?.privateIPAddress ? 'Internal' : 'External';
+        if (frontend.properties?.privateIPAllocationMethod) {
+          config.frontendIp = frontend.properties.privateIPAllocationMethod;
+        }
+      }
+      break;
+    
+    case 'gw':
+      if (sku.name) config.sku = sku.name;
+      if (props.vpnGatewayGeneration) config.generation = props.vpnGatewayGeneration;
+      if (props.vpnType) config.vpnType = props.vpnType;
+      if (props.activeActive !== undefined) config.activeActive = String(props.activeActive);
+      if (props.bgpSettings?.asn) config.bgpAsn = String(props.bgpSettings.asn);
+      break;
+    
+    case 'ergw':
+      if (sku.name) config.sku = sku.name;
+      if (props.gatewayType) config.gatewayType = props.gatewayType;
+      break;
+    
+    case 'bas':
+      if (sku.name) config.sku = sku.name;
+      if (props.scaleUnits) config.scaleUnits = String(props.scaleUnits);
+      if (props.enableShareableLink !== undefined) config.shareableLink = String(props.enableShareableLink);
+      if (props.enableIpConnect !== undefined) config.ipConnect = String(props.enableIpConnect);
+      if (props.enableTunneling !== undefined) config.tunneling = String(props.enableTunneling);
+      break;
+    
+    case 'afd':
+      if (sku.name) config.sku = sku.name;
+      break;
+    
+    case 'pe':
+      if (props.privateLinkServiceConnections?.[0]) {
+        const connection = props.privateLinkServiceConnections[0];
+        if (connection.properties?.privateLinkServiceId) {
+          config.targetResourceId = connection.properties.privateLinkServiceId;
+          // Extract service type from resource ID
+          const match = connection.properties.privateLinkServiceId.match(/providers\/([^/]+)\/([^/]+)/);
+          if (match && match[2]) {
+            const serviceType = match[2].toLowerCase();
+            if (serviceType.includes('storage')) config.target = 'Storage';
+            else if (serviceType.includes('sql')) config.target = 'SQL';
+            else if (serviceType.includes('cosmos')) config.target = 'Cosmos';
+            else if (serviceType.includes('keyvault')) config.target = 'KeyVault';
+          }
+        }
+        if (connection.properties?.groupIds?.[0]) {
+          config.groupId = connection.properties.groupIds[0];
+          config.subResource = connection.properties.groupIds[0];
+        }
+        if (connection.name) config.connectionName = connection.name;
+      }
+      break;
+    
+    case 'nsg':
+      if (props.securityRules && Array.isArray(props.securityRules)) {
+        const rules = props.securityRules.map(rule => {
+          const ruleProps = rule.properties || {};
+          return {
+            name: rule.name || 'Rule',
+            priority: String(ruleProps.priority || '100'),
+            direction: ruleProps.direction || 'Inbound',
+            access: ruleProps.access || 'Allow',
+            protocol: ruleProps.protocol || 'Tcp',
+            srcPort: ruleProps.sourcePortRange || '*',
+            dstPort: ruleProps.destinationPortRange || '*',
+            srcAddr: ruleProps.sourceAddressPrefix || '*',
+            dstAddr: ruleProps.destinationAddressPrefix || '*'
+          };
+        });
+        config.rules = JSON.stringify(rules);
+      }
+      break;
+    
     case 'sql':
       if (sku.tier) config.tier = sku.tier;
       if (sku.capacity) config.vcores = String(sku.capacity);
+      if (props.maxSizeBytes) config.maxSizeGB = String(Math.round(props.maxSizeBytes / (1024*1024*1024)));
+      if (props.collation) config.collation = props.collation;
+      if (props.zoneRedundant !== undefined) config.zoneRedundant = String(props.zoneRedundant);
       break;
+    
+    case 'cosmos':
+      if (props.databaseAccountOfferType) config.api = props.databaseAccountOfferType;
+      if (props.consistencyPolicy?.defaultConsistencyLevel) config.consistencyLevel = props.consistencyPolicy.defaultConsistencyLevel;
+      if (props.locations && props.locations.length > 1) config.geoReplication = 'true';
+      if (props.enableFreeTier !== undefined) config.enableFreeTier = String(props.enableFreeTier);
+      if (props.capabilities?.some(c => c.name === 'EnableServerless')) config.serverless = 'true';
+      break;
+    
     case 'sa':
       if (sku.name) {
         const parts = sku.name.split('_');
@@ -645,18 +836,100 @@ function _buildConfig(resource, type) {
         if (parts[1]) config.replication = parts[1];
       }
       if (resource.kind) config.kind = resource.kind;
+      if (props.accessTier) config.accessTier = props.accessTier;
+      if (props.supportsHttpsTrafficOnly !== undefined) config.httpsOnly = String(props.supportsHttpsTrafficOnly);
+      if (props.minimumTlsVersion) config.minTlsVersion = props.minimumTlsVersion;
       break;
+    
+    case 'redis':
+      if (sku.name && sku.family && sku.capacity) {
+        config.sku = `${sku.name} ${sku.family}${sku.capacity}`;
+      }
+      if (props.enableNonSslPort !== undefined) config.enableNonSslPort = String(props.enableNonSslPort);
+      if (props.minimumTlsVersion) config.minTlsVersion = props.minimumTlsVersion;
+      if (props.replicasPerMaster) config.replicasPerPrimary = String(props.replicasPerMaster);
+      break;
+    
+    case 'adls':
+      if (sku.tier) config.tier = sku.tier;
+      if (props.isHnsEnabled !== undefined) config.hierarchicalNamespace = String(props.isHnsEnabled);
+      if (sku.name?.split('_')[1]) config.replication = sku.name.split('_')[1];
+      break;
+    
     case 'kv':
       if (sku.name) config.sku = sku.name;
+      if (props.softDeleteRetentionInDays) config.softDeleteDays = String(props.softDeleteRetentionInDays);
+      if (props.enablePurgeProtection !== undefined) config.purgeProtection = String(props.enablePurgeProtection);
+      if (props.enableRbacAuthorization !== undefined) config.enableRbacAuth = String(props.enableRbacAuthorization);
+      if (props.networkAcls?.defaultAction) config.networkAcls = props.networkAcls.defaultAction;
       break;
-    case 'fw':
-      if (sku.tier) config.sku = sku.tier;
-      break;
+    
     case 'app':
-    case 'fa':
-      const runtimeVersion = props.siteConfig?.linuxFxVersion || props.siteConfig?.windowsFxVersion;
-      if (runtimeVersion) config.runtime = runtimeVersion;
+      const runtimeVersion = props.siteConfig?.linuxFxVersion || props.siteConfig?.windowsFxVersion || '';
+      if (runtimeVersion) {
+        const parts = runtimeVersion.split('|');
+        if (parts[0]) config.runtime = parts[0].toLowerCase();
+        if (parts[1]) config.runtimeVersion = parts[1];
+      }
+      if (props.siteConfig?.alwaysOn !== undefined) config.alwaysOn = String(props.siteConfig.alwaysOn);
+      if (props.httpsOnly !== undefined) config.httpsOnly = String(props.httpsOnly);
+      if (props.siteConfig?.minTlsVersion) config.minTlsVersion = props.siteConfig.minTlsVersion;
+      if (props.identity?.type) config.managedIdentity = props.identity.type;
       break;
+    
+    case 'apim':
+      if (sku.name) config.tier = sku.name;
+      if (sku.capacity) config.capacity = String(sku.capacity);
+      if (props.publisherName) config.publisherName = props.publisherName;
+      if (props.publisherEmail) config.publisherEmail = props.publisherEmail;
+      if (props.virtualNetworkType) config.vnetType = props.virtualNetworkType;
+      break;
+    
+    case 'sb':
+      if (sku.tier) config.tier = sku.tier;
+      if (props.messagingUnits) config.messagingUnits = String(props.messagingUnits);
+      if (sku.capacity) config.capacity = String(sku.capacity);
+      if (props.zoneRedundant !== undefined) config.zoneRedundant = String(props.zoneRedundant);
+      break;
+    
+    case 'evh':
+      if (sku.name) config.plan = sku.name;
+      if (sku.capacity) config.throughputUnits = String(sku.capacity);
+      break;
+    
+    case 'logic':
+      if (sku.name) config.plan = sku.name;
+      if (props.state) config.state = props.state;
+      if (props.definition?.triggers) {
+        const triggerKeys = Object.keys(props.definition.triggers);
+        if (triggerKeys.length > 0) {
+          config.triggerType = triggerKeys[0];
+        }
+      }
+      break;
+    
+    case 'foundry':
+    case 'openai':
+      if (sku.name) config.sku = sku.name;
+      if (resource.kind) config.kind = resource.kind;
+      if (props.customSubDomainName) config.customSubdomain = props.customSubDomainName;
+      if (props.networkAcls?.defaultAction) config.networkRules = props.networkAcls.defaultAction;
+      // For OpenAI, extract deployment info if available
+      if (type === 'openai' && props.deployments?.[0]) {
+        const deployment = props.deployments[0];
+        if (deployment.name) config.deploymentName = deployment.name;
+        if (deployment.properties?.model?.name) config.model = deployment.properties.model.name;
+        if (deployment.properties?.model?.version) config.modelVersion = deployment.properties.model.version;
+        if (deployment.sku?.capacity) config.capacity = String(deployment.sku.capacity);
+      }
+      break;
+    
+    case 'monitor':
+      if (props.retentionInDays) config.retentionDays = String(props.retentionInDays);
+      if (sku.name) config.workspaceSku = sku.name;
+      if (props.workspaceCapping?.dailyQuotaGb) config.dailyCapGB = String(props.workspaceCapping.dailyQuotaGb);
+      break;
+    
     case 'dns':
     case 'publicDns':
       // Extract DNS zone name from resource name (zone name is typically the resource name)
@@ -683,6 +956,7 @@ function _buildConfig(resource, type) {
         });
       }
       break;
+    
     default:
       // Already have full default config, no additional type-specific extraction needed
       break;
@@ -690,19 +964,82 @@ function _buildConfig(resource, type) {
   return config;
 }
 
-function _findSubnetRef(props) {
+function _findSubnetRef(props, resources) {
   // Look for subnet references in resource properties (common patterns)
+  
+  // Direct subnet reference (Load Balancers, App Gateways, etc.)
   if (props.subnet && props.subnet.id) return props.subnet.id;
+  
+  // IP Configurations (Firewalls, Bastions, VPN Gateways, etc.)
   if (props.ipConfigurations) {
     for (const ip of props.ipConfigurations) {
       if (ip.properties?.subnet?.id) return ip.properties.subnet.id;
       if (ip.subnet?.id) return ip.subnet.id;
     }
   }
-  if (props.networkProfile?.networkInterfaces) {
-    // Can't resolve NIC to subnet without more data, skip
+  
+  // Frontend IP configurations (Load Balancers, App Gateways)
+  if (props.frontendIPConfigurations) {
+    for (const frontend of props.frontendIPConfigurations) {
+      if (frontend.properties?.subnet?.id) return frontend.properties.subnet.id;
+      if (frontend.subnet?.id) return frontend.subnet.id;
+    }
   }
+  
+  // Gateway IP configurations (VPN Gateways, ExpressRoute Gateways)
+  if (props.gatewayIPConfigurations) {
+    for (const gwIp of props.gatewayIPConfigurations) {
+      if (gwIp.properties?.subnet?.id) return gwIp.properties.subnet.id;
+      if (gwIp.subnet?.id) return gwIp.subnet.id;
+    }
+  }
+  
+  // Network Profile with Network Interfaces (VMs, VMSSs)
+  if (props.networkProfile?.networkInterfaces && resources) {
+    // Try to resolve NIC to subnet by looking up NIC in resources array
+    for (const nicRef of props.networkProfile.networkInterfaces) {
+      const nicId = nicRef.id || nicRef.Id;
+      if (nicId) {
+        const nic = resources.find(r => (r.id || r.Id || r.ResourceId) === nicId);
+        if (nic) {
+          const nicProps = nic.properties || nic.Properties || {};
+          if (nicProps.ipConfigurations) {
+            for (const ip of nicProps.ipConfigurations) {
+              if (ip.properties?.subnet?.id) return ip.properties.subnet.id;
+              if (ip.subnet?.id) return ip.subnet.id;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Subnet resources (AKS, Container Apps, etc.)
+  if (props.agentPoolProfiles) {
+    // AKS agent pools
+    for (const pool of props.agentPoolProfiles) {
+      if (pool.vnetSubnetID) return pool.vnetSubnetID;
+      if (pool.vnetSubnetId) return pool.vnetSubnetId;
+    }
+  }
+  
+  // Container Apps
+  if (props.template?.containers) {
+    if (props.infrastructureSubnetId) return props.infrastructureSubnetId;
+  }
+  
+  // Private Endpoints
+  if (props.subnet?.id) return props.subnet.id;
+  if (props.manualPrivateLinkServiceConnections) {
+    for (const conn of props.manualPrivateLinkServiceConnections) {
+      if (conn.properties?.subnet?.id) return conn.properties.subnet.id;
+    }
+  }
+  
+  // Direct properties (various services)
   if (props.virtualNetworkSubnetId) return props.virtualNetworkSubnetId;
   if (props.subnetId) return props.subnetId;
+  if (props.delegatedSubnetResourceId) return props.delegatedSubnetResourceId;
+  
   return null;
 }
