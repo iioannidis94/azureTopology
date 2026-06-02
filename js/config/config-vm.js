@@ -47,11 +47,14 @@ export function buildVmConfig(props, config) {
   if (props.networkProfile?.networkInterfaces && Array.isArray(props.networkProfile.networkInterfaces)) {
     config.nics = props.networkProfile.networkInterfaces.map((nicRef, index) => {
       const nic = nicRef.properties || {};
+      const isPrimary = nicRef.properties?.primary !== undefined 
+        ? nicRef.properties.primary 
+        : (index === 0);
       return {
         name: nicRef.id ? nicRef.id.split('/').pop() : '',
         enableAcceleratedNetworking: String(nic.enableAcceleratedNetworking || false),
         enableIPForwarding: String(nic.enableIPForwarding || false),
-        primary: String(nicRef.properties?.primary !== undefined ? nicRef.properties.primary : (index === 0)),
+        primary: String(isPrimary),
         privateIPAllocationMethod: nic.ipConfigurations?.[0]?.properties?.privateIPAllocationMethod || 'Dynamic',
         privateIPAddress: nic.ipConfigurations?.[0]?.properties?.privateIPAddress || '',
         publicIp: String(nic.ipConfigurations?.[0]?.properties?.publicIPAddress !== undefined ? true : false)

@@ -912,7 +912,7 @@ function _buildConfig(resource, type) {
   return config;
 }
 
-function _findSubnetRef(props, resources) {
+function _findSubnetRef(props, resources = []) {
   // Look for subnet references in resource properties (common patterns)
   
   // Direct subnet reference (Load Balancers, App Gateways, etc.)
@@ -943,7 +943,7 @@ function _findSubnetRef(props, resources) {
   }
   
   // Network Profile with Network Interfaces (VMs, VMSSs)
-  if (props.networkProfile?.networkInterfaces && resources) {
+  if (props.networkProfile?.networkInterfaces && resources.length > 0) {
     // Try to resolve NIC to subnet by looking up NIC in resources array
     for (const nicRef of props.networkProfile.networkInterfaces) {
       const nicId = nicRef.id || nicRef.Id;
