@@ -1,5 +1,6 @@
 import { state, saveState, fullUpdate, RES_TYPES } from '../state-management.js';
 import { closeModal } from './export-utils.js';
+import { migrateState } from '../config/config-migration.js';
 
 const JSON_EXPORT_VERSION = 1;
 const TRANSIENT_KEYS = ['dragging','dragStart','offsetStart','dragNodeId','dragGroup','selectedId','offset','scale','mouseStart','dragNodeStart'];
@@ -147,6 +148,9 @@ export function confirmJsonImport(){
   try { parsed = JSON.parse(raw); } catch(e) { errEl.textContent = '⚠ Invalid JSON: ' + e.message; return; }
 
   let data = parsed._format === 'AzureArchitectureBuilder' ? parsed.state : parsed;
+
+  // Migrate old configuration format to new nested format
+  data = migrateState(data);
 
   // Validate minimum structure
   if (!data.subscriptions || !data.resourceGroups || !data.hub) {
